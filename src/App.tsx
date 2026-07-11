@@ -80,10 +80,14 @@ export default function App() {
   const htmlCacheRef = useRef<{ [fileName: string]: string }>({});
 
   // Objkt.com Integration States
-  const [galleryMode, setGalleryMode] = useState<'objkt' | 'local'>('objkt');
+  const [galleryMode, setGalleryMode] = useState<'objkt' | 'local'>('local');
   const [objktTokens, setObjktTokens] = useState<any[]>([]);
   const [selectedObjktToken, setSelectedObjktToken] = useState<any | null>(null);
   const [isLoadingObjkt, setIsLoadingObjkt] = useState<boolean>(false);
+
+  // Aspect ratio and Resolution controls for high-res shader rendering
+  const [selectedAspect, setSelectedAspect] = useState<string>('1:1');
+  const [selectedResolution, setSelectedResolution] = useState<string>('high');
 
   // AI Slop State
   const [rawPrompt, setRawPrompt] = useState<string>('glowing robotic garbage floating in low orbit');
@@ -601,6 +605,20 @@ export default function App() {
     }
   }, [selectedShader]);
 
+  // Autodetect CPU capabilities for resolution defaults
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) {
+      const cores = navigator.hardwareConcurrency;
+      if (cores >= 8) {
+        setSelectedResolution('high');
+      } else if (cores <= 4) {
+        setSelectedResolution('low');
+      } else {
+        setSelectedResolution('med');
+      }
+    }
+  }, []);
+
   // Helper to inject a style tag to completely hide the interactive HUD box in files
   const injectHudHidingStyle = (htmlString: string) => {
     const styleTag = `
@@ -626,6 +644,81 @@ export default function App() {
       modified = htmlString.substring(0, idx) + styleTag + htmlString.substring(idx);
     } else {
       modified = styleTag + htmlString;
+    }
+    return modified;
+  };
+
+  // Helper to dynamically inject resolution multipliers and security constraints (anti-theft)
+  const injectRuntimeLabMods = (htmlString: string, resolutionKey: string) => {
+    if (!htmlString) return '';
+    
+    const multipliers: { [key: string]: number } = {
+      'low': 0.35,
+      'med': 0.7,
+      'high': 1.0,
+      'very-high': 1.5,
+      'max': 2.2
+    };
+    
+    const mult = multipliers[resolutionKey] || 1.0;
+    
+    const runtimeStylesAndScripts = `
+      <style>
+        /* Anti-theft selection constraints */
+        body, html {
+          user-select: none !important;
+          -webkit-user-select: none !important;
+          -moz-user-select: none !important;
+          -ms-user-select: none !important;
+        }
+        img, canvas {
+          pointer-events: auto !important;
+          user-select: none !important;
+          -webkit-user-drag: none !important;
+        }
+      </style>
+      <script>
+        (function() {
+          try {
+            // Override browser Device Pixel Ratio inside sandbox for speed control
+            Object.defineProperty(window, 'devicePixelRatio', { 
+              value: ${mult}, 
+              writable: false, 
+              configurable: true 
+            });
+          } catch(e) {}
+
+          // Prevent right-click context menu (anti-theft)
+          document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+          }, true);
+
+          // Prevent screenshot/save hotkeys (anti-theft)
+          document.addEventListener('keydown', function(e) {
+            // Cmd+S / Ctrl+S
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+              e.preventDefault();
+            }
+            // Cmd+P / Ctrl+P
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+              e.preventDefault();
+            }
+            // F12 or Inspect shortcuts
+            if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'C' || e.key === 'c'))) {
+              e.preventDefault();
+            }
+          }, true);
+        })();
+      </script>
+    `;
+    
+    let modified = htmlString;
+    if (htmlString.toLowerCase().includes('</head>')) {
+      const idx = htmlString.toLowerCase().indexOf('</head>');
+      modified = htmlString.substring(0, idx) + runtimeStylesAndScripts + htmlString.substring(idx);
+    } else {
+      modified = runtimeStylesAndScripts + htmlString;
     }
     return modified;
   };
@@ -1068,40 +1161,40 @@ export default function App() {
               </div>
 
               <div className="frame">
+                {/* Hero Section (placed outside the grid so it sits at the top on both mobile and desktop) */}
+                <section className="hero pt-6 pb-2 border-b border-zinc-900/30">
+                  <div className="online">
+                    <span className="dot" /> ONLINE NOW · BROADCASTING FROM LOW VOID ORBIT
+                  </div>
+                  <h1>AstralTrash</h1>
+                  <div className="sub">
+                    Cosmic debris, lovingly rendered. <em>GLSL shaders</em>, generative math, and twenty years of documented psychedelic phenomenology — salvaged, glitched, and left glowing in orbit by <em>astraltrash</em>. One artist's trash is the same artist's treasure.
+                  </div>
+                  <div className="btn-row">
+                    <button onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }} className="btn speak cursor-crosshair" data-say="Entering the gallery">
+                      ENTER GALLERY ▸
+                    </button>
+                    <a
+                      className="btn speak border-[#EFFF04] text-[#EFFF04] hover:bg-[#EFFF04] hover:text-black hover:shadow-[0_0_24px_#EFFF04]"
+                      href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-say="Collect original AstralTrash NFT artworks on Tezos"
+                    >
+                      SHOP TEZOS NFTs ⟡ OBJKT
+                    </a>
+                    <a className="btn alt2 speak" href="#manifesto" data-say="The manifesto">
+                      MANIFESTO
+                    </a>
+                  </div>
+                </section>
+
                 {/* 2-Column Split Layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start py-6">
                   
                   {/* Left Column (2/3 width on desktop) */}
                   <div className="lg:col-span-8 space-y-10 order-2 lg:order-1">
                     
-                    {/* Hero Section */}
-                    <section className="hero">
-                      <div className="online">
-                        <span className="dot" /> ONLINE NOW · BROADCASTING FROM LOW VOID ORBIT
-                      </div>
-                      <h1>AstralTrash</h1>
-                      <div className="sub">
-                        Cosmic debris, lovingly rendered. <em>GLSL shaders</em>, generative math, and twenty years of documented psychedelic phenomenology — salvaged, glitched, and left glowing in orbit by <em>astraltrash</em>. One artist's trash is the same artist's treasure.
-                      </div>
-                      <div className="btn-row">
-                        <button onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }} className="btn speak cursor-crosshair" data-say="Entering the gallery">
-                          ENTER GALLERY ▸
-                        </button>
-                        <a
-                          className="btn speak border-[#EFFF04] text-[#EFFF04] hover:bg-[#EFFF04] hover:text-black hover:shadow-[0_0_24px_#EFFF04]"
-                          href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          data-say="Collect original AstralTrash NFT artworks on Tezos"
-                        >
-                          SHOP TEZOS NFTs ⟡ OBJKT
-                        </a>
-                        <a className="btn alt2 speak" href="#manifesto" data-say="The manifesto">
-                          MANIFESTO
-                        </a>
-                      </div>
-                    </section>
-
                     {/* Top 8 Debris Section */}
                     <section className="sect pt-2" id="top8">
                       <h2 className="sect-head">▓▒░ TOP 8 DEBRIS ░▒▓</h2>
@@ -1399,221 +1492,121 @@ export default function App() {
                   <span className="text-[11px] text-gray-500 font-mono">RENDER_PLATFORM: WebGL2_GENATIVE</span>
                 </div>
                 <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-2xl">
-                  Real raw GLSL fragment code compiled dynamically in your browser, paired with live Tezos NFTs from my official collection on Objkt.
+                  Real raw GLSL fragment code compiled dynamically in your browser at high resolution. Click on any shader shard to activate the rendering lab, configure aspect ratios, or select custom rendering quality.
                 </p>
               </div>
 
-              {/* Toggle Mode Radio Tabs */}
-              <div className="flex border-b border-zinc-900 pb-2 mb-6 gap-6">
-                <button 
-                  onClick={() => { setGalleryMode('objkt'); playChime('triangle', 1.0); }}
-                  className={`font-mono text-xs pb-1.5 tracking-widest uppercase border-b-2 transition-all cursor-crosshair ${
-                    galleryMode === 'objkt' ? 'text-[#EFFF04] border-[#EFFF04] font-bold' : 'text-gray-500 border-transparent hover:text-white'
-                  }`}
-                >
-                  ✦ LIVE TEZOS TOKENS (ON OBJKT) ✦
-                </button>
-                <button 
-                  onClick={() => { setGalleryMode('local'); playChime('triangle', 1.0); }}
-                  className={`font-mono text-xs pb-1.5 tracking-widest uppercase border-b-2 transition-all cursor-crosshair ${
-                    galleryMode === 'local' ? 'text-[#FF2BD6] border-[#FF2BD6] font-bold' : 'text-gray-500 border-transparent hover:text-white'
-                  }`}
-                >
-                  ⚛ INTERACTIVE CODE SHARDS (LOCAL LAB) ⚛
-                </button>
-              </div>
-
-              {/* Main Split Layout: Grid on left / Blown up playground or NFT explorer on right */}
+              {/* Main Split Layout: Grid on left / Blown up playground on right */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 
                 {/* Left Side: Dynamic Grid */}
                 <div className="lg:col-span-5">
-                  {galleryMode === 'objkt' ? (
-                    isLoadingObjkt ? (
-                      <div className="py-20 text-center font-mono text-xs text-[#EFFF04] animate-pulse">
-                        TUNING INTO THE TEZOS MATRIX DATASTREAM...
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        {objktTokens.map((token) => {
-                          const hasImg = token.thumbnail_uri || token.display_uri;
-                          const imageUrl = hasImg ? getIpfsUrl(token.thumbnail_uri || token.display_uri) : '';
-                          
-                          return (
-                            <div 
-                              key={token.token_id}
-                              onClick={() => {
-                                setSelectedObjktToken(token);
-                                playChime('square', 1.0);
-                              }}
-                              className={`group border cursor-crosshair p-3 transition-all ${
-                                selectedObjktToken?.token_id === token.token_id 
-                                  ? 'bg-[#EFFF04]/10 border-[#EFFF04] shadow-[0_0_15px_rgba(239,255,4,0.3)]' 
-                                  : 'bg-black/80 border-gray-800 hover:border-[#EFFF04]/50'
-                              }`}
-                            >
-                              <div className="aspect-square w-full mb-2 relative overflow-hidden bg-black border border-gray-950 flex items-center justify-center">
-                                {imageUrl ? (
-                                  <img 
-                                    src={imageUrl} 
-                                    alt={token.name} 
-                                    referrerPolicy="no-referrer"
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 z-10"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                    }}
-                                  />
-                                ) : null}
-                                {(!imageUrl || token.localShader) && (
-                                  <div className="absolute inset-0">
-                                    <ShaderThumbnail shaderId={token.localShader?.id || 'default'} />
-                                  </div>
-                                )}
-                                <div className="absolute top-1 left-1 text-[8px] bg-black/90 text-[#EFFF04] border border-[#EFFF04]/30 px-1 py-0.5 font-mono z-20">
-                                  #{token.token_id}
-                                </div>
-                              </div>
-                              <h4 className="text-white text-[13px] font-sans font-bold truncate tracking-wide">{token.name}</h4>
-                              <div className="flex justify-between items-center mt-1">
-                                <span className="text-[9px] text-[#EFFF04] uppercase tracking-widest">OBJKT COLLECTIBLE</span>
-                                <ChevronRight className="w-3 h-3 text-[#EFFF04] group-hover:translate-x-1 transition-transform" />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      {shadersList.map((item) => (
-                        <div 
-                          key={item.id}
-                          onClick={() => {
-                            setSelectedShader(item);
-                            setShaderSpeed(item.defaultParams.speed);
-                            setShaderScale(item.defaultParams.scale);
-                            setShaderIntensity(item.defaultParams.intensity);
-                            setShaderHue(item.defaultParams.hue);
-                            setShowGLSL(false);
-                            playChime('square', 1.0);
-                          }}
-                          className={`group border cursor-crosshair p-3 transition-all ${
-                            selectedShader?.id === item.id 
-                              ? 'bg-[#FF2BD6]/10 border-[#FF2BD6] shadow-[0_0_15px_rgba(255,43,214,0.3)]' 
-                              : 'bg-black/80 border-gray-800 hover:border-[#FF2BD6]/50'
-                          }`}
-                        >
-                          <div className="aspect-square w-full mb-2 relative overflow-hidden border border-gray-950">
-                            <ShaderThumbnail shaderId={item.id} />
-                            <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors pointer-events-none" />
-                            <div className="absolute top-1 left-1 text-[8px] bg-black/80 text-white px-1.5 py-0.5 font-mono border border-white/10">
-                              {item.tag}
-                            </div>
-                          </div>
-                          <h4 className="text-white text-[13px] font-sans font-bold truncate tracking-wide">{item.title}</h4>
-                          <div className="flex justify-between items-center mt-1">
-                            <span className="text-[9px] text-[#FF2BD6] uppercase tracking-widest">{item.tag} SHARD</span>
-                            <ChevronRight className="w-3 h-3 text-[#FF2BD6] group-hover:translate-x-1 transition-transform" />
+                  <div className="grid grid-cols-2 gap-4">
+                    {shadersList.map((item) => (
+                      <div 
+                        key={item.id}
+                        onClick={() => {
+                          setSelectedShader(item);
+                          setShaderSpeed(item.defaultParams.speed);
+                          setShaderScale(item.defaultParams.scale);
+                          setShaderIntensity(item.defaultParams.intensity);
+                          setShaderHue(item.defaultParams.hue);
+                          setShowGLSL(false);
+                          playChime('square', 1.0);
+                        }}
+                        className={`group border cursor-crosshair p-3 transition-all ${
+                          selectedShader?.id === item.id 
+                            ? 'bg-[#FF2BD6]/10 border-[#FF2BD6] shadow-[0_0_15px_rgba(255,43,214,0.3)]' 
+                            : 'bg-black/80 border-gray-800 hover:border-[#FF2BD6]/50'
+                        }`}
+                      >
+                        <div className="aspect-square w-full mb-2 relative overflow-hidden border border-gray-950">
+                          <ShaderThumbnail shaderId={item.id} fileName={item.fileName} />
+                          <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors pointer-events-none" />
+                          <div className="absolute top-1 left-1 text-[8px] bg-black/80 text-white px-1.5 py-0.5 font-mono border border-white/10">
+                            {item.tag}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <h4 className="text-white text-[13px] font-sans font-bold truncate tracking-wide">{item.title}</h4>
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-[9px] text-[#FF2BD6] uppercase tracking-widest">{item.tag} SHARD</span>
+                          <ChevronRight className="w-3 h-3 text-[#FF2BD6] group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Right Side: Blown Up Playground (The Exploded Detail View) */}
                 <div className="lg:col-span-7 bg-black/90 border border-zinc-800 p-5">
-                  {galleryMode === 'objkt' ? (
-                    selectedObjktToken ? (
-                      <div className="space-y-4 border border-[#EFFF04]/30 p-4 bg-black">
-                        {/* NFT Media Preview */}
-                        <div className="relative aspect-square w-full bg-black border border-[#EFFF04]/50 overflow-hidden flex items-center justify-center">
-                          {selectedObjktToken.display_uri || selectedObjktToken.artifact_uri ? (
-                            <img 
-                              src={getIpfsUrl(selectedObjktToken.display_uri || selectedObjktToken.artifact_uri)} 
-                              alt={selectedObjktToken.name}
-                              referrerPolicy="no-referrer"
-                              className="max-w-full max-h-full object-contain"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <div className="text-[#EFFF04] font-mono text-[10px] animate-pulse">
-                              [ CHROMATIC NFT ARTIFACT IN TRANSIT ]
-                            </div>
-                          )}
-                          
-                          <div className="absolute top-2 left-2 bg-black/90 border border-[#EFFF04] text-[#EFFF04] font-mono text-[10px] px-2 py-1 flex items-center gap-1.5 backdrop-blur-md">
-                            <Radio className="w-3 h-3 animate-pulse" />
-                            <span>TEZOS // LIVE BLOCKCHAIN ARTIFACT</span>
-                          </div>
-
-                          <div className="absolute bottom-2 right-2 bg-black/90 border border-gray-800 text-gray-400 font-mono text-[9px] px-2 py-1 backdrop-blur-md">
-                            TOKEN ID: #{selectedObjktToken.token_id}
-                          </div>
+                  {selectedShader ? (
+                    <div className="space-y-4 border border-[#FF2BD6]/30 p-4 bg-black select-none" onContextMenu={(e) => e.preventDefault()}>
+                      
+                      {/* Configuration Controls Bar */}
+                      <div className="flex flex-wrap items-center gap-4 bg-zinc-950 p-2.5 border border-zinc-900 justify-between text-xs font-mono text-gray-400">
+                        <div className="flex items-center gap-1.5">
+                          <Sliders className="w-3.5 h-3.5 text-[#FF2BD6]" />
+                          <span className="text-[#FF2BD6] font-bold text-[11px] uppercase tracking-wider">LAB VIEWER CONFIG</span>
                         </div>
-
-                        {/* Title and stats */}
-                        <div className="flex justify-between items-start gap-4">
-                          <div>
-                            <h3 className="text-xl font-bold font-sans text-white tracking-tight">{selectedObjktToken.name}</h3>
-                            <p className="text-[12px] text-[#EFFF04] mt-0.5 tracking-wider font-mono">CONTRACT: {selectedObjktToken.fa_contract}</p>
-                          </div>
-                          <span className="px-2 py-1 bg-[#EFFF04] text-black text-[10px] font-bold tracking-widest uppercase shrink-0">
-                            ID #{selectedObjktToken.token_id}
-                          </span>
-                        </div>
-
-                        {/* Description */}
-                        <div className="border-l-2 border-[#EFFF04] pl-3 py-1 space-y-2">
-                          <p className="text-[13px] text-gray-200 leading-relaxed font-sans">
-                            {selectedObjktToken.description || "An original, verified generative digital masterpiece from the AstralTrash collection."}
-                          </p>
-                        </div>
-
-                        {/* Collector/NFT marketplace call-to-action */}
-                        <div className="bg-gradient-to-r from-black via-[#EFFF04]/5 to-black border border-[#EFFF04]/50 p-5 font-mono text-center space-y-3 pt-4">
-                          <div className="text-[10px] text-[#EFFF04] tracking-widest uppercase font-bold flex items-center justify-center gap-1.5">
-                            <span className="animate-pulse">⟡</span> ORIGINAL ASTRALTRASH TEZOS NFT <span className="animate-pulse">⟡</span>
-                          </div>
-                          <p className="text-[11px] text-gray-400 leading-normal max-w-sm mx-auto">
-                            This asset is loaded dynamically from the Tezos blockchain. Click the button below to see the full view on Objkt, place offers, and complete acquisition.
-                          </p>
-                          <a 
-                            href={`https://objkt.com/tokens/${selectedObjktToken.fa_contract}/${selectedObjktToken.token_id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => playChime('triangle', 1.4)}
-                            className="inline-flex items-center gap-2 border border-[#EFFF04] bg-[#EFFF04] text-black hover:bg-black hover:text-[#EFFF04] px-5 py-2.5 text-[11px] font-bold tracking-widest cursor-crosshair uppercase transition-all hover:shadow-[0_0_20px_rgba(239,255,4,0.5)]"
-                          >
-                            VIEW FULL SIZE &amp; COLLECT ON OBJKT ↗
-                          </a>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="h-[400px] flex flex-col items-center justify-center border border-dashed border-[#EFFF04]/20 text-center p-6 text-gray-500 font-mono">
-                        <Atom className="w-12 h-12 text-[#EFFF04]/30 animate-spin mb-4" style={{ animationDuration: '8s' }} />
-                        <h4 className="text-white text-md font-sans font-bold uppercase mb-1">NO TOKEN SELECTED</h4>
-                        <p className="text-[12px] max-w-sm">
-                          Click on any of the live Tezos tokens in the grid on the left to inspect metadata and access marketplace gateways.
-                        </p>
-                      </div>
-                    )
-                  ) : (
-                    selectedShader ? (
-                      <div className="space-y-4 border border-[#FF2BD6]/30 p-4 bg-black">
                         
-                        {/* Live Full-Resolution WebGL Canvas Box via IFrame */}
-                        <div className="relative aspect-square w-full bg-black border border-[#FF2BD6]/50 overflow-hidden flex items-center justify-center">
+                        <div className="flex flex-wrap gap-4 items-center">
+                          {/* Aspect Ratio */}
+                          <div className="flex items-center gap-1.5">
+                            <span>ASPECT:</span>
+                            <select 
+                              value={selectedAspect}
+                              onChange={(e) => {
+                                setSelectedAspect(e.target.value);
+                                playChime('sine', 1.3);
+                              }}
+                              className="bg-black border border-[#FF2BD6]/40 text-[#FF2BD6] hover:border-[#FF2BD6] px-2 py-0.5 focus:outline-none cursor-crosshair text-[10px]"
+                            >
+                              <option value="1:1">1:1 (SQUARE)</option>
+                              <option value="16:9">16:9 (WIDESCREEN)</option>
+                              <option value="4:3">4:3 (RETRO CRT)</option>
+                              <option value="full">FULL (RESPONSIVE BOX)</option>
+                            </select>
+                          </div>
+
+                          {/* Resolution */}
+                          <div className="flex items-center gap-1.5">
+                            <span>QUALITY:</span>
+                            <select 
+                              value={selectedResolution}
+                              onChange={(e) => {
+                                setSelectedResolution(e.target.value);
+                                playChime('sine', 1.3);
+                              }}
+                              className="bg-black border border-[#39FF14]/40 text-[#39FF14] hover:border-[#39FF14] px-2 py-0.5 focus:outline-none cursor-crosshair text-[10px]"
+                            >
+                              <option value="low">LOW (0.35x)</option>
+                              <option value="med">MED (0.70x)</option>
+                              <option value="high">HIGH (1.0x)</option>
+                              <option value="very-high">ULTRA (1.5x)</option>
+                              <option value="max">MAX (2.2x)</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Live Full-Resolution WebGL Canvas Box via IFrame */}
+                      <div className="flex justify-center w-full bg-black border border-[#FF2BD6]/30 relative overflow-hidden select-none">
+                        <div className={`relative ${
+                          selectedAspect === '1:1' ? 'aspect-square w-full max-w-[500px]' :
+                          selectedAspect === '16:9' ? 'aspect-video w-full' :
+                          selectedAspect === '4:3' ? 'aspect-[4/3] w-full max-w-[550px]' :
+                          'w-full h-[500px]'
+                        } bg-black overflow-hidden flex items-center justify-center`}>
+                          
                           {galleryHtml ? (
                             <iframe 
-                              srcDoc={galleryHtml}
+                              srcDoc={injectRuntimeLabMods(galleryHtml, selectedResolution)}
                               className="w-full h-full border-0 block bg-black"
                               title={selectedShader.title}
                               allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
                               sandbox="allow-scripts allow-same-origin"
                               id={`gallery-iframe-${selectedShader.id}`}
+                              onContextMenu={(e) => e.preventDefault()}
                             />
                           ) : (
                             <div className="text-[#FF2BD6] font-mono text-[10px] animate-pulse">
@@ -1621,191 +1614,192 @@ export default function App() {
                             </div>
                           )}
                           
-                          <div className="absolute top-2 left-2 bg-black/90 border border-[#FF2BD6] text-[#FF2BD6] font-mono text-[10px] px-2 py-1 flex items-center gap-1.5 backdrop-blur-md">
-                            <Maximize2 className="w-3 h-3" />
-                            <span>FULL RESOLUTION CODE LAB // LIVE FEED</span>
+                          {/* Visual Overlay Indicators */}
+                          <div className="absolute top-2 left-2 bg-black/90 border border-[#FF2BD6] text-[#FF2BD6] font-mono text-[9px] px-2 py-0.5 flex items-center gap-1 backdrop-blur-md select-none pointer-events-none">
+                            <Maximize2 className="w-2.5 h-2.5" />
+                            <span>CODE LAB FEED // {selectedAspect}</span>
                           </div>
 
-                          <div className="absolute bottom-2 right-2 bg-black/90 border border-gray-800 text-gray-400 font-mono text-[9px] px-2 py-1 backdrop-blur-md">
-                            FILE: {selectedShader.fileName}
-                          </div>
-                        </div>
-
-                        {/* Header with tags */}
-                        <div className="flex justify-between items-start gap-4">
-                          <div>
-                            <h3 className="text-xl font-bold font-sans text-white tracking-tight">{selectedShader.title}</h3>
-                            <p className="text-[12px] text-[#39FF14] mt-0.5 tracking-wider font-mono">ROOT ARCHETYPE ID: {selectedShader.id.toUpperCase()}</p>
-                          </div>
-                          <span className="px-2 py-1 text-[10px] text-black font-bold tracking-widest uppercase shrink-0" style={{ backgroundColor: selectedShader.tagColor }}>
-                            {selectedShader.tag} MATRIX
-                          </span>
-                        </div>
-
-                        {/* Descriptive/Manifesto Wording */}
-                        <div className="border-l-2 border-[#FF2BD6] pl-3 py-1 space-y-2">
-                          <p className="text-[14px] text-gray-200 leading-relaxed font-sans">
-                            {selectedShader.explanation}
-                          </p>
-                          <p className="text-[11px] text-[#9fdc96] font-mono italic">
-                            TECHNICAL SPECS: {selectedShader.technicalDetails}
-                          </p>
-                        </div>
-
-                        {/* Interactive Custom Sliders */}
-                        <div className="bg-zinc-950 p-4 border border-zinc-900 space-y-3 font-mono">
-                          <div className="flex items-center gap-2 text-[11px] text-gray-400 border-b border-zinc-900 pb-1.5 uppercase tracking-wider">
-                            <Sliders className="w-3.5 h-3.5 text-[#FF2BD6]" />
-                            <span>Modify WebGL Shader Parameters</span>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Speed */}
-                            <div>
-                              <div className="flex justify-between text-[11px] mb-1 text-gray-400">
-                                <span>SPEED_MULT</span>
-                                <span className="text-[#FF2BD6] font-bold">{shaderSpeed.toFixed(2)}x</span>
-                              </div>
-                              <input 
-                                type="range" 
-                                min="0.1" 
-                                max="4.0" 
-                                step="0.05"
-                                value={shaderSpeed}
-                                onChange={(e) => setShaderSpeed(parseFloat(e.target.value))}
-                                className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
-                              />
-                            </div>
-
-                            {/* Scale */}
-                            <div>
-                              <div className="flex justify-between text-[11px] mb-1 text-gray-400">
-                                <span>SCALE_FACTOR</span>
-                                <span className="text-[#FF2BD6] font-bold">{shaderScale.toFixed(2)}x</span>
-                              </div>
-                              <input 
-                                type="range" 
-                                min="0.2" 
-                                max="3.0" 
-                                step="0.05"
-                                value={shaderScale}
-                                onChange={(e) => setShaderScale(parseFloat(e.target.value))}
-                                className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
-                              />
-                            </div>
-
-                            {/* Intensity */}
-                            <div>
-                              <div className="flex justify-between text-[11px] mb-1 text-gray-400">
-                                <span>WARPING_FORCE</span>
-                                <span className="text-[#FF2BD6] font-bold">{shaderIntensity.toFixed(2)}x</span>
-                              </div>
-                              <input 
-                                type="range" 
-                                min="0.1" 
-                                max="3.0" 
-                                step="0.05"
-                                value={shaderIntensity}
-                                onChange={(e) => setShaderIntensity(parseFloat(e.target.value))}
-                                className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
-                              />
-                            </div>
-
-                            {/* Hue Shift */}
-                            <div>
-                              <div className="flex justify-between text-[11px] mb-1 text-gray-400">
-                                <span>CHROMATIC_HUE</span>
-                                <span className="text-[#FF2BD6] font-bold">+{Math.round(shaderHue * 360)}°</span>
-                              </div>
-                              <input 
-                                type="range" 
-                                min="0.0" 
-                                max="1.0" 
-                                step="0.01"
-                                value={shaderHue}
-                                onChange={(e) => setShaderHue(parseFloat(e.target.value))}
-                                className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Reset and View Source Buttons */}
-                          <div className="flex justify-between items-center pt-2 gap-2">
-                            <button 
-                              onClick={() => {
-                                setShaderSpeed(selectedShader.defaultParams.speed);
-                                setShaderScale(selectedShader.defaultParams.scale);
-                                setShaderIntensity(selectedShader.defaultParams.intensity);
-                                setShaderHue(selectedShader.defaultParams.hue);
-                                playChime('sine', 1.0);
-                              }}
-                              className="text-[10px] border border-gray-800 hover:border-white px-2 py-1 text-gray-400 hover:text-white transition-all flex items-center gap-1 cursor-crosshair"
-                            >
-                              <RefreshCw className="w-3 h-3" />
-                              <span>RESET DEFAULTS</span>
-                            </button>
-
-                            <button 
-                              onClick={() => {
-                                setShowGLSL(!showGLSL);
-                                playChime('sine', 1.4);
-                              }}
-                              className={`text-[10px] border px-2 py-1 transition-all flex items-center gap-1 cursor-crosshair ${
-                                showGLSL 
-                                  ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
-                                  : 'border-[#FF2BD6]/30 text-[#FF2BD6] hover:bg-[#FF2BD6]/10'
-                              }`}
-                            >
-                              <Code className="w-3 h-3" />
-                              <span>{showGLSL ? 'HIDE FILE CODE' : 'VIEW RAW FILE CODE'}</span>
-                            </button>
+                          <div className="absolute bottom-2 right-2 bg-black/90 border border-gray-800 text-gray-500 font-mono text-[8px] px-2 py-0.5 backdrop-blur-md select-none pointer-events-none">
+                            RES: {selectedResolution.toUpperCase()} // FILE: {selectedShader.fileName}
                           </div>
                         </div>
-
-                        {/* Explicit Tezos NFT OBJKT Collection Banner */}
-                        <div className="bg-gradient-to-r from-black via-[#EFFF04]/5 to-black border border-[#EFFF04]/40 p-4 font-mono text-center space-y-2">
-                          <div className="text-[10px] text-[#EFFF04] tracking-widest uppercase font-bold flex items-center justify-center gap-1.5">
-                            <span className="animate-pulse">⟡</span> COLLECTIBLE ORBITAL DEBRIS <span className="animate-pulse">⟡</span>
-                          </div>
-                          <p className="text-[11px] text-gray-300 leading-normal max-w-md mx-auto">
-                            This WebGL art matrix is minted on the Tezos blockchain. No local saves or copies are permitted: visit the official NFT portal to obtain full custodial ownership.
-                          </p>
-                          <a 
-                            href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => playChime('triangle', 1.4)}
-                            className="inline-flex items-center gap-1.5 border border-[#EFFF04] text-[#EFFF04] hover:bg-[#EFFF04] hover:text-black px-4 py-2 text-[11px] font-bold tracking-widest cursor-crosshair uppercase transition-all hover:shadow-[0_0_14px_rgba(239,255,4,0.4)]"
-                          >
-                            COLLECT THIS WORK ON OBJKT ↗
-                          </a>
-                        </div>
-
-                        {/* Expandable raw File Code View */}
-                        {showGLSL && (
-                          <div className="bg-[#020202] border border-[#FF2BD6]/40 p-4 font-mono text-[11px] text-[#39FF14] relative max-h-[250px] overflow-y-auto">
-                            <div className="sticky top-0 bg-[#020202]/95 border-b border-zinc-900 pb-1 mb-2 text-gray-500 text-[10px] uppercase flex justify-between items-center">
-                              <span>{selectedShader.fileName}</span>
-                              <span className="text-[#FF2BD6]">LIVE SOURCE</span>
-                            </div>
-                            {isFetchingCode ? (
-                              <div className="text-gray-500 animate-pulse py-2">RETRIEVING SOURCE STREAM FROM REPOSITORY...</div>
-                            ) : (
-                              <pre className="whitespace-pre-wrap text-[10px] leading-tight select-all">{fetchedCode}</pre>
-                            )}
-                          </div>
-                        )}
-
                       </div>
-                    ) : (
-                      <div className="h-[400px] flex flex-col items-center justify-center border border-dashed border-[#FF2BD6]/20 text-center p-6 text-gray-500 font-mono">
-                        <Atom className="w-12 h-12 text-[#FF2BD6]/30 animate-spin mb-4" style={{ animationDuration: '8s' }} />
-                        <h4 className="text-white text-md font-sans font-bold uppercase mb-1">NO SHARD SELECTED</h4>
-                        <p className="text-[12px] max-w-sm">
-                          Click on any of the shader shards in the grid on the left to activate the dynamic rendering lab feed.
+
+                      {/* Header with tags */}
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <h3 className="text-xl font-bold font-sans text-white tracking-tight">{selectedShader.title}</h3>
+                          <p className="text-[12px] text-[#39FF14] mt-0.5 tracking-wider font-mono">ROOT ARCHETYPE ID: {selectedShader.id.toUpperCase()}</p>
+                        </div>
+                        <span className="px-2 py-1 text-[10px] text-black font-bold tracking-widest uppercase shrink-0" style={{ backgroundColor: selectedShader.tagColor }}>
+                          {selectedShader.tag} MATRIX
+                        </span>
+                      </div>
+
+                      {/* Descriptive/Manifesto Wording */}
+                      <div className="border-l-2 border-[#FF2BD6] pl-3 py-1 space-y-2">
+                        <p className="text-[14px] text-gray-200 leading-relaxed font-sans">
+                          {selectedShader.explanation}
+                        </p>
+                        <p className="text-[11px] text-[#9fdc96] font-mono italic">
+                          TECHNICAL SPECS: {selectedShader.technicalDetails}
                         </p>
                       </div>
-                    )
+
+                      {/* Interactive Custom Sliders */}
+                      <div className="bg-zinc-950 p-4 border border-zinc-900 space-y-3 font-mono">
+                        <div className="flex items-center gap-2 text-[11px] text-gray-400 border-b border-zinc-900 pb-1.5 uppercase tracking-wider">
+                          <Sliders className="w-3.5 h-3.5 text-[#FF2BD6]" />
+                          <span>Modify WebGL Shader Parameters</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Speed */}
+                          <div>
+                            <div className="flex justify-between text-[11px] mb-1 text-gray-400">
+                              <span>SPEED_MULT</span>
+                              <span className="text-[#FF2BD6] font-bold">{shaderSpeed.toFixed(2)}x</span>
+                            </div>
+                            <input 
+                              type="range" 
+                              min="0.1" 
+                              max="4.0" 
+                              step="0.05"
+                              value={shaderSpeed}
+                              onChange={(e) => setShaderSpeed(parseFloat(e.target.value))}
+                              className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
+                            />
+                          </div>
+
+                          {/* Scale */}
+                          <div>
+                            <div className="flex justify-between text-[11px] mb-1 text-gray-400">
+                              <span>SCALE_FACTOR</span>
+                              <span className="text-[#FF2BD6] font-bold">{shaderScale.toFixed(2)}x</span>
+                            </div>
+                            <input 
+                              type="range" 
+                              min="0.2" 
+                              max="3.0" 
+                              step="0.05"
+                              value={shaderScale}
+                              onChange={(e) => setShaderScale(parseFloat(e.target.value))}
+                              className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
+                            />
+                          </div>
+
+                          {/* Intensity */}
+                          <div>
+                            <div className="flex justify-between text-[11px] mb-1 text-gray-400">
+                              <span>WARPING_FORCE</span>
+                              <span className="text-[#FF2BD6] font-bold">{shaderIntensity.toFixed(2)}x</span>
+                            </div>
+                            <input 
+                              type="range" 
+                              min="0.1" 
+                              max="3.0" 
+                              step="0.05"
+                              value={shaderIntensity}
+                              onChange={(e) => setShaderIntensity(parseFloat(e.target.value))}
+                              className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
+                            />
+                          </div>
+
+                          {/* Hue Shift */}
+                          <div>
+                            <div className="flex justify-between text-[11px] mb-1 text-gray-400">
+                              <span>CHROMATIC_HUE</span>
+                              <span className="text-[#FF2BD6] font-bold">+{Math.round(shaderHue * 360)}°</span>
+                            </div>
+                            <input 
+                              type="range" 
+                              min="0.0" 
+                              max="1.0" 
+                              step="0.01"
+                              value={shaderHue}
+                              onChange={(e) => setShaderHue(parseFloat(e.target.value))}
+                              className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Reset and View Source Buttons */}
+                        <div className="flex justify-between items-center pt-2 gap-2">
+                          <button 
+                            onClick={() => {
+                              setShaderSpeed(selectedShader.defaultParams.speed);
+                              setShaderScale(selectedShader.defaultParams.scale);
+                              setShaderIntensity(selectedShader.defaultParams.intensity);
+                              setShaderHue(selectedShader.defaultParams.hue);
+                              playChime('sine', 1.0);
+                            }}
+                            className="text-[10px] border border-gray-800 hover:border-white px-2 py-1 text-gray-400 hover:text-white transition-all flex items-center gap-1 cursor-crosshair"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            <span>RESET DEFAULTS</span>
+                          </button>
+
+                          <button 
+                            onClick={() => {
+                              setShowGLSL(!showGLSL);
+                              playChime('sine', 1.4);
+                            }}
+                            className={`text-[10px] border px-2 py-1 transition-all flex items-center gap-1 cursor-crosshair ${
+                              showGLSL 
+                                ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
+                                : 'border-[#FF2BD6]/30 text-[#FF2BD6] hover:bg-[#FF2BD6]/10'
+                            }`}
+                          >
+                            <Code className="w-3 h-3" />
+                            <span>{showGLSL ? 'HIDE FILE CODE' : 'VIEW RAW FILE CODE'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Explicit Tezos NFT OBJKT Collection Banner */}
+                      <div className="bg-gradient-to-r from-black via-[#EFFF04]/5 to-black border border-[#EFFF04]/40 p-4 font-mono text-center space-y-2">
+                        <div className="text-[10px] text-[#EFFF04] tracking-widest uppercase font-bold flex items-center justify-center gap-1.5">
+                          <span className="animate-pulse">⟡</span> COLLECTIBLE ORBITAL DEBRIS <span className="animate-pulse">⟡</span>
+                        </div>
+                        <p className="text-[11px] text-gray-300 leading-normal max-w-md mx-auto">
+                          This WebGL art matrix is minted on the Tezos blockchain. No local saves or copies are permitted: visit the official NFT portal to obtain full custodial ownership.
+                        </p>
+                        <a 
+                          href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => playChime('triangle', 1.4)}
+                          className="inline-flex items-center gap-1.5 border border-[#EFFF04] text-[#EFFF04] hover:bg-[#EFFF04] hover:text-black px-4 py-2 text-[11px] font-bold tracking-widest cursor-crosshair uppercase transition-all hover:shadow-[0_0_14px_rgba(239,255,4,0.4)]"
+                        >
+                          COLLECT THIS WORK ON OBJKT ↗
+                        </a>
+                      </div>
+
+                      {/* Expandable raw File Code View */}
+                      {showGLSL && (
+                        <div className="bg-[#020202] border border-[#FF2BD6]/40 p-4 font-mono text-[11px] text-[#39FF14] relative max-h-[250px] overflow-y-auto select-text">
+                          <div className="sticky top-0 bg-[#020202]/95 border-b border-zinc-900 pb-1 mb-2 text-gray-500 text-[10px] uppercase flex justify-between items-center">
+                            <span>{selectedShader.fileName}</span>
+                            <span className="text-[#FF2BD6]">LIVE SOURCE</span>
+                          </div>
+                          {isFetchingCode ? (
+                            <div className="text-gray-500 animate-pulse py-2">RETRIEVING SOURCE STREAM FROM REPOSITORY...</div>
+                          ) : (
+                            <pre className="whitespace-pre-wrap text-[10px] leading-tight select-all">{fetchedCode}</pre>
+                          )}
+                        </div>
+                      )}
+
+                    </div>
+                  ) : (
+                    <div className="h-[400px] flex flex-col items-center justify-center border border-dashed border-[#FF2BD6]/20 text-center p-6 text-gray-500 font-mono">
+                      <Atom className="w-12 h-12 text-[#FF2BD6]/30 animate-spin mb-4" style={{ animationDuration: '8s' }} />
+                      <h4 className="text-white text-md font-sans font-bold uppercase mb-1">NO SHARD SELECTED</h4>
+                      <p className="text-[12px] max-w-sm">
+                        Click on any of the shader shards in the grid on the left to activate the dynamic rendering lab feed.
+                      </p>
+                    </div>
                   )}
                 </div>
 
@@ -2290,7 +2284,7 @@ export default function App() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Twitter (X) */}
                       <a 
-                        href="https://x.com" 
+                        href="https://x.com/astraltrash_art" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         onClick={() => playChime('sine', 1.0)}
@@ -2305,7 +2299,7 @@ export default function App() {
 
                       {/* TikTok */}
                       <a 
-                        href="https://tiktok.com" 
+                        href="https://www.tiktok.com/@astraltrash" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         onClick={() => playChime('sine', 1.0)}
@@ -2405,6 +2399,14 @@ export default function App() {
               ASTRAL TRASH ♻ an artifact of merrypranxter · handmade HTML · no trackers, no frameworks, no shame ·{' '}
               <a href="https://github.com/merrypranxter" target="_blank" rel="noopener">
                 github
+              </a>{' '}
+              ·{' '}
+              <a href="https://x.com/astraltrash_art" target="_blank" rel="noopener">
+                x.com
+              </a>{' '}
+              ·{' '}
+              <a href="https://www.tiktok.com/@astraltrash" target="_blank" rel="noopener">
+                tiktok
               </a>
             </div>
           </div>
