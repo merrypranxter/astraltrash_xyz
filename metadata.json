@@ -1,0 +1,6 @@
+{
+  "name": "Astral Trash",
+  "description": "ASTRAL TRASH — GLSL shaders, generative math, and psychedelic phenomenology rendered as beautiful orbital garbage. By merrypranxter.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
