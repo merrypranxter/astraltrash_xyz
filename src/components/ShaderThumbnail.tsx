@@ -102,13 +102,13 @@ export const ShaderThumbnail: React.FC<ShaderThumbnailProps> = ({ shaderId, file
   return (
     <div 
       ref={containerRef} 
-      className="w-full h-full bg-black relative flex items-center justify-center overflow-hidden select-none"
+      className="w-full h-full bg-black relative flex items-center justify-center overflow-hidden select-none clean-container"
     >
       {srcDoc ? (
         <iframe
           srcDoc={srcDoc}
           title={`thumb-${shaderId}`}
-          className="absolute border-0 block bg-black"
+          className="absolute border-0 block bg-black shader-iframe-clean"
           // We set small viewport dimensions (128x128).
           // This forces WebGL inside the iframe to draw only 128x128 pixels,
           // saving massive CPU/GPU resources and creating a beautiful authentic pixelated look!

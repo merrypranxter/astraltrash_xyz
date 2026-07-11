@@ -43,15 +43,11 @@ interface ShaderItem {
 
 // Dossier section photos and timing for the About Me Section on the Home/Hub Tab
 const DOSSIER_PHOTOS: string[] = [
-  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/8016E78C-4FB1-47DB-97A9-9F79BC5881BC.png',
-  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_3078.jpg',
-  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_4802.PNG',
-  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_4804.PNG',
-  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_5605.jpg',
-  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_5612.PNG',
-  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_5614.PNG',
-  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_6421.PNG',
-  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/ReLens_IMG_20250623145800.jpg',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/public/selfies/8016E78C-4FB1-47DB-97A9-9F79BC5881BC.png',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/public/selfies/IMG_0391.jpg',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/public/selfies/IMG_4171.jpg',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/public/selfies/IMG_4802.PNG',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/public/selfies/IMG_5614.PNG',
 ];
 
 const DOSSIER_ROTATE_MS = 4200;
@@ -136,6 +132,42 @@ export default function App() {
   // Dossier Carousel State
   const [dossierIdx, setDossierIdx] = useState<number>(0);
   const [dossierBroken, setDossierBroken] = useState<Set<number>>(new Set());
+  const [dossierAttempts, setDossierAttempts] = useState<Record<number, number>>({});
+
+  const DOSSIER_FILE_NAMES = [
+    '8016E78C-4FB1-47DB-97A9-9F79BC5881BC.png',
+    'IMG_0391.jpg',
+    'IMG_4171.jpg',
+    'IMG_4802.PNG',
+    'IMG_5614.PNG'
+  ];
+
+  const getDossierPhotoUrl = (idx: number) => {
+    const attempt = dossierAttempts[idx] || 0;
+    const fileName = DOSSIER_FILE_NAMES[idx] || DOSSIER_FILE_NAMES[0];
+    if (attempt === 0) {
+      return `https://cdn.jsdelivr.net/gh/merrypranxter/astraltrash_site_support@main/public/selfies/${fileName}`;
+    } else if (attempt === 1) {
+      return `https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/public/selfies/${fileName}`;
+    } else if (attempt === 2) {
+      return `https://cdn.statically.io/gh/merrypranxter/astraltrash_site_support/main/public/selfies/${fileName}`;
+    } else {
+      return `https://raw.githack.com/merrypranxter/astraltrash_site_support/main/public/selfies/${fileName}`;
+    }
+  };
+
+  const handleDossierError = (idx: number) => {
+    const currentAttempt = dossierAttempts[idx] || 0;
+    if (currentAttempt < 3) {
+      setDossierAttempts(prev => ({ ...prev, [idx]: currentAttempt + 1 }));
+    } else {
+      setDossierBroken(prev => {
+        const next = new Set(prev);
+        next.add(idx);
+        return next;
+      });
+    }
+  };
 
   // Web Audio Context reference for synthesizer
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -1322,9 +1354,10 @@ export default function App() {
                             <div className="aspect-[9/16] relative overflow-hidden bg-zinc-950/50 flex items-center justify-center p-0.5">
                               {!dossierBroken.has(dossierIdx) ? (
                                 <img
-                                  src={DOSSIER_PHOTOS[dossierIdx]}
+                                  src={getDossierPhotoUrl(dossierIdx)}
+                                  key={`dossier-hub-${dossierIdx}-${dossierAttempts[dossierIdx] || 0}`}
                                   alt="Subject: Merry"
-                                  onError={() => setDossierBroken(b => new Set(b).add(dossierIdx))}
+                                  onError={() => handleDossierError(dossierIdx)}
                                   referrerPolicy="no-referrer"
                                   className="w-full h-full object-cover block transition-all duration-500 group-hover:scale-105"
                                   style={{ animation: 'dzflicker 7s steps(50) infinite' }}
@@ -1584,11 +1617,11 @@ export default function App() {
 
                     {/* Live Render IFrame */}
                     <div className="space-y-2">
-                      <div className="relative aspect-square w-full bg-black border border-[#FF2BD6]/40 overflow-hidden flex items-center justify-center">
+                      <div className="relative aspect-square w-full bg-black border border-[#FF2BD6]/40 overflow-hidden flex items-center justify-center clean-container">
                         {featuredHtml ? (
                           <iframe 
                             srcDoc={featuredHtml}
-                            className="w-full h-full border-0 block bg-black"
+                            className="w-full h-full border-0 block bg-black shader-iframe-clean"
                             title={shadersList[featuredShaderIndex].title}
                             allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
                             sandbox="allow-scripts allow-same-origin"
@@ -1857,7 +1890,7 @@ export default function App() {
                       </div>
 
                       {/* Live Full-Resolution WebGL Canvas Box via IFrame */}
-                      <div className="flex justify-center w-full bg-black border border-[#FF2BD6]/30 relative overflow-hidden select-none">
+                      <div className="flex justify-center w-full bg-black border border-[#FF2BD6]/30 relative overflow-hidden select-none clean-container">
                         <div className={`relative ${
                           selectedAspect === '1:1' ? 'aspect-square w-full max-w-[500px]' :
                           selectedAspect === '16:9' ? 'aspect-video w-full' :
@@ -1868,7 +1901,7 @@ export default function App() {
                           {galleryHtml ? (
                             <iframe 
                               srcDoc={injectRuntimeLabMods(galleryHtml, selectedResolution)}
-                              className="w-full h-full border-0 block bg-black"
+                              className="w-full h-full border-0 block bg-black shader-iframe-clean"
                               title={selectedShader.title}
                               allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
                               sandbox="allow-scripts allow-same-origin"
@@ -2434,7 +2467,7 @@ export default function App() {
             <div className="frame py-8 animate-fade-in">
               <div className="mb-6">
                 <div className="flex justify-between items-end border-b border-[#9D4DFF] pb-3 mb-2">
-                  <h2 className="text-3xl font-bold font-sans text-[#9D4DFF] tracking-wider uppercase">░ About Mary Gray // astraltrash ░</h2>
+                  <h2 className="text-3xl font-bold font-sans text-[#9D4DFF] tracking-wider uppercase">░ About Merry // astraltrash ░</h2>
                   <span className="text-[11px] text-gray-500 font-mono">STATUS_FEED: ENCRYPTED_ENTITY</span>
                 </div>
                 <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-2xl">
@@ -2444,111 +2477,69 @@ export default function App() {
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 
-                {/* Left Column: Interactive Avatar Resynthesizer */}
+                {/* Left Column: Interactive Portrait Dossier */}
                 <div className="lg:col-span-5 bg-black/95 border-2 border-[#9D4DFF] p-4 shadow-[0_0_20px_rgba(157,77,255,0.2)] space-y-4 font-mono">
                   <div className="bg-[#9D4DFF] text-black text-[12px] font-bold p-1 px-2 tracking-widest flex justify-between items-center">
-                    <span>👾 BIO_MATRIX_AVATAR</span>
-                    <span className="text-[8px] bg-black text-[#9D4DFF] px-1.5 py-0.5">Y3K_SYSTEM</span>
+                    <span>👾 PORTRAIT_DOSSIER</span>
+                    <span className="text-[8px] bg-black text-[#9D4DFF] px-1.5 py-0.5">TRK_STREAM</span>
                   </div>
 
-                  {/* 1:1 Sacred Geometry Avatar Canvas */}
-                  <div className="aspect-square w-full relative bg-black border border-[#9D4DFF]/40 overflow-hidden flex items-center justify-center">
-                    <canvas 
-                      ref={avatarCanvasRef} 
-                      width={400} 
-                      height={400} 
-                      className="w-full h-full block bg-black"
-                    />
+                  <div 
+                    className="relative cursor-crosshair overflow-hidden group transition-all"
+                    onClick={advanceDossierPhoto}
+                    title="Click to advance photo"
+                  >
+                    {/* Target Corner brackets instead of bounding box */}
+                    <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#9D4DFF] z-10" />
+                    <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#9D4DFF] z-10" />
+                    <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#9D4DFF] z-10" />
+                    <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#9D4DFF] z-10" />
+
+                    {/* CRT scanline overlay */}
+                    <div className="absolute inset-0 pointer-events-none opacity-20" style={{
+                      backgroundImage: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 50%)',
+                      backgroundSize: '100% 4px',
+                      zIndex: 5
+                    }} />
+
+                    {/* Aspect-ratio 9:16 container */}
+                    <div className="aspect-[9/16] relative overflow-hidden bg-zinc-950/50 flex items-center justify-center p-0.5">
+                      {!dossierBroken.has(dossierIdx) ? (
+                        <img
+                          src={getDossierPhotoUrl(dossierIdx)}
+                          key={`dossier-about-${dossierIdx}-${dossierAttempts[dossierIdx] || 0}`}
+                          alt="Subject: Merry"
+                          onError={() => handleDossierError(dossierIdx)}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover block transition-all duration-500 group-hover:scale-105"
+                          style={{ animation: 'dzflicker 7s steps(50) infinite' }}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 p-4 flex flex-col justify-center items-center text-center text-[#9D4DFF] space-y-2 select-none">
+                          <span className="text-[20px] animate-pulse">⚠</span>
+                          <span className="text-[11px] font-bold tracking-wider uppercase">NO PHOTO RETRIEVED</span>
+                          <span className="text-[9px] text-zinc-500 leading-normal max-w-[140px] font-mono normal-case">
+                            drop photos in public/dossier/ and update code to active
+                          </span>
+                          <div className="text-[8px] text-zinc-600 font-mono scale-90 mt-1">
+                            [IMG_0{dossierIdx + 1}_PLACEHOLDER]
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Photo footer details */}
+                    <div className="flex justify-between items-center text-[11px] text-[#9D4DFF] p-2 pt-3 font-mono">
+                      <span className="text-[#39FF14] animate-pulse font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14] inline-block" /> ● TRK_ACTIVE
+                      </span>
+                      <span>IMG_0{dossierIdx + 1}/0{DOSSIER_PHOTOS.length}</span>
+                      <span className="font-bold">MERRY_ID</span>
+                    </div>
                   </div>
 
-                  {/* Re-Synthesize Controls */}
-                  <div className="space-y-3 bg-[#030303] p-3 border border-zinc-900 text-[11px]">
-                    <div className="text-gray-400 font-bold text-[9px] uppercase tracking-wider flex items-center justify-between">
-                      <span>AVATAR TUNING SLIDERS</span>
-                      <span className="text-[#9D4DFF]">ACTIVE</span>
-                    </div>
-
-                    {/* Symmetry Slider */}
-                    <div>
-                      <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-                        <span>SYMMETRY_AXIS</span>
-                        <span className="text-[#9D4DFF] font-bold">{avatarSymmetry}pt</span>
-                      </div>
-                      <input 
-                        type="range"
-                        min="2"
-                        max="16"
-                        step="1"
-                        value={avatarSymmetry}
-                        onChange={(e) => {
-                          setAvatarSymmetry(parseInt(e.target.value));
-                          playChime('sine', 0.9);
-                        }}
-                        className="w-full accent-[#9D4DFF] bg-zinc-800 h-1 cursor-crosshair"
-                      />
-                    </div>
-
-                    {/* Seed Slider */}
-                    <div>
-                      <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-                        <span>COEFFICIENT_SEED</span>
-                        <span className="text-[#9D4DFF] font-bold">{avatarSeed.toFixed(2)}</span>
-                      </div>
-                      <input 
-                        type="range"
-                        min="0.05"
-                        max="2.0"
-                        step="0.01"
-                        value={avatarSeed}
-                        onChange={(e) => {
-                          setAvatarSeed(parseFloat(e.target.value));
-                          playChime('triangle', 1.1);
-                        }}
-                        className="w-full accent-[#9D4DFF] bg-zinc-800 h-1 cursor-crosshair"
-                      />
-                    </div>
-
-                    {/* Color Swatch Matrix Selection */}
-                    <div>
-                      <span className="text-[9px] text-gray-500 block mb-1">COLOR_MATRIX_CHALLENGE:</span>
-                      <div className="flex gap-2.5">
-                        {[
-                          { color: '#9D4DFF', label: 'VIOLET' },
-                          { color: '#FF2BD6', label: 'PINK' },
-                          { color: '#00F0FF', label: 'CYAN' },
-                          { color: '#39FF14', label: 'NEON' },
-                          { color: '#EFFF04', label: 'YELLOW' }
-                        ].map((swatch) => (
-                          <button 
-                            key={swatch.color}
-                            onClick={() => {
-                              setAvatarColor(swatch.color);
-                              playChime('square', 1.2);
-                            }}
-                            className={`w-5 h-5 border transition-all cursor-crosshair ${
-                              avatarColor === swatch.color ? 'border-white scale-110 shadow-[0_0_8px_currentColor]' : 'border-transparent opacity-60 hover:opacity-100'
-                            }`}
-                            style={{ backgroundColor: swatch.color, color: swatch.color }}
-                            title={swatch.label}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Randomize Button */}
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        setAvatarSeed(Math.random() * 1.9 + 0.1);
-                        setAvatarSymmetry(Math.floor(Math.random() * 12) + 3);
-                        const colors = ['#9D4DFF', '#FF2BD6', '#00F0FF', '#39FF14', '#EFFF04'];
-                        setAvatarColor(colors[Math.floor(Math.random() * colors.length)]);
-                        playChime('triangle', 1.4);
-                      }}
-                      className="w-full bg-[#9D4DFF] text-black font-bold py-1.5 px-3 uppercase tracking-wider text-[10px] hover:bg-[#9D4DFF]/80 transition-all cursor-crosshair"
-                    >
-                      ⚡ SYNTHESIZE ATOMS RAND_GEN ⚡
-                    </button>
+                  <div className="text-[9px] text-zinc-600 text-center uppercase tracking-wider font-mono">
+                    ✦ Click photo to manually cycle index ✦
                   </div>
                 </div>
 
@@ -2559,11 +2550,11 @@ export default function App() {
                   <div className="border border-zinc-800 bg-black/80 p-5 space-y-3 font-sans">
                     <h3 className="text-xl font-bold font-sans text-white tracking-tight border-b border-zinc-900 pb-2 flex items-center gap-2">
                       <Atom className="w-5 h-5 text-[#9D4DFF]" />
-                      <span>THE ENTITY: MARY GRAY</span>
+                      <span>THE ENTITY: MERRY</span>
                     </h3>
                     <div className="text-[14px] text-gray-300 leading-relaxed space-y-3.5">
                       <p>
-                        I am Mary Gray (known across web networks as <strong>astraltrash</strong>), a visual artist and shader wizard exploring the intersections of geometry, visual phenomenology, and retro computing.
+                        I am Merry (known across web networks as <strong>astraltrash</strong>), a visual artist and shader wizard exploring the intersections of geometry, visual phenomenology, and retro computing.
                       </p>
                       <p>
                         For two decades, I have compiled, dithered, and documented recurring mathematical constants found during psychedelic states. Rather than letting these ideas rest in obscure offline notebooks, I construct responsive, live WebGL2 systems so that anyone with a browser can look directly into the field of low void orbit.
@@ -2587,7 +2578,7 @@ export default function App() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Twitter (X) */}
                       <a 
-                        href="https://x.com/astraltrash_art" 
+                        href="https://x.com/astraltrash_" 
                         target="_blank" 
                         rel="noopener noreferrer"
                         onClick={() => playChime('sine', 1.0)}
@@ -2595,7 +2586,7 @@ export default function App() {
                       >
                         <div className="space-y-0.5">
                           <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#9D4DFF]">X Account Profile</div>
-                          <div className="text-[9px] text-gray-500 uppercase">@astraltrash_art</div>
+                          <div className="text-[9px] text-gray-500 uppercase">@astraltrash_</div>
                         </div>
                         <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#9D4DFF] transition-all" />
                       </a>
@@ -2646,8 +2637,8 @@ export default function App() {
                       </a>
                     </div>
 
-                    <p className="text-[10px] text-gray-500 text-center leading-normal max-w-sm mx-auto pt-2">
-                      * Contact: Reach out at <span className="text-[#9D4DFF] font-sans">marygray.art@gmail.com</span> for custom digital design collaborations or visual inquiries.
+                    <p className="text-[10px] text-zinc-500 text-center leading-normal max-w-sm mx-auto pt-2 font-mono">
+                      * NO COMMISSIONS · NO INQUIRIES · TRANSMISSION ONLY
                     </p>
                   </div>
 
