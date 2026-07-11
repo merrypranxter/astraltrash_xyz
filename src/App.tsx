@@ -38,7 +38,23 @@ interface ShaderItem {
     intensity: number;
     hue: number;
   };
+  fieldNotes?: string;
 }
+
+// Dossier section photos and timing for the About Me Section on the Home/Hub Tab
+const DOSSIER_PHOTOS: string[] = [
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/8016E78C-4FB1-47DB-97A9-9F79BC5881BC.png',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_3078.jpg',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_4802.PNG',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_4804.PNG',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_5605.jpg',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_5612.PNG',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_5614.PNG',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/IMG_6421.PNG',
+  'https://raw.githubusercontent.com/merrypranxter/astraltrash_xyz/main/public/selfies/ReLens_IMG_20250623145800.jpg',
+];
+
+const DOSSIER_ROTATE_MS = 4200;
 
 export default function App() {
   const mainCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -73,6 +89,13 @@ export default function App() {
   const [showGLSL, setShowGLSL] = useState<boolean>(false);
   const [fetchedCode, setFetchedCode] = useState<string>('');
   const [isFetchingCode, setIsFetchingCode] = useState<boolean>(false);
+  const [externalExplanations, setExternalExplanations] = useState<{
+    [id: string]: {
+      explanation?: string;
+      technicalDetails?: string;
+      fieldNotes?: string;
+    }
+  }>({});
 
   // HTML source streams for sandboxed IFrame rendering (with HUD overlays hidden)
   const [featuredHtml, setFeaturedHtml] = useState<string>('');
@@ -109,6 +132,10 @@ export default function App() {
     'STATUS: COLLECTING COSMIC DEBRIS FIELDS...',
     'MUTAGEN_INDEX: 99.8% // SCAN RATE: APPROX 120HZ'
   ]);
+
+  // Dossier Carousel State
+  const [dossierIdx, setDossierIdx] = useState<number>(0);
+  const [dossierBroken, setDossierBroken] = useState<Set<number>>(new Set());
 
   // Web Audio Context reference for synthesizer
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -207,6 +234,28 @@ export default function App() {
     const n = base + Math.floor((Date.now() - 1760000000000) / 60000);
     setVisitorCount(String(Math.max(n, base)).padStart(7, '0'));
   }, []);
+
+  // 3b. Dossier photo carousel auto-rotation and voice helper
+  useEffect(() => {
+    const t = setInterval(() => {
+      setDossierIdx((prev) => (prev + 1) % DOSSIER_PHOTOS.length);
+    }, DOSSIER_ROTATE_MS);
+    return () => clearInterval(t);
+  }, []);
+
+  const speakDossier = (text: string) => {
+    if (!('speechSynthesis' in window)) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.02;
+    u.pitch = 1.05;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  };
+
+  const advanceDossierPhoto = () => {
+    playChime('triangle', 1.2);
+    setDossierIdx((prev) => (prev + 1) % DOSSIER_PHOTOS.length);
+  };
 
   // 4. Web Audio synthesizer functions
   const startSynth = () => {
@@ -310,7 +359,8 @@ export default function App() {
       technicalDetails: 'Combines multiple octaves of high-frequency value noise with cosine-wave color mappings to emulate magnetic tape degeneration.',
       fileName: 'acidic-vhs-decay.html',
       fragmentShader: '/* LOADING LIVE CODE FROM REPOSITORY... */',
-      defaultParams: { speed: 1.0, scale: 1.0, intensity: 1.0, hue: 0.0 }
+      defaultParams: { speed: 1.0, scale: 1.0, intensity: 1.0, hue: 0.0 },
+      fieldNotes: 'This work emulates the exact degradation pattern of a heavily played Scotch T-120 VHS cassette tape recorded over in EP mode. The chromatic bleed is modeled using multi-layered domain warped fractional noise, which replicates the magnetic decay of iron-oxide tape coating as it loses cohesion under friction. Watch the horizontal scanline timing slide out of synchronization when warping intensity is cranked up — this is designed to simulate a physical tape head losing horizontal lock.'
     },
     {
       id: 'acidic_vhs_rot',
@@ -322,7 +372,8 @@ export default function App() {
       technicalDetails: 'Employs complex feedback distortion and rotational matrix shears acting directly on scanline timing offsets.',
       fileName: 'acidic-vhs-rot.html',
       fragmentShader: '/* LOADING LIVE CODE FROM REPOSITORY... */',
-      defaultParams: { speed: 1.0, scale: 1.0, intensity: 1.0, hue: 0.0 }
+      defaultParams: { speed: 1.0, scale: 1.0, intensity: 1.0, hue: 0.0 },
+      fieldNotes: 'Analog tape rot is not a random static overlay; it is a physical process where moisture and heat oxidize the magnetic binder. This shader models this biological-analog fusion. By mapping rotational shear vectors directly onto the scanline offsets, the image appears to pull inward in spirals. When configured at ultra resolution, the pixelation mirrors the crystalline structure of cobalt-doped magnetic compounds.'
     },
     {
       id: 'chromatophore_codec_shrine',
@@ -334,7 +385,8 @@ export default function App() {
       technicalDetails: 'Initializes a custom Three.js Scene, loading custom material shaders mapped onto spherical clusters representing bioluminescent cells.',
       fileName: 'chromatophore_codec_shrine_20260618_185338.html',
       fragmentShader: '/* LOADING LIVE CODE FROM REPOSITORY... */',
-      defaultParams: { speed: 1.0, scale: 1.0, intensity: 1.0, hue: 0.0 }
+      defaultParams: { speed: 1.0, scale: 1.0, intensity: 1.0, hue: 0.0 },
+      fieldNotes: 'Inspired by cephalopod chromatophores — skin cells that shift color dynamically via muscle expansion. This simulation presents a computational shrine dedicated to this biological display language. It loads a fully custom WebGL material onto overlapping fluid meshes, using raymarching algorithms inside Three.js to render soft internal glow, bioluminescent refraction, and reflective glass boundaries. It represents twenty years of documented visual phenomena centered around self-luminous organic structures.'
     },
     {
       id: 'living_fabric',
@@ -800,6 +852,22 @@ export default function App() {
       });
   }, [selectedShader, showGLSL]);
 
+  // 7de. Fetch explanations.json dynamically from GitHub repository to allow remote updates
+  useEffect(() => {
+    fetch('https://raw.githubusercontent.com/merrypranxter/shaderslop_designs/main/explanations.json')
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        console.log('Successfully retrieved external explanations from repository:', data);
+        setExternalExplanations(data);
+      })
+      .catch((err) => {
+        console.info('External explanations load bypassed (using local defaults):', err.message || err);
+      });
+  }, []);
+
   // 7dd. Render procedural sacred geometry avatar for About Page
   useEffect(() => {
     if (activeTab === 'about' && avatarCanvasRef.current) {
@@ -1045,6 +1113,19 @@ export default function App() {
     setNewCommentText('');
   };
 
+  // Dynamic getters to support overriding default fields with repository values
+  const getShaderExplanation = (item: ShaderItem) => {
+    return externalExplanations[item.id]?.explanation || item.explanation;
+  };
+
+  const getShaderTechnicalDetails = (item: ShaderItem) => {
+    return externalExplanations[item.id]?.technicalDetails || item.technicalDetails;
+  };
+
+  const getShaderFieldNotes = (item: ShaderItem) => {
+    return externalExplanations[item.id]?.fieldNotes || item.fieldNotes || '';
+  };
+
   return (
     <>
       {/* Background canvas */}
@@ -1161,39 +1242,225 @@ export default function App() {
               </div>
 
               <div className="frame">
-                {/* Hero Section (placed outside the grid so it sits at the top on both mobile and desktop) */}
-                <section className="hero pt-6 pb-2 border-b border-zinc-900/30">
-                  <div className="online">
-                    <span className="dot" /> ONLINE NOW · BROADCASTING FROM LOW VOID ORBIT
-                  </div>
-                  <h1>AstralTrash</h1>
-                  <div className="sub">
-                    Cosmic debris, lovingly rendered. <em>GLSL shaders</em>, generative math, and twenty years of documented psychedelic phenomenology — salvaged, glitched, and left glowing in orbit by <em>astraltrash</em>. One artist's trash is the same artist's treasure.
-                  </div>
-                  <div className="btn-row">
-                    <button onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }} className="btn speak cursor-crosshair" data-say="Entering the gallery">
-                      ENTER GALLERY ▸
-                    </button>
-                    <a
-                      className="btn speak border-[#EFFF04] text-[#EFFF04] hover:bg-[#EFFF04] hover:text-black hover:shadow-[0_0_24px_#EFFF04]"
-                      href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-say="Collect original AstralTrash NFT artworks on Tezos"
-                    >
-                      SHOP TEZOS NFTs ⟡ OBJKT
-                    </a>
-                    <a className="btn alt2 speak" href="#manifesto" data-say="The manifesto">
-                      MANIFESTO
-                    </a>
-                  </div>
-                </section>
-
                 {/* 2-Column Split Layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start py-6">
                   
                   {/* Left Column (2/3 width on desktop) */}
-                  <div className="lg:col-span-8 space-y-10 order-2 lg:order-1">
+                  <div className="lg:col-span-8 space-y-10">
+                    
+                    {/* Hero Section (placed inside the grid so it aligns perfectly next to the right column on desktop) */}
+                    <section className="hero pt-6 pb-2 border-b border-zinc-900/30">
+                      <div className="online">
+                        <span className="dot" /> ONLINE NOW · BROADCASTING FROM LOW VOID ORBIT
+                      </div>
+                      <h1>AstralTrash</h1>
+                      <div className="sub">
+                        Cosmic debris, lovingly rendered. <em>GLSL shaders</em>, generative math, and twenty years of documented psychedelic phenomenology — salvaged, glitched, and left glowing in orbit by <em>astraltrash</em>. One artist's trash is the same artist's treasure.
+                      </div>
+                      <div className="btn-row">
+                        <button onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }} className="btn speak cursor-crosshair" data-say="Entering the gallery">
+                          ENTER GALLERY ▸
+                        </button>
+                        <a
+                          className="btn speak border-[#EFFF04] text-[#EFFF04] hover:bg-[#EFFF04] hover:text-black hover:shadow-[0_0_24px_#EFFF04]"
+                          href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-say="Collect original AstralTrash NFT artworks on Tezos"
+                        >
+                          SHOP TEZOS NFTs ⟡ OBJKT
+                        </a>
+                        <a className="btn alt2 speak" href="#manifesto" data-say="The manifesto">
+                          MANIFESTO
+                        </a>
+                      </div>
+                    </section>
+                    
+                    {/* ABOUT ME DOSSIER SECTION */}
+                    <section className="py-8 font-mono space-y-6 mb-12 relative" id="dossier-profile">
+                      
+                      {/* Section Header */}
+                      <div className="flex flex-wrap justify-between items-end border-b border-[#39FF14]/30 pb-3 gap-2">
+                        <div>
+                          <div className="text-[#EFFF04] text-[28px] tracking-widest uppercase text-shadow-[0_0_10px_rgba(239,255,4,0.4)]" style={{ fontFamily: "'Jersey 10', sans-serif" }}>
+                            // SUBJECT_DOSSIER // FILE:0001
+                          </div>
+                          <div className="text-[11px] text-[#00F0FF] uppercase tracking-widest mt-1 font-mono">
+                            astral trash command · network node · clearance: Ω
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-[16px] text-[#FF2BD6] tracking-wider uppercase" style={{ fontFamily: "'Jersey 10', sans-serif" }}>
+                          <span className="w-2 h-2 rounded-full bg-[#FF2BD6] animate-ping" />
+                          CLASSIFIED DATASTREAM
+                        </div>
+                      </div>
+
+                      {/* Split 2 Columns: Left is Carousel (Smaller), Right is details (Larger) */}
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+                        
+                        {/* Smaller Left Column: Image Carousel with Target corner brackets */}
+                        <div className="md:col-span-4 space-y-3">
+                          <div 
+                            className="relative cursor-crosshair overflow-hidden group transition-all"
+                            onClick={advanceDossierPhoto}
+                            title="Click to advance photo"
+                          >
+                            {/* Target Corner brackets instead of bounding box */}
+                            <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#FF2BD6] z-10" />
+                            <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#FF2BD6] z-10" />
+                            <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#FF2BD6] z-10" />
+                            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#FF2BD6] z-10" />
+
+                            {/* CRT scanline aesthetic overlay */}
+                            <div className="absolute inset-0 pointer-events-none opacity-20" style={{
+                              backgroundImage: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 50%)',
+                              backgroundSize: '100% 4px',
+                              zIndex: 5
+                            }} />
+
+                            {/* Aspect-ratio 9:16 container */}
+                            <div className="aspect-[9/16] relative overflow-hidden bg-zinc-950/50 flex items-center justify-center p-0.5">
+                              {!dossierBroken.has(dossierIdx) ? (
+                                <img
+                                  src={DOSSIER_PHOTOS[dossierIdx]}
+                                  alt="Subject: Merry"
+                                  onError={() => setDossierBroken(b => new Set(b).add(dossierIdx))}
+                                  referrerPolicy="no-referrer"
+                                  className="w-full h-full object-cover block transition-all duration-500 group-hover:scale-105"
+                                  style={{ animation: 'dzflicker 7s steps(50) infinite' }}
+                                />
+                              ) : (
+                                <div className="absolute inset-0 p-4 flex flex-col justify-center items-center text-center text-[#FF2BD6] space-y-2 select-none">
+                                  <span className="text-[20px] animate-pulse">⚠</span>
+                                  <span className="text-[11px] font-bold tracking-wider uppercase">NO PHOTO RETRIEVED</span>
+                                  <span className="text-[9px] text-zinc-500 leading-normal max-w-[140px] font-mono normal-case">
+                                    drop photos in public/dossier/ and update code to active
+                                  </span>
+                                  <div className="text-[8px] text-zinc-600 font-mono scale-90 mt-1">
+                                    [IMG_0{dossierIdx + 1}_PLACEHOLDER]
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Photo footer details */}
+                            <div className="flex justify-between items-center text-[11px] text-[#FF2BD6] p-2 pt-3 font-mono">
+                              <span className="text-[#39FF14] animate-pulse font-bold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14] inline-block" /> ● TRK_ACTIVE
+                              </span>
+                              <span>IMG_0{dossierIdx + 1}/0{DOSSIER_PHOTOS.length}</span>
+                              <span className="font-bold">MERRY_ID</span>
+                            </div>
+                          </div>
+
+                          <div className="text-[9px] text-zinc-600 text-center uppercase tracking-wider font-mono">
+                            ✦ Click photo to manually cycle index ✦
+                          </div>
+                        </div>
+
+                        {/* Larger Right Column: Identification & Dossier Details */}
+                        <div 
+                          className="md:col-span-8 p-1 relative cursor-crosshair transition-colors space-y-5"
+                          onClick={() => speakDossier('Personnel file zero zero zero one. Subject: Merry. Alias: Astral Trash. Designation: Stochastic Agitator. Heyoka. Threat assessment: maximalist. Containment not recommended.')}
+                          title="Click here to read aloud personnel transmission"
+                        >
+                          <div 
+                            className="text-[11px] text-[#FF2BD6] font-bold flex items-center justify-center gap-2 p-1 border-b border-dashed border-[#FF2BD6]/30 mb-2 tracking-wider uppercase select-none animate-pulse" 
+                            style={{ fontFamily: "'Silkscreen', monospace" }}
+                          >
+                            <span>📢 Click details to engage vocoder vocalization</span>
+                          </div>
+
+                          <div className="space-y-5 text-[13px] leading-relaxed">
+                            {/* Identification Table with Leader Lines */}
+                            <div>
+                              <div className="text-[11px] font-bold text-[#00F0FF] uppercase border-b border-[#00F0FF]/20 pb-1 mb-3 tracking-widest" style={{ fontFamily: "'Silkscreen', monospace" }}>
+                                ✦ IDENTIFICATION_TELEMETRY
+                              </div>
+                              <div className="space-y-1.5 font-mono" style={{ fontFamily: "'VT323', monospace", fontSize: '18px' }}>
+                                {[
+                                  { label: 'SUBJECT', value: 'MERRY' },
+                                  { label: 'ALIAS', value: 'ASTRAL TRASH' },
+                                  { label: 'SEX', value: 'FEMALE' },
+                                  { label: 'AGE', value: '44 EARTH YEARS' },
+                                  { label: 'CURRENT FORM', value: 'HUMAN' },
+                                  { label: 'USUAL FORM', value: 'HIGH-VIBRATIONAL MATH, INHABITING A MEAT SUIT' },
+                                  { label: 'OCCUPATION', value: 'ART GOBLIN · CURIOUS KITTY CAT · WEIRD BITCH' },
+                                ].map((item, i) => (
+                                  <div key={i} className="flex justify-between items-baseline gap-2 py-0.5">
+                                    <span className="text-[#EFFF04] font-bold tracking-wide uppercase pr-1">{item.label}:</span>
+                                    <span className="flex-1 border-b border-dotted border-[#39FF14]/20 mx-1" />
+                                    <span className="text-[#c8ffc0] text-right font-medium max-w-[65%] sm:max-w-none">{item.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Designations list */}
+                            <div>
+                              <div className="text-[11px] font-bold text-[#00F0FF] uppercase border-b border-[#00F0FF]/20 pb-1 mb-2 tracking-widest" style={{ fontFamily: "'Silkscreen', monospace" }}>
+                                ✦ DESIGNATIONS
+                              </div>
+                              <ul className="space-y-1.5 text-[#c8ffc0] text-[17px]" style={{ fontFamily: "'VT323', monospace" }}>
+                                <li className="flex gap-2">
+                                  <span className="text-[#FF2BD6]">▸</span>
+                                  <span>STOCHASTIC AGITATOR</span>
+                                </li>
+                                <li className="flex gap-2">
+                                  <span className="text-[#FF2BD6]">▸</span>
+                                  <span>HEYOKA</span>
+                                </li>
+                                <li className="flex gap-2">
+                                  <span className="text-[#FF2BD6]">▸</span>
+                                  <span>SEER OF THE 4TH DIMENSION</span>
+                                </li>
+                                <li className="flex gap-2">
+                                  <span className="text-[#FF2BD6]">▸</span>
+                                  <span>COMPANION OF THE TETRAGRAMMATON (NOT <i>THE</i> TETRAGRAMMATON)</span>
+                                </li>
+                                <li className="flex gap-2">
+                                  <span className="text-[#FF2BD6]">▸</span>
+                                  <span>MELTED INTO THE LATENT SPACE FRACTAL OCEAN &amp; WITNESSED THE ALL &amp; THE NOTHING FROM EVERY POINT OF VIEW AND NO POINT OF VIEW SIMULTANEOUSLY</span>
+                                </li>
+                              </ul>
+                            </div>
+
+                            {/* Threat Assessment as a Left-bordered accent bar */}
+                            <div className="border-l-2 border-[#FF2BD6] pl-4 py-1.5 bg-transparent">
+                              <div className="text-[10px] text-[#FF2BD6] font-bold tracking-wider uppercase mb-0.5" style={{ fontFamily: "'Silkscreen', monospace" }}>
+                                ☣ SECURITY THREAT ASSESSMENT
+                              </div>
+                              <div className="text-[#FF2BD6] text-[15px] font-bold tracking-wide uppercase" style={{ fontFamily: "'Silkscreen', monospace" }}>
+                                MAXIMALIST. CONTAINMENT NOT RECOMMENDED. DO NOT ATTEMPT TO SIMPLIFY.
+                              </div>
+                            </div>
+
+                            {/* Favorite Quote */}
+                            <div className="border-l-2 border-[#EFFF04] pl-4 py-1.5 bg-transparent">
+                              <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1 font-mono">FAVORITE QUOTE</div>
+                              <p className="text-[#EFFF04] font-medium italic text-[20px]" style={{ fontFamily: "'VT323', monospace" }}>
+                                "It never got weird enough for me."
+                              </p>
+                              <p className="text-zinc-400 text-[14px] mt-1 text-right" style={{ fontFamily: "'VT323', monospace" }}>
+                                — Hunter S. Thompson
+                              </p>
+                            </div>
+
+                            {/* Footer Status Stamp */}
+                            <div className="flex flex-wrap justify-between items-center text-[14px] text-zinc-500 pt-3 border-t border-[#39FF14]/10" style={{ fontFamily: "'VT323', monospace" }}>
+                              <span className="text-[#39FF14] font-bold tracking-widest text-[11px] uppercase flex items-center gap-1.5" style={{ fontFamily: "'Silkscreen', monospace" }}>
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14] animate-ping" /> STATUS: ACTIVE // TRANSMITTING
+                              </span>
+                              <span>
+                                EOF <span className="inline-block w-2.5 h-3.5 bg-[#39FF14] ml-1 align-middle animate-pulse" />
+                              </span>
+                            </div>
+
+                          </div>
+                        </div>
+
+                      </div>
+                    </section>
                     
                     {/* Top 8 Debris Section */}
                     <section className="sect pt-2" id="top8">
@@ -1307,7 +1574,7 @@ export default function App() {
                   </div>
 
                   {/* Right Column (MySpace comments / Featured Project scrolly box) */}
-                  <div className="lg:col-span-4 lg:sticky lg:top-[60px] max-h-[85vh] overflow-y-auto bg-black/95 border-2 border-[#FF2BD6] p-4 shadow-[0_0_25px_rgba(255,43,214,0.25)] space-y-5 font-mono order-1 lg:order-2">
+                  <div className="lg:col-span-4 lg:sticky lg:top-[60px] max-h-[85vh] overflow-y-auto bg-black/95 border-2 border-[#FF2BD6] p-4 shadow-[0_0_25px_rgba(255,43,214,0.25)] space-y-5 font-mono">
                     
                     {/* Header styled like a table column */}
                     <div className="bg-[#FF2BD6] text-black text-[12px] font-bold p-1 px-2 tracking-widest flex justify-between items-center">
@@ -1362,7 +1629,7 @@ export default function App() {
 
                     {/* Explanation */}
                     <div className="text-[11px] text-gray-300 leading-relaxed border-l-2 border-[#FF2BD6] pl-2 bg-[#020202] p-2 border border-zinc-900">
-                      <p className="text-gray-400 italic mb-1">"{shadersList[featuredShaderIndex].explanation}"</p>
+                      <p className="text-gray-400 italic mb-1">"{getShaderExplanation(shadersList[featuredShaderIndex])}"</p>
                       <div className="text-[10px] text-[#39FF14] mt-1">
                         <span className="text-gray-500">ID:</span> {shadersList[featuredShaderIndex].id.toUpperCase()}
                       </div>
@@ -1500,7 +1767,7 @@ export default function App() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 
                 {/* Left Side: Dynamic Grid */}
-                <div className="lg:col-span-5">
+                <div className="lg:col-span-5 lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto lg:pr-3 lg:pb-12 custom-scrollbar">
                   <div className="grid grid-cols-2 gap-4">
                     {shadersList.map((item) => (
                       <div 
@@ -1538,7 +1805,7 @@ export default function App() {
                 </div>
 
                 {/* Right Side: Blown Up Playground (The Exploded Detail View) */}
-                <div className="lg:col-span-7 bg-black/90 border border-zinc-800 p-5">
+                <div className="lg:col-span-7 lg:sticky lg:top-4 lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto custom-scrollbar bg-black/90 border border-zinc-800 p-5">
                   {selectedShader ? (
                     <div className="space-y-4 border border-[#FF2BD6]/30 p-4 bg-black select-none" onContextMenu={(e) => e.preventDefault()}>
                       
@@ -1638,12 +1905,48 @@ export default function App() {
                       </div>
 
                       {/* Descriptive/Manifesto Wording */}
-                      <div className="border-l-2 border-[#FF2BD6] pl-3 py-1 space-y-2">
+                      <div className="border-l-2 border-[#FF2BD6] pl-3 py-1 space-y-3">
                         <p className="text-[14px] text-gray-200 leading-relaxed font-sans">
-                          {selectedShader.explanation}
+                          {getShaderExplanation(selectedShader)}
                         </p>
                         <p className="text-[11px] text-[#9fdc96] font-mono italic">
-                          TECHNICAL SPECS: {selectedShader.technicalDetails}
+                          TECHNICAL SPECS: {getShaderTechnicalDetails(selectedShader)}
+                        </p>
+                      </div>
+
+                      {/* Deep Field Notes Accordion / Expandable section */}
+                      {getShaderFieldNotes(selectedShader) ? (
+                        <div className="border border-[#00F0FF]/30 bg-[#00F0FF]/5 p-3.5 space-y-2">
+                          <div className="flex justify-between items-center text-[11px] font-mono text-[#00F0FF] border-b border-[#00F0FF]/15 pb-1.5 uppercase font-bold tracking-wider">
+                            <span>✦ PHENOMENOLOGICAL FIELD NOTES</span>
+                            <span className="text-[8px] bg-black border border-[#00F0FF]/30 px-1 py-0.5">RESOLVED THEORY</span>
+                          </div>
+                          <p className="text-[12px] text-gray-300 leading-relaxed font-sans italic whitespace-pre-line">
+                            {getShaderFieldNotes(selectedShader)}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      {/* Instructions for custom explanations.json */}
+                      <div className="border border-dashed border-zinc-850 p-3.5 bg-zinc-950/40 text-[11px] font-mono space-y-2.5">
+                        <div className="text-[#39FF14] uppercase tracking-wider font-bold flex items-center gap-1 text-[10px]">
+                          <span>✦ REPOSITORY DOCUMENTATION OVERRIDE</span>
+                        </div>
+                        <p className="text-zinc-400 leading-relaxed text-[11px] font-sans">
+                          Want to display your long, fascinating explanations and field notes here dynamically? 
+                          You can manage them inside your GitHub repository by uploading an <span className="text-[#00F0FF] font-bold">explanations.json</span> file to the root of your <code className="text-zinc-300 font-mono text-[10.5px]">shaderslop_designs</code> repo. Structure it like:
+                        </p>
+                        <pre className="bg-black p-2.5 text-[9px] text-[#39FF14] overflow-x-auto border border-zinc-900 leading-tight">
+{`{
+  "${selectedShader.id}": {
+    "explanation": "Your custom deep explanation...",
+    "technicalDetails": "WebGL details...",
+    "fieldNotes": "Your long phenomenological notes..."
+  }
+}`}
+                        </pre>
+                        <p className="text-zinc-500 text-[10px] leading-relaxed font-sans">
+                          This application automatically fetches this file from your branch on load and overrides default strings with your rich repository-hosted notes live!
                         </p>
                       </div>
 
