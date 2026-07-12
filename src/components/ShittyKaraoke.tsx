@@ -12,12 +12,12 @@ interface BucketVideo {
 }
 
 const topSongsOrder = [
-  'Whatta_Man_by_Salt_n_Pepa.mov',
   'Work_It_by_Missy_Elliott.mov',
   'Girl_Anachronism_by_The_Dresden_Dolls.mp4',
   'Faith_by_George_Michael.mov',
   'Hi_Dee_Ho.mov',
   'Bouncing_Around_The_Room_by_Phish.mp4',
+  'Whatta_Man_by_Salt_n_Pepa.mov',
   'Too_Many_Dicks_On_The_Dancefloor_by_Flight_of_the_Conchords.mp4',
   'Whoomp_There_It_Is_by_Tag_Team.mov',
   'The_Medical_Love_Song_by_Monty_Python.mp4',
@@ -26,15 +26,6 @@ const topSongsOrder = [
 ];
 
 const defaultBucketVideos: BucketVideo[] = [
-  {
-    id: 'whatta_man',
-    title: 'Whatta Man',
-    artist: 'Salt n Pepa',
-    desc: "Mary's favorite - retro jam slotted and ready to spin!",
-    fileName: 'Whatta_Man_by_Salt_n_Pepa.mov',
-    duration: '4:52',
-    tag: 'FAV'
-  },
   {
     id: 'work_it',
     title: 'Work It',
@@ -79,6 +70,15 @@ const defaultBucketVideos: BucketVideo[] = [
     fileName: 'Bouncing_Around_The_Room_by_Phish.mp4',
     duration: '3:50',
     tag: 'LIVE'
+  },
+  {
+    id: 'whatta_man',
+    title: 'Whatta Man',
+    artist: 'Salt n Pepa',
+    desc: "Mary's favorite - retro jam slotted and ready to spin!",
+    fileName: 'Whatta_Man_by_Salt_n_Pepa.mov',
+    duration: '4:52',
+    tag: 'FAV'
   },
   {
     id: 'too_many_dicks',
@@ -262,9 +262,11 @@ function formatVideoMetadata(fileName: string) {
 
 interface ShittyKaraokeProps {
   playChime: (type: 'sine' | 'triangle' | 'sawtooth' | 'square', pitchModifier: number) => void;
+  preselectedVideoFileName?: string;
+  clearPreselectedVideoFileName?: () => void;
 }
 
-export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
+export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPreselectedVideoFileName }: ShittyKaraokeProps) {
   // GCS Bucket state
   const [bucketName, setBucketName] = useState<string>(() => {
     return localStorage.getItem('astraltrash_karaoke_bucket_name') || 'astraltrash_karaoke';
@@ -276,10 +278,18 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Verify it contains our default first video
-          const hasFirst = parsed.some(v => v.fileName === 'Whatta_Man_by_Salt_n_Pepa.mov');
-          if (hasFirst) {
-            return parsed;
+          // Verify it contains our new default first video
+          const hasNewFirst = parsed.some(v => v.fileName === 'Work_It_by_Missy_Elliott.mov');
+          if (hasNewFirst) {
+            // Recalculate title and artist on the fly to reflect filename changes!
+            return parsed.map(v => {
+              const { title, artist } = formatVideoMetadata(v.fileName);
+              return {
+                ...v,
+                title: title || v.title,
+                artist: artist || v.artist
+              };
+            });
           }
         }
       }
@@ -385,8 +395,8 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
 
           return {
             id: existing?.id || `gcs-${idx}-${key.substring(0, 8)}`,
-            title: existing?.title || title,
-            artist: existing?.artist || artist,
+            title: title, // Always prioritize the real filename title!
+            artist: artist, // Always prioritize the real filename artist!
             desc: existing?.desc || (artist ? `Tape extracted with title: "${title}" by ${artist}.` : `GCS tape clip: "${title}".`),
             fileName: key,
             duration: existing?.duration || '3:30',
@@ -419,6 +429,35 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
       active = false;
     };
   }, [bucketName]);
+
+  useEffect(() => {
+    if (preselectedVideoFileName) {
+      const found = videos.find(v => v.fileName === preselectedVideoFileName || v.fileName.includes(preselectedVideoFileName));
+      if (found) {
+        setSelectedVideo(found);
+        setIsPlaying(false);
+        addLog(`VCR_AUTO_LINK_LOAD: Loaded ${found.title}`);
+        
+        // Auto play after small timeout
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.load();
+            videoRef.current.play()
+              .then(() => {
+                setIsPlaying(true);
+                addLog(`VCR_AUTOPLAY: Success`);
+              })
+              .catch(() => {
+                addLog(`AUTOPLAY_PAUSED: Click play to start.`);
+              });
+          }
+        }, 150);
+      }
+      if (clearPreselectedVideoFileName) {
+        clearPreselectedVideoFileName();
+      }
+    }
+  }, [preselectedVideoFileName, videos, clearPreselectedVideoFileName]);
 
   // Sync state to selected video
   const activeUrl = getResolvedUrl(selectedVideo.fileName);
@@ -560,40 +599,41 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
   return (
     <div className="frame py-8 animate-fade-in space-y-8" id="karaoke-mainframe">
       {/* Title Banner */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#FF6B00]/40 pb-4 mb-2 gap-3">
-        <div>
-          <h2 
-            className="text-3xl md:text-4xl font-extrabold font-sans text-white tracking-wider uppercase"
-            style={{
-              textShadow: '0 0 8px #FF6B00, 0 0 35px rgba(255,107,0,0.4)',
-              fontFamily: "'Chakra Petch', sans-serif"
-            }}
-          >
-            📼 MERRY'S KARAOKE VHS DECK
-          </h2>
-          <p className="text-xs text-[#FF6B00] font-mono mt-1.5 uppercase tracking-widest">
-            A Clean Archive of raw audio and recording clips straight from Google Storage
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {isScanning && (
-            <div className="flex items-center gap-1.5 font-mono text-[10px] text-[#39FF14]">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              <span>GCS LIST SCANNING...</span>
-            </div>
-          )}
+      <div className="border-b border-[#FF6B00]/40 pb-6 mb-2 space-y-4">
+        {/* Top Status Row */}
+        <div className="flex justify-between items-center text-xs">
+          <div className="flex items-center gap-1.5 font-mono text-[10px] text-[#39FF14]">
+            {isScanning ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>GCS LIST SCANNING...</span>
+              </>
+            ) : (
+              <span className="text-zinc-600">VCR STANDBY</span>
+            )}
+          </div>
           <div className="bg-black/60 border border-[#FF6B00]/40 px-3 py-1 font-mono text-[10px] text-[#FF6B00] uppercase tracking-widest">
             VCR MODEM: ACTIVE
           </div>
         </div>
+
+        {/* Centered Main Header */}
+        <div className="text-center space-y-3">
+          <h1 className="text-center uppercase select-none">
+            SHITTY KARAOKE TIME
+          </h1>
+          <p className="text-[10px] sm:text-xs md:text-sm lg:text-base text-[#FF6B00] font-sans font-black tracking-tighter md:tracking-tight mx-auto max-w-full whitespace-nowrap overflow-x-auto py-1 uppercase scrollbar-thin select-all">
+            I'm not THE BEST singer but, this is MY site &amp; i can put ANYTHING I WANT to here, so.... IT'S SHITTY KARAOKE TIME!
+          </p>
+        </div>
       </div>
 
       {/* Grid: Player Area (Left) & Current Case Details (Right) */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* TV CRT Screen Box (Vertical 9:16 aspect ratio) */}
-        <div className="md:col-span-5 lg:col-span-4 space-y-4">
-          <div className="relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(255,107,0,0.15)] p-2 rounded-2xl overflow-hidden aspect-[9/16] w-full max-w-[340px] mx-auto flex flex-col justify-between">
+        <div className="lg:col-span-6 md:col-span-6 space-y-4">
+          <div className="relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(255,107,0,0.15)] p-2 rounded-2xl overflow-hidden aspect-[9/16] w-full max-w-[450px] mx-auto flex flex-col justify-between">
             {/* Ambient Scanline Filter */}
             <div className="absolute inset-0 pointer-events-none z-10 bg-scanlines opacity-10" />
             
@@ -607,14 +647,14 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
               </div>
             </div>
 
-            {/* Main Video Element (Fills vertical screen perfectly with object-cover) */}
+            {/* Main Video Element (Fills vertical screen perfectly with object-contain) */}
             <div className="flex-grow bg-black relative flex items-center justify-center overflow-hidden">
               <video
                 ref={videoRef}
                 src={activeUrl}
                 controls
                 width={resolution === '480p' ? 480 : resolution === '720p' ? 720 : undefined}
-                className="w-full h-full object-cover z-10"
+                className="w-full h-full object-contain bg-black z-10"
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
@@ -648,7 +688,7 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
           </div>
 
           {/* VCR Stream Quality Resolution Dial (Optimizes GPU decoding overhead) */}
-          <div className="bg-zinc-950 border border-zinc-900 rounded-lg p-3 max-w-[340px] mx-auto w-full space-y-2">
+          <div className="bg-zinc-950 border border-zinc-900 rounded-lg p-3 max-w-[450px] mx-auto w-full space-y-2">
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
               <span>📺 CRT Resolution Engine</span>
               <span className="text-[#39FF14] font-bold">MODE: {resolution}</span>
@@ -678,7 +718,7 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
           </div>
 
           {/* External Action Row (Direct Fallbacks - perfectly centered below player) */}
-          <div className="flex gap-2 justify-center max-w-[340px] mx-auto w-full">
+          <div className="flex gap-2 justify-center max-w-[450px] mx-auto w-full">
             <button
               onClick={() => {
                 playChime('triangle', 1.0);
@@ -699,7 +739,7 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
         </div>
 
         {/* Right Sidebar: Active Cassette Sleeve, Metadata & Options */}
-        <div className="md:col-span-7 lg:col-span-8 flex flex-col justify-between space-y-6">
+        <div className="lg:col-span-6 md:col-span-6 flex flex-col justify-between space-y-6">
           <div className="border border-zinc-900 bg-[#050505] p-5 rounded-xl space-y-4">
             <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
               <span className="text-[10px] font-mono text-zinc-500 uppercase">ACTIVE_CASSETTE_SLEEVE</span>

@@ -33,6 +33,7 @@ import {
 import { ShaderThumbnail } from './components/ShaderThumbnail';
 import { ShittyKaraoke } from './components/ShittyKaraoke';
 import { SubProjects } from './components/SubProjects';
+import AiSlop from './components/AiSlop';
 import localExplanations from './explanations.json';
 
 // Define structure for our shader items
@@ -530,6 +531,7 @@ export default function App() {
   ]);
   const [karLyricsOffset, setKarLyricsOffset] = useState<number>(0);
   const [micLevelVal, setMicLevelVal] = useState<number>(0);
+  const [karPreselectedFile, setKarPreselectedFile] = useState<string | undefined>(undefined);
 
   // Google Storage Bucket Karaoke Visualizer & Customizer States
   const [karBucketName, setKarBucketName] = useState<string>(() => {
@@ -2720,6 +2722,113 @@ export default function App() {
                       </div>
                     </section>
 
+                    {/* SHITTY KARAOKE TEASER SECTION */}
+                    <section className="sect py-4 border-t border-[#FF6B00]/20" id="karaoke-teaser">
+                      <div className="border-2 border-[#FF6B00] bg-black/90 p-5 md:p-6 shadow-[0_0_20px_rgba(255,107,0,0.25)] relative overflow-hidden font-mono">
+                        {/* Orange glow accent line on top */}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FF6B00] via-[#FF2BD6] to-[#EFFF04]" />
+                        
+                        {/* Header banner */}
+                        <div className="flex flex-wrap justify-between items-baseline gap-2 border-b border-[#FF6B00]/30 pb-2.5 mb-4">
+                          <span 
+                            className="text-[#FF6B00] text-[24px] font-black tracking-widest uppercase flex items-center gap-2" 
+                            style={{ fontFamily: "'Jersey 10', sans-serif" }}
+                          >
+                            🎤 SHITTY KARAOKE TIME!
+                          </span>
+                          <span className="text-[10px] text-zinc-500 uppercase tracking-wider">
+                            vhs analog broadcast node
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                          {/* Left Column: Call to Action */}
+                          <div className="md:col-span-6 space-y-4">
+                            <p className="text-[#ff9c54] text-[16px] leading-snug font-bold" style={{ fontFamily: "'Share Tech Mono', monospace" }}>
+                              WET THE WHISTLE &amp; SPIN THE REELS.
+                            </p>
+                            <p className="text-[12.5px] text-zinc-300 leading-relaxed font-mono">
+                              I have renamed all the files in my storage bucket to song titles and artists! Come play authentic, raw audio cassettes straight from Google Cloud Storage.
+                            </p>
+                            <button
+                              onClick={() => {
+                                setKarPreselectedFile(undefined);
+                                setActiveTab('karaoke');
+                                playChime('square', 1.8);
+                              }}
+                              className="w-full text-center border-2 border-[#FF6B00] hover:bg-[#FF6B00] text-[#FF6B00] hover:text-black transition-all py-3 font-bold uppercase text-xs tracking-wider cursor-crosshair flex items-center justify-center gap-2"
+                            >
+                              <span>👉 CLICK HERE FOR MEDIOCRE SINGING 🎙</span>
+                            </button>
+                          </div>
+
+                          {/* Right Column: Mini CASSETTES (The requested Whattaman & Girl Anachronism thumbnails) */}
+                          <div className="md:col-span-6 space-y-3.5">
+                            <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-semibold">
+                              ✦ FAST LOAD SINGLE TRACKS
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              {/* 1. Salt n Pepa - Whatta Man */}
+                              <button 
+                                onClick={() => {
+                                  setKarPreselectedFile('Whatta_Man_by_Salt_n_Pepa.mov');
+                                  setActiveTab('karaoke');
+                                  playChime('triangle', 1.4);
+                                }}
+                                className="group/teaser text-left w-full cursor-crosshair border border-[#FF6B00]/40 hover:border-[#FF2BD6] bg-zinc-950 p-2 space-y-2 hover:shadow-[0_0_12px_rgba(255,43,214,0.3)] transition-all block"
+                              >
+                                <div className="aspect-[16/10] bg-black border border-zinc-900 rounded relative overflow-hidden flex items-center justify-center">
+                                  <video
+                                    src="https://storage.googleapis.com/astraltrash_karaoke/Whatta_Man_by_Salt_n_Pepa.mov#t=1"
+                                    preload="metadata"
+                                    playsInline
+                                    muted
+                                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/teaser:opacity-90 transition-opacity duration-300"
+                                  />
+                                  <div className="absolute top-1 left-1.5 flex gap-0.5 items-center bg-black/80 px-1 py-0.5 border border-zinc-900 text-[5px] text-zinc-500 font-mono tracking-tighter">
+                                    <div className="w-1 h-1 rounded-full border border-zinc-700 animate-spin" style={{ animationDuration: '3s' }} />
+                                    <span>FAV</span>
+                                  </div>
+                                </div>
+                                <div className="bg-zinc-100 p-1 text-zinc-950 text-[10px] font-mono leading-tight truncate rotate-[-0.5deg] shadow-[1px_1px_2px_rgba(0,0,0,0.15)] text-center font-bold">
+                                  Whatta Man
+                                </div>
+                              </button>
+
+                              {/* 2. The Dresden Dolls - Girl Anachronism */}
+                              <button 
+                                onClick={() => {
+                                  setKarPreselectedFile('Girl_Anachronism_by_The_Dresden_Dolls.mp4');
+                                  setActiveTab('karaoke');
+                                  playChime('triangle', 1.4);
+                                }}
+                                className="group/teaser text-left w-full cursor-crosshair border border-[#FF6B00]/40 hover:border-[#FF2BD6] bg-zinc-950 p-2 space-y-2 hover:shadow-[0_0_12px_rgba(255,43,214,0.3)] transition-all block"
+                              >
+                                <div className="aspect-[16/10] bg-black border border-zinc-900 rounded relative overflow-hidden flex items-center justify-center">
+                                  <video
+                                    src="https://storage.googleapis.com/astraltrash_karaoke/Girl_Anachronism_by_The_Dresden_Dolls.mp4#t=1"
+                                    preload="metadata"
+                                    playsInline
+                                    muted
+                                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/teaser:opacity-90 transition-opacity duration-300"
+                                  />
+                                  <div className="absolute top-1 left-1.5 flex gap-0.5 items-center bg-black/80 px-1 py-0.5 border border-zinc-900 text-[5px] text-zinc-500 font-mono tracking-tighter">
+                                    <div className="w-1 h-1 rounded-full border border-zinc-700 animate-spin" style={{ animationDuration: '3s' }} />
+                                    <span>PUNK</span>
+                                  </div>
+                                </div>
+                                <div className="bg-zinc-100 p-1 text-zinc-950 text-[10px] font-mono leading-tight truncate rotate-[0.5deg] shadow-[1px_1px_2px_rgba(0,0,0,0.15)] text-center font-bold">
+                                  Girl Anachronism
+                                </div>
+                              </button>
+
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
                     {/* Manifesto Section */}
                     <section className="sect pt-2" id="manifesto">
                       <h2 className="sect-head">TRANSMISSION</h2>
@@ -3424,178 +3533,17 @@ export default function App() {
           {/* SECTION C: AI SLOP - RETRO HALLUCINATION LABORATORY                       */}
           {/* ========================================================================= */}
           {activeTab === 'aislop' && (
-            <div className="frame py-8">
-              <div className="mb-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#00F0FF]/30 pb-3 mb-2 gap-2">
-                  <h2 
-                    className="text-3xl font-bold font-sans text-white tracking-wider uppercase"
-                    style={{
-                      fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
-                      textShadow: '0 0 8px var(--phosphor), 0 0 30px rgba(57,255,20,0.5), 3px 0 0 rgba(255,43,214,0.8), -3px 0 0 rgba(0,240,255,0.8)',
-                      animation: 'jitter 6s infinite'
-                    }}
-                  >
-                    ☣ AI SLOP MATRIX ☣
-                  </h2>
-                  <span className="text-[11px] text-gray-500 font-mono">ENGINE: TENSORTRANTRUM.v1</span>
-                </div>
-                <p className="text-[#d7ffd0] text-[13px] leading-relaxed max-w-2xl">
-                  In art, the hallucination is the point. We treat generative errors as magnificent sacred geometry. 
-                  Below is the Hallucinatory Prompt Purifier and our museum of lovely generated mistakes.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                
-                {/* Left Side: Dynamic Prompt Scrambler */}
-                <div className="lg:col-span-6 bg-black/95 border border-[#00F0FF] p-5 shadow-[0_0_20px_rgba(0,240,255,0.15)] space-y-4">
-                  
-                  <div className="flex items-center gap-2 text-white font-bold font-sans uppercase text-[15px] border-b border-zinc-900 pb-2">
-                    <Bot className="w-5 h-5 text-[#00F0FF]" />
-                    <span>Hallucinatory Prompt Purifier</span>
-                  </div>
-
-                  <p className="text-gray-400 text-[12px] font-mono leading-relaxed">
-                    Feed a raw concept into our weights. We bypass regular, boring safety grids to synthesize extreme textual artifacting.
-                  </p>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-[#00F0FF] font-mono block uppercase">INPUT DESIGN PROMPT</label>
-                    <input 
-                      type="text"
-                      value={rawPrompt}
-                      onChange={(e) => setRawPrompt(e.target.value)}
-                      placeholder="e.g. glowing digital junk..."
-                      className="w-full bg-[#050505] border border-gray-800 focus:border-[#00F0FF] text-white p-3 font-mono text-[13px] outline-none"
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleCorruptPrompt}
-                    disabled={isCorrupting}
-                    className="w-full bg-[#00F0FF] hover:bg-[#00F0FF]/80 text-black font-bold py-3 px-4 font-sans uppercase text-[13px] tracking-widest cursor-crosshair transition-all disabled:opacity-50"
-                  >
-                    {isCorrupting ? '☠ CORRUPTING COGNITIVE MAPS...' : '☢ SYNTHESIZE GLITCH SLOP ▸'}
-                  </button>
-
-                  {/* Corrupted Output Terminal View */}
-                  <div className="bg-[#020202] border border-[#00F0FF]/30 p-4 font-mono text-[12px] space-y-2">
-                    <div className="text-gray-500 text-[10px] border-b border-zinc-900 pb-1 flex justify-between uppercase">
-                      <span>PURIFIED_HALLUCINATION_FEED.txt</span>
-                      <span className="text-[#00F0FF]">LIVE</span>
-                    </div>
-
-                    <div className="min-h-[60px] flex items-center justify-center text-center">
-                      {corruptedPrompt ? (
-                        <p className="text-[#39FF14] text-[13px] tracking-wide break-all font-bold animate-pulse">
-                          {corruptedPrompt}
-                        </p>
-                      ) : (
-                        <p className="text-gray-600 italic">
-                          No slop generated yet. Push the button to distort the space.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Dynamic Slop Index Bar */}
-                  <div className="bg-[#080808] p-4 border border-zinc-900 space-y-2 font-mono">
-                    <div className="flex justify-between items-center text-[11px] text-gray-400">
-                      <span>HALLUCINATION OVERFLOW RATIO:</span>
-                      <span className="text-[#00F0FF] font-bold">{slopMetric}%</span>
-                    </div>
-                    <div className="w-full bg-zinc-950 h-2 overflow-hidden border border-zinc-900">
-                      <div 
-                        className="bg-gradient-to-r from-[#00F0FF] to-[#FF2BD6] h-full transition-all duration-500"
-                        style={{ width: `${slopMetric}%` }}
-                      />
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* Right Side: Museum of generated mistakes */}
-                <div className="lg:col-span-6 bg-black/90 border border-gray-800 p-5 space-y-4">
-                  <div className="flex justify-between items-center border-b border-gray-800 pb-2">
-                    <h3 className="text-white font-bold font-sans uppercase text-[15px]">The Museum of AI Failures</h3>
-                    <span className="text-[10px] bg-[#EFFF04]/20 text-[#EFFF04] px-2 py-0.5 font-mono">8 ACCUMULATED ENTRIES</span>
-                  </div>
-
-                  {/* Fun Grid of Mock-AI Slop masterpieces with creative descriptions */}
-                  <div className="grid grid-cols-2 gap-4">
-                    
-                    {/* Failure 1 */}
-                    <div className="border border-zinc-900 bg-[#040404] p-2 space-y-2 hover:border-[#00F0FF]/50 transition-all">
-                      <div className="aspect-[4/3] w-full relative overflow-hidden bg-gradient-to-tr from-[#9D4DFF] to-[#FF2BD6] flex items-center justify-center">
-                        <Skull className="w-10 h-10 text-white/30 animate-pulse" />
-                        <div className="absolute inset-0 bg-repeat bg-[linear-gradient(45deg,#000_25%,transparent_25%,transparent_50%,#000_50%,#000_75%,transparent_75%,transparent)] bg-[size:10px_10px] opacity-15" />
-                      </div>
-                      <div>
-                        <h4 className="text-white text-[12px] font-sans font-bold truncate">morpho_corrupted_skull</h4>
-                        <p className="text-[10px] text-gray-500 leading-normal mt-0.5">
-                          Tried to generate a cyber butterfly; weights collapsed into an absolute neon skull. Beautiful.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Failure 2 */}
-                    <div className="border border-zinc-900 bg-[#040404] p-2 space-y-2 hover:border-[#00F0FF]/50 transition-all">
-                      <div className="aspect-[4/3] w-full relative overflow-hidden bg-gradient-to-tr from-[#00F0FF] to-[#39FF14] flex items-center justify-center">
-                        <Sparkles className="w-10 h-10 text-white/30" />
-                        <div className="absolute inset-0 bg-repeat bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.8)_20%,transparent_20%)] bg-[size:8px_8px] opacity-25" />
-                      </div>
-                      <div>
-                        <h4 className="text-white text-[12px] font-sans font-bold truncate">infinite_yaml_cathedral</h4>
-                        <p className="text-[10px] text-gray-500 leading-normal mt-0.5">
-                          A cathedral generated entirely out of parsed Kubernetes configurations. Over-fitted chaos.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Failure 3 */}
-                    <div className="border border-zinc-900 bg-[#040404] p-2 space-y-2 hover:border-[#00F0FF]/50 transition-all">
-                      <div className="aspect-[4/3] w-full relative overflow-hidden bg-gradient-to-tr from-[#FF6B00] to-[#EFFF04] flex items-center justify-center">
-                        <Globe className="w-10 h-10 text-white/30" />
-                        <div className="absolute inset-0 bg-repeat bg-[linear-gradient(to_bottom,transparent_50%,rgba(0,0,0,0.9)_50%)] bg-[size:4px_4px] opacity-35" />
-                      </div>
-                      <div>
-                        <h4 className="text-white text-[12px] font-sans font-bold truncate">hyperbolic_trash_heap</h4>
-                        <p className="text-[10px] text-gray-500 leading-normal mt-0.5">
-                          12 dimensions of low-orbit garbage intersecting at impossible angles. Highly non-Euclidean.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Failure 4 */}
-                    <div className="border border-zinc-900 bg-[#040404] p-2 space-y-2 hover:border-[#00F0FF]/50 transition-all">
-                      <div className="aspect-[4/3] w-full relative overflow-hidden bg-gradient-to-tr from-[#39FF14] to-[#9D4DFF] flex items-center justify-center">
-                        <Radio className="w-10 h-10 text-white/30 animate-pulse" />
-                        <div className="absolute inset-0 bg-repeat bg-[linear-gradient(to_right,rgba(0,0,0,0.55)_0_2px,transparent_2px_4px)] opacity-30" />
-                      </div>
-                      <div>
-                        <h4 className="text-white text-[12px] font-sans font-bold truncate">unstable_weight_melt</h4>
-                        <p className="text-[10px] text-gray-500 leading-normal mt-0.5">
-                          A portrait of the artist as raw matrix float variables before optimization bounds.
-                        </p>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* Live neural logs */}
-                  <div className="bg-[#020202] border border-zinc-900 p-4 font-mono text-[10px] text-gray-500 max-h-[140px] overflow-y-auto space-y-1">
-                    <span className="text-[9px] uppercase tracking-wider block text-zinc-700 border-b border-zinc-950 pb-1 mb-2">
-                      LOG_STREAM: neural_hallucination_weights
-                    </span>
-                    {aiLogs.map((log, index) => (
-                      <div key={index} className="truncate">{log}</div>
-                    ))}
-                  </div>
-
-                </div>
-
-              </div>
-            </div>
+            <AiSlop
+              playChime={playChime}
+              rawPrompt={rawPrompt}
+              setRawPrompt={setRawPrompt}
+              corruptedPrompt={corruptedPrompt}
+              setCorruptedPrompt={setCorruptedPrompt}
+              isCorrupting={isCorrupting}
+              handleCorruptPrompt={handleCorruptPrompt}
+              slopMetric={slopMetric}
+              aiLogs={aiLogs}
+            />
           )}
 
           {/* ========================================================================= */}
@@ -3956,7 +3904,11 @@ export default function App() {
           {/* SECTION F: SHITTY KARAOKE - CHUNKY CRT AUDIO-VISUAL EXPLOSION              */}
           {/* ========================================================================= */}
           {activeTab === 'karaoke' && (
-            <ShittyKaraoke playChime={playChime} />
+            <ShittyKaraoke
+              playChime={playChime}
+              preselectedVideoFileName={karPreselectedFile}
+              clearPreselectedVideoFileName={() => setKarPreselectedFile(undefined)}
+            />
           )}
 
           {/* ========================================================================= */}
