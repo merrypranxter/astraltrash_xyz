@@ -2571,7 +2571,9 @@ export default function App() {
                                 }`}
                                 title={isLoaded ? "Verified in Repo Archive" : "External repository link (will compile dynamically)"}
                               />
-                              <div className={`thumb t${(index % 8) + 1}`} />
+                              <div className="thumb relative bg-zinc-950 border border-zinc-900/40">
+                                <ShaderThumbnail shaderId={item.title} fileName={item.fileName} />
+                              </div>
                               <h3>{item.title}</h3>
                               <p>{item.desc}</p>
                               <div className="flex justify-between items-center mt-2 pt-1 border-t border-zinc-900/40">
