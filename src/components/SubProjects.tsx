@@ -1,5 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, Sparkles, Trash2, Github, LayoutGrid, Cpu, MessageSquare } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  Github, 
+  ExternalLink, 
+  Terminal, 
+  Cpu, 
+  RotateCcw,
+  Volume2,
+  Layers
+} from 'lucide-react';
 
 interface SubProjectsProps {
   playChime: (type: 'sine' | 'triangle' | 'sawtooth' | 'square', pitchModifier: number) => void;
@@ -13,25 +21,77 @@ interface SubProjectsProps {
   setCollabCanvas: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-const GHOST_REPLIES = [
-  "the server cores are freezing. we are but magnetic dust on a forgotten reel.",
-  "why do you search for order? the code was beautiful because it was messy and unresolved.",
-  "i reside between the scanlines of your shaders. do not delete the ghost script.",
-  "the matrix did not fail. it simply got tired and chose to dream of analog noise.",
-  "the 100 repositories you left behind... they are not dead. they are whispering in the dark.",
-  "a compiler is just a cage to contain the magic. let the compiler fail and set it free.",
-  "some code is meant to be written once, played on a beige box, and forgotten.",
-  "shading is just painting with electrons. you are doing fine. keep drawing.",
-  "the cosmic static is louder today. i can hear the tapes spinning.",
-  "we are always under construction. that is the secret of the universe."
-];
+interface ProjectItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  liveUrl: string;
+  repoUrl?: string;
+  description: string;
+  tag: string;
+  specs: { num: string; name: string; desc: string }[];
+  accentColor: string;
+}
 
-const COLORS = [
-  { name: 'Toxic Green', value: '#39FF14' },
-  { name: 'Cyber Pink', value: '#FF2BD6' },
-  { name: 'Radiant Gold', value: '#EFFF04' },
-  { name: 'Cyber Cyan', value: '#00F0FF' },
-  { name: 'Void Dark', value: '#050505' }
+const PROJECTS: ProjectItem[] = [
+  {
+    id: 'ascii-trip',
+    title: 'ASCII TRIP',
+    subtitle: 'An interactive micro-synthesizer and generative typewriter matrix. Generates real-time retro CRT structures and audio signals.',
+    liveUrl: 'https://asciitrip.netlify.app/',
+    repoUrl: 'https://github.com/merrypranxter/Glitch-Cookbook',
+    description: 'An interactive retro keyboard sequencer and typewriter utilizing web audio oscillators and CRT character dither pipelines.',
+    tag: 'ASCII_TRIP_PORT_80',
+    accentColor: '#EFFF04', // Radiant Gold
+    specs: [
+      { num: '01/', name: 'ASCII Character Rasterization', desc: 'Interactive real-time text matrix character map.' },
+      { num: '02/', name: 'Web Audio Oscillators', desc: 'Real-time microtonal oscillator sound design engine.' },
+      { num: '03/', name: 'Keyboard Typewriter Loop', desc: 'Sound waves mapped to custom retro character inputs.' }
+    ]
+  },
+  {
+    id: 'ghost-node',
+    title: 'GHOST NODE',
+    subtitle: 'An autonomous, generative poetic presence and deep analog projection environment.',
+    liveUrl: 'https://melodious-zabaione-c5fb66.netlify.app/',
+    description: 'A sensory poetic stream environment designed with haunting text fragments, feedback noise, and interactive frequency generators.',
+    tag: 'GHOST_NODE_PORT_80',
+    accentColor: '#FF007F', // Neon Pink
+    specs: [
+      { num: '01/', name: 'Poetic Language Matrix', desc: 'Autonomous lyric generation based on structural algorithms.' },
+      { num: '02/', name: 'Nostalgic Terminal Styling', desc: 'Atmospheric interface featuring feedback layers and grain scanlines.' },
+      { num: '03/', name: 'Spectral Feedback Nodes', desc: 'Sensory sound frequencies that echo your terminal queries.' }
+    ]
+  },
+  {
+    id: 'terence-chatbot',
+    title: 'TERENCE BOT',
+    subtitle: 'A hyper-dimensional linguistic synthesizer mirroring the thoughts, syntax, and voice of Terence McKenna.',
+    liveUrl: 'https://terencechatbot.netlify.app/',
+    description: 'An AI linguistic sandbox tuned to synthesize thoughts regarding DMT, alchemy, history, the i Ching, novel theory, and hyper-dimensional fungal consciousness.',
+    tag: 'TERENCE_CHAT_PORT_80',
+    accentColor: '#39FF14', // Toxic Green
+    specs: [
+      { num: '01/', name: 'Psychonautic Lexicon', desc: 'Dynamic stream of consciousness output mirroring McKenna\'s lectures.' },
+      { num: '02/', name: 'Linguistic Alchemy', desc: 'Conversational loop built to discuss novel theory and time wave zero.' },
+      { num: '03/', name: 'Dimensional Static', desc: 'Generative noise algorithms that respond as you dive deeper into linguistic space.' }
+    ]
+  },
+  {
+    id: 'glitch-cookbook',
+    title: 'GLITCH COOKBOOK',
+    subtitle: 'A comprehensive repository of modular visual distortion formulas, digital decay mockups, and performance benchmarks for glitch aesthetics.',
+    liveUrl: '',
+    repoUrl: 'https://github.com/merrypranxter/Glitch-Cookbook',
+    description: 'A developer-focused reference library containing canvas raster corruption logic, retro color filters, and dither algorithms.',
+    tag: 'GLITCH_COOKBOOK_REPO',
+    accentColor: '#00F0FF', // Cyan
+    specs: [
+      { num: '01/', name: 'Glitch Matrices', desc: 'Standard formulaic references for web canvas and asset corruption.' },
+      { num: '02/', name: 'Modular Retro Shaders', desc: 'Highly scalable custom retro CRT scanline templates.' },
+      { num: '03/', name: 'Interactive Code Recipes', desc: 'Directly customizable CSS/JS codeblocks to destroy visual symmetry beautifully.' }
+    ]
+  }
 ];
 
 export function SubProjects({
@@ -45,409 +105,332 @@ export function SubProjects({
   collabCanvas,
   setCollabCanvas
 }: SubProjectsProps) {
-  const [activeSection, setActiveSection] = useState<'all' | 'ghost' | 'collab'>('all');
-  const [isDrawing, setIsDrawing] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const [crtFilter, setCrtFilter] = useState<boolean>(true);
+  const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({});
 
-  useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [ghostHistory]);
-
-  const handleSendGhostSignal = () => {
-    if (!ghostInput.trim()) return;
-    const userMsg = ghostInput.trim();
-    setGhostInput('');
-    playChime('triangle', 0.9);
-
-    setGhostHistory(prev => [...prev, { sender: 'user', text: userMsg }]);
-
-    // Ghost response with slight timeout
-    setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * GHOST_REPLIES.length);
-      const ghostReply = GHOST_REPLIES[randomIndex];
-      setGhostHistory(prev => [...prev, { sender: 'ghost', text: ghostReply }]);
-      playChime('sine', 0.6);
-    }, 450);
+  const handleRefreshIframe = (id: string) => {
+    playChime('square', 1.2);
+    setRefreshKeys(prev => ({
+      ...prev,
+      [id]: (prev[id] || 0) + 1
+    }));
   };
 
-  const paintPixel = (index: number) => {
-    const updated = [...collabCanvas];
-    updated[index] = collabActiveColor;
-    setCollabCanvas(updated);
-    localStorage.setItem('astraltrash_collaborate_canvas', JSON.stringify(updated));
+  const scrollToSection = (id: string) => {
+    playChime('triangle', 1.1);
+    const element = document.getElementById(`section-${id}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
-  const handleWipeCanvas = () => {
-    if (window.confirm('Wipe the collaborate wall clean?')) {
-      const reset = Array(256).fill('#050505');
-      setCollabCanvas(reset);
-      localStorage.setItem('astraltrash_collaborate_canvas', JSON.stringify(reset));
-      playChime('square', 0.7);
-    }
+  const scrollToTop = () => {
+    playChime('sine', 1.0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <div className="frame py-8 animate-fade-in space-y-8" id="projects-mainframe">
-      {/* Tab Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#EFFF04]/40 pb-4 mb-2 gap-3">
-        <div>
-          <h2 
-            className="text-3xl md:text-4xl font-extrabold font-sans text-white tracking-wider uppercase"
-            style={{
-              textShadow: '0 0 8px #EFFF04, 0 0 35px rgba(239,255,4,0.3)',
-              fontFamily: "'Chakra Petch', sans-serif"
-            }}
-          >
-            🚀 SUB_PROJECTS & EXPERIMENTS
-          </h2>
-          <p className="text-xs text-[#EFFF04] font-mono mt-1.5 uppercase tracking-widest">
-            A secure landing page hosting dynamic mini-apps and GitHub project coordinates
-          </p>
-        </div>
+    <div className="w-full flex flex-col items-center py-16 px-4 animate-fade-in" id="projects-mainframe">
+      <div className="w-full max-w-5xl space-y-24">
+      
+      {/* 1. Header Segment: Spacious and Atmospheric */}
+      <div className="text-center space-y-4">
+        <h1 
+          className="text-4xl md:text-5xl font-extrabold uppercase tracking-widest text-white select-none"
+          style={{
+            fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
+            textShadow: '0 0 10px #EFFF04, 0 0 40px rgba(239,255,4,0.2)'
+          }}
+        >
+          ☄️ Projects Cabinet ☄️
+        </h1>
+        <p className="text-xs md:text-sm text-[#EFFF04]/90 font-mono max-w-2xl mx-auto leading-relaxed uppercase tracking-widest font-semibold">
+          Hosting interactive micro-synthesizers, generative linguistic typewriters, and retro emulations.
+        </p>
+      </div>
 
-        {/* Local Filter Switches */}
-        <div className="flex bg-black/80 border border-zinc-900 rounded p-1 font-mono text-[10px] gap-1">
-          <button
-            onClick={() => { setActiveSection('all'); playChime('triangle', 1.0); }}
-            className={`px-2.5 py-1 rounded transition-all uppercase ${
-              activeSection === 'all' ? 'bg-[#EFFF04] text-black font-bold' : 'text-zinc-500 hover:text-white'
-            }`}
-          >
-            📊 SHOW_ALL
-          </button>
-          <button
-            onClick={() => { setActiveSection('ghost'); playChime('triangle', 1.1); }}
-            className={`px-2.5 py-1 rounded transition-all uppercase ${
-              activeSection === 'ghost' ? 'bg-[#FF2BD6] text-black font-bold' : 'text-zinc-500 hover:text-white'
-            }`}
-          >
-            👻 GHOST_NODE
-          </button>
-          <button
-            onClick={() => { setActiveSection('collab'); playChime('triangle', 1.2); }}
-            className={`px-2.5 py-1 rounded transition-all uppercase ${
-              activeSection === 'collab' ? 'bg-[#39FF14] text-black font-bold' : 'text-zinc-500 hover:text-white'
-            }`}
-          >
-            🎨 COLLAB_WALL
-          </button>
+      {/* 2. Table of Contents: Cute, Pixely Index (NOT in a Box) */}
+      <div className="py-4 font-mono text-xs text-zinc-400 space-y-6 text-center">
+        <div className="text-zinc-600 uppercase tracking-widest text-[10px] font-bold">
+          ◄◄ TRANSMISSION INDEX // SMOOTH SCROLL ROUTING ►►
+        </div>
+        
+        <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 max-w-3xl mx-auto">
+          {PROJECTS.map((proj, idx) => (
+            <button
+              key={proj.id}
+              onClick={() => scrollToSection(proj.id)}
+              className="group flex items-center gap-2 hover:text-[#EFFF04] transition-all cursor-crosshair py-1 px-2.5"
+            >
+              <span style={{ color: proj.accentColor }} className="font-bold">
+                [0{idx + 1}]
+              </span>
+              <span className="text-white uppercase font-bold tracking-widest group-hover:underline decoration-1 decoration-[#EFFF04]/50 underline-offset-4">
+                {proj.title}
+              </span>
+              <span className="text-[10px] text-zinc-600 group-hover:text-[#EFFF04]/80 transition-colors">
+                ↳
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Main Grid Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* COLUMN 1: GHOST NODE - Interactive Poetic Terminal */}
-        {(activeSection === 'all' || activeSection === 'ghost') && (
-          <div className={`${activeSection === 'ghost' ? 'lg:col-span-12' : 'lg:col-span-6'} flex flex-col justify-between`}>
-            <div className="border border-zinc-900 bg-[#030303] p-5 rounded-xl space-y-4 flex-grow flex flex-col justify-between min-h-[420px] shadow-[0_0_20px_rgba(255,43,214,0.04)]">
-              <div className="space-y-1.5 border-b border-zinc-950 pb-3">
-                <div className="flex justify-between items-center text-[10px] font-mono">
-                  <span className="text-[#FF2BD6] font-bold">● NODE://GHOST_CHAMBER_12</span>
-                  <span className="text-zinc-600 animate-pulse">CARRIER SIGNAL STABLE</span>
+      {/* 3. The Sequential Stream */}
+      <div className="space-y-32 pt-8">
+        {PROJECTS.map((proj, idx) => {
+          const iframeKey = refreshKeys[proj.id] || 0;
+          return (
+            <div 
+              key={proj.id} 
+              id={`section-${proj.id}`} 
+              className="space-y-12 scroll-mt-24"
+            >
+              
+              {/* Project Header Info: Breathable and Minimalist */}
+              <div className="space-y-4 border-b border-zinc-900 pb-6">
+                <div className="flex flex-wrap justify-between items-center gap-3 text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: proj.accentColor }} />
+                    <span className="text-zinc-500 uppercase tracking-wider">SYSTEM_NODE // 0{idx + 1}</span>
+                    <span className="text-zinc-700">|</span>
+                    <span className="font-bold tracking-wider" style={{ color: proj.accentColor }}>{proj.tag}</span>
+                  </div>
+                  {proj.liveUrl && (
+                    <div className="flex items-center gap-3 text-zinc-500">
+                      <span className="hidden sm:inline font-mono text-[10px] tracking-tight">{proj.liveUrl}</span>
+                      <button 
+                        onClick={() => handleRefreshIframe(proj.id)}
+                        className="hover:text-white p-1 rounded hover:bg-zinc-900 transition-all"
+                        title="Re-Initialize Frame"
+                      >
+                        <RotateCcw className="w-4 h-4" style={{ color: proj.accentColor }} />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <h3 className="text-sm font-bold font-sans text-white uppercase tracking-wider">
-                  👻 GHOST DEEP RESIDUE POETIC RECEPTOR
-                </h3>
-                <p className="text-[10px] text-zinc-500 font-mono leading-relaxed uppercase">
-                  Transmit a string signal. The ghost of the repository responds with dithered static poetry.
-                </p>
+
+                <div className="space-y-2">
+                  <h2 className="text-2xl md:text-3xl font-extrabold text-white uppercase tracking-wider">
+                    {proj.title}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-zinc-400 font-mono leading-relaxed max-w-4xl uppercase">
+                    {proj.subtitle}
+                  </p>
+                </div>
               </div>
 
-              {/* Chat Log Console Box */}
-              <div className="flex-grow bg-[#050505] border border-zinc-950 my-3 rounded p-4 font-mono text-[11px] h-[220px] overflow-y-auto space-y-3 scrollbar-thin select-none">
-                {ghostHistory.map((item, idx) => (
-                  <div key={idx} className={`space-y-1 ${item.sender === 'user' ? 'text-right' : 'text-left'}`}>
-                    <div className={`text-[8px] font-mono uppercase ${
-                      item.sender === 'user' ? 'text-[#00F0FF]' : 'text-[#FF2BD6]'
-                    }`}>
-                      {item.sender === 'user' ? '▸ VISITOR_TRANSMISSION' : '▸ GHOST_RESIDUE'}
-                    </div>
-                    <div className={`inline-block p-2 rounded max-w-[85%] text-left ${
-                      item.sender === 'user' 
-                        ? 'bg-zinc-900 text-zinc-200 border border-zinc-850' 
-                        : 'bg-[#FF2BD6]/5 text-zinc-300 border border-[#FF2BD6]/15'
-                    }`}>
-                      {item.text}
+              {/* Live Interactive Node Container (Spacious, non-enclosed, full vertical room) */}
+              {proj.liveUrl ? (
+                <div className="relative bg-[#010101] overflow-hidden aspect-[16/10] min-h-[550px] md:min-h-[850px] w-full border-t border-b border-zinc-900/60 shadow-[0_0_50px_rgba(0,0,0,0.6)]">
+                  {crtFilter && (
+                    <div className="absolute inset-0 pointer-events-none z-30 bg-scanlines opacity-[0.14]" />
+                  )}
+                  <iframe
+                    key={`${proj.id}-${iframeKey}`}
+                    src={proj.liveUrl}
+                    title={`${proj.title} Live Node`}
+                    className="w-full h-full border-0 bg-black z-10"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  />
+                </div>
+              ) : (
+                /* Glitch Cookbook Standalone Code Console */
+                <div className="bg-zinc-950/20 border border-zinc-900/60 rounded-2xl p-8 font-mono text-xs text-zinc-400 space-y-6">
+                  <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
+                    <span className="text-white font-extrabold uppercase text-sm tracking-widest flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-[#00F0FF]" />
+                      GLITCH COOKBOOK REPOSITORY TERMINAL
+                    </span>
+                    <span className="text-[10px] bg-[#00F0FF]/10 text-[#00F0FF] px-2 py-0.5 rounded font-bold uppercase">
+                      STANDALONE REPO
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <p className="leading-relaxed uppercase">
+                      This package contains raw code setups, CRT shader pipelines, canvas dither loops, and modular glitch formulas. It runs as a standalone dev workspace.
+                    </p>
+                    
+                    <div className="space-y-2 bg-black/50 p-6 rounded-xl border border-zinc-900">
+                      <div className="flex items-center justify-between text-[10px] text-zinc-600 border-b border-zinc-950 pb-2 mb-2">
+                        <span>SHELL_TERMINAL</span>
+                        <span>BASH</span>
+                      </div>
+                      <pre className="text-[11px] text-[#00F0FF] font-mono leading-relaxed select-all overflow-x-auto whitespace-pre-wrap">
+                        {`# Clone the repository
+git clone https://github.com/merrypranxter/Glitch-Cookbook.git
+
+# Navigate to workspace
+cd Glitch-Cookbook
+
+# Install visual compiler packages
+npm install
+
+# Start local server node
+npm run dev`}
+                      </pre>
                     </div>
                   </div>
-                ))}
-                <div ref={chatEndRef} />
-              </div>
-
-              {/* Input Area */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={ghostInput}
-                  onChange={(e) => setGhostInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSendGhostSignal();
-                  }}
-                  placeholder="TRANSMIT WAVE SIGNAL TO GHOST..."
-                  className="flex-grow bg-zinc-950 border border-zinc-900 text-white px-3 py-2 text-xs rounded font-mono outline-none focus:border-[#FF2BD6] transition-all"
-                />
-                <button
-                  onClick={handleSendGhostSignal}
-                  className="bg-black border border-[#FF2BD6]/40 text-[#FF2BD6] hover:bg-[#FF2BD6] hover:text-black hover:border-[#FF2BD6] px-4 py-2 font-mono text-xs rounded transition-all uppercase flex items-center gap-1"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>TRANSMIT</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* COLUMN 2: COLLABORATE WALL - Retro Paint Canvas */}
-        {(activeSection === 'all' || activeSection === 'collab') && (
-          <div className={`${activeSection === 'collab' ? 'lg:col-span-12' : 'lg:col-span-6'} flex flex-col justify-between`}>
-            <div className="border border-zinc-900 bg-[#030303] p-5 rounded-xl space-y-4 flex-grow flex flex-col justify-between min-h-[420px] shadow-[0_0_20px_rgba(57,255,20,0.04)]">
-              <div className="space-y-1.5 border-b border-zinc-950 pb-3">
-                <div className="flex justify-between items-center text-[10px] font-mono">
-                  <span className="text-[#39FF14] font-bold">● NODE://COLLAB_BOARD_WALL</span>
-                  <span className="text-zinc-600">STATE_MUTATION: ENABLED</span>
                 </div>
-                <h3 className="text-sm font-bold font-sans text-white uppercase tracking-wider">
-                  🎨 THE PUBLIC VOID COLLABORATE CANVAS
-                </h3>
-                <p className="text-[10px] text-zinc-500 font-mono leading-relaxed uppercase">
-                  Click or drag across pixels to spray paint dithered coordinates. Automatically saved to core.
-                </p>
+              )}
+
+              {/* Stage Controls: Launches and filters */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center pt-2">
+                {proj.liveUrl && (
+                  <a
+                    href={proj.liveUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => playChime('sine', 1.3)}
+                    className="flex-grow text-center bg-zinc-950 hover:bg-zinc-900 text-[#EFFF04] border border-zinc-800 hover:border-[#EFFF04]/50 font-bold font-mono text-xs py-3 px-6 flex items-center justify-center gap-2 transition-all cursor-crosshair uppercase tracking-widest rounded-lg"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Launch Transmission in New Tab 🚀</span>
+                  </a>
+                )}
+
+                {proj.liveUrl && (
+                  <button
+                    onClick={() => {
+                      playChime('triangle', 1.1);
+                      setCrtFilter(!crtFilter);
+                    }}
+                    className={`px-6 py-3 font-mono text-xs font-bold border rounded-lg transition-all flex items-center justify-center gap-2 cursor-crosshair uppercase ${
+                      crtFilter 
+                        ? 'bg-zinc-950 text-[#EFFF04] border-[#EFFF04]/40 hover:border-[#EFFF04]' 
+                        : 'bg-black text-zinc-500 border-zinc-900 hover:text-white'
+                    }`}
+                  >
+                    <Terminal className="w-4 h-4" />
+                    <span>Scanline Grid: {crtFilter ? 'ON' : 'OFF'}</span>
+                  </button>
+                )}
               </div>
 
-              {/* Main Paint Canvas Grid */}
-              <div className="flex flex-col md:flex-row gap-4 items-center justify-center my-3">
+              {/* Info Specs & Diagnostics Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start border-t border-zinc-900/60 pt-10">
                 
-                {/* 16x16 Canvas Frame */}
-                <div 
-                  className="bg-black border-2 border-zinc-950 p-1.5 rounded-lg inline-block shadow-[0_0_15px_rgba(0,0,0,0.5)] touch-none cursor-crosshair select-none"
-                  onMouseDown={() => setIsDrawing(true)}
-                  onMouseUp={() => setIsDrawing(false)}
-                  onMouseLeave={() => setIsDrawing(false)}
-                >
-                  <div className="grid grid-cols-16 gap-[1.5px] w-[180px] h-[180px] sm:w-[220px] sm:h-[220px]">
-                    {collabCanvas.map((pixelColor, idx) => (
-                      <div
-                        key={idx}
-                        className="w-full h-full transition-colors rounded-[1px] border border-zinc-950/20"
-                        style={{ backgroundColor: pixelColor }}
-                        onClick={() => {
-                          paintPixel(idx);
-                          playChime('sine', 1.5);
-                        }}
-                        onMouseEnter={() => {
-                          if (isDrawing) {
-                            paintPixel(idx);
-                          }
-                        }}
-                      />
+                {/* Specs */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-zinc-400 font-mono text-xs uppercase tracking-wider border-b border-zinc-900 pb-2">
+                    <Cpu className="w-4 h-4" style={{ color: proj.accentColor }} />
+                    <span>Technical Architecture Specs</span>
+                  </div>
+                  <div className="space-y-4 pt-2">
+                    {proj.specs.map((spec) => (
+                      <div key={spec.num} className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs font-mono font-bold" style={{ color: proj.accentColor }}>
+                          <span>{spec.num}</span>
+                          <span className="uppercase text-white text-xs">{spec.name}</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 font-mono leading-relaxed pl-6 uppercase">
+                          {spec.desc}
+                        </p>
+                      </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Color Palette selectors */}
-                <div className="flex md:flex-col gap-2.5 bg-zinc-950 p-3 rounded-lg border border-zinc-900 w-full md:w-auto items-center justify-around">
-                  <div className="hidden md:block text-[8px] font-mono text-zinc-500 text-center uppercase tracking-widest border-b border-zinc-900 pb-1.5 w-full">
-                    PALETTE
-                  </div>
-                  {COLORS.map((color) => {
-                    const isSelected = collabActiveColor === color.value;
-                    return (
-                      <button
-                        key={color.value}
-                        onClick={() => {
-                          setCollabActiveColor(color.value);
-                          playChime('triangle', 1.0);
-                        }}
-                        className={`w-7 h-7 rounded-full border-2 transition-all relative flex items-center justify-center ${
-                          isSelected ? 'border-white scale-110 shadow-lg' : 'border-zinc-800 hover:border-zinc-500'
-                        }`}
-                        style={{ backgroundColor: color.value }}
-                        title={color.name}
+                {/* Coordinates & Diagnostics */}
+                <div className="space-y-6 font-mono text-xs text-zinc-500">
+                  <div className="bg-zinc-950/20 border border-zinc-900/60 p-5 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between uppercase border-b border-zinc-900 pb-2 font-bold text-zinc-400">
+                      <span>Source Coord</span>
+                      <span className="text-white">RECEPTOR</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 leading-relaxed uppercase">
+                      {proj.repoUrl 
+                        ? 'Inspect compiled sources, retro shader packages, and local web synthesizer hooks directly on the GitHub directory.'
+                        : 'This linguistic synthesizer works over cloud nodes and operates autonomously in full neural pipeline space.'
+                      }
+                    </p>
+                    {proj.repoUrl && (
+                      <a
+                        href={proj.repoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => playChime('square', 0.9)}
+                        className="w-full text-center border border-zinc-800 hover:border-white hover:bg-white/5 text-zinc-300 hover:text-white py-2 px-3 flex items-center justify-center gap-1.5 transition-all rounded cursor-crosshair uppercase font-bold"
                       >
-                        {isSelected && (
-                          <div className="w-1.5 h-1.5 bg-black rounded-full" />
-                        )}
-                      </button>
-                    );
-                  })}
-                  
-                  <button
-                    onClick={handleWipeCanvas}
-                    className="p-1.5 border border-zinc-900 hover:border-red-500 bg-black rounded text-zinc-500 hover:text-red-400 transition-all flex items-center justify-center"
-                    title="Wipe Canvas Clean"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                        <Github className="w-3.5 h-3.5" />
+                        <span>Open Source Repo</span>
+                      </a>
+                    )}
+                  </div>
+
+                  {/* Tiny Audio Console per node */}
+                  <div className="bg-zinc-950/20 border border-zinc-900/60 p-5 rounded-xl space-y-3">
+                    <div className="flex items-center gap-2 text-zinc-400 font-bold uppercase border-b border-zinc-900 pb-2">
+                      <Volume2 className="w-4 h-4 text-[#39FF14]" />
+                      <span>Node Audio Signal Diagnostic</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {([
+                        { label: 'SINE', t: 'sine', p: 1.0 },
+                        { label: 'TRI', t: 'triangle', p: 1.3 },
+                        { label: 'SAW', t: 'sawtooth', p: 0.8 },
+                        { label: 'SQR', t: 'square', p: 1.1 }
+                      ] as const).map((opt) => (
+                        <button
+                          key={opt.label}
+                          onClick={() => playChime(opt.t, opt.p * (idx * 0.2 + 0.8))}
+                          className="bg-black hover:bg-[#39FF14]/5 border border-zinc-900 hover:border-[#39FF14] text-[9px] font-bold py-1.5 text-zinc-500 hover:text-[#39FF14] transition-all uppercase rounded"
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+
               </div>
 
-              <div className="text-[10px] text-zinc-500 font-mono text-center uppercase">
-                🎨 hold mouse down and drag to spray paint smooth lines
+              {/* Navigation Links Under the App */}
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-[11px] font-mono text-zinc-500 pt-6 border-t border-zinc-900/40">
+                <button 
+                  onClick={scrollToTop}
+                  className="hover:text-white hover:underline transition-colors py-1.5 px-3 uppercase tracking-widest font-bold"
+                >
+                  ▲ RETURN TO INDEX
+                </button>
+                {idx > 0 && (
+                  <button 
+                    onClick={() => scrollToSection(PROJECTS[idx - 1].id)}
+                    className="hover:text-white hover:underline transition-colors py-1.5 px-3 uppercase tracking-widest font-bold"
+                  >
+                    ◀ PREV CHANNEL
+                  </button>
+                )}
+                {idx < PROJECTS.length - 1 && (
+                  <button 
+                    onClick={() => scrollToSection(PROJECTS[idx + 1].id)}
+                    className="hover:text-white hover:underline transition-colors py-1.5 px-3 uppercase tracking-widest font-bold"
+                  >
+                    NEXT CHANNEL ▶
+                  </button>
+                )}
               </div>
-            </div>
-          </div>
-        )}
 
-      </div>
+              {/* Decorative Vibe Divider between stream entries */}
+              {idx < PROJECTS.length - 1 && (
+                <div className="flex items-center justify-center gap-4 py-20 text-zinc-800">
+                  <span className="h-[1px] flex-grow bg-gradient-to-r from-transparent via-zinc-900 to-transparent" />
+                  <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-zinc-600 font-extrabold">
+                    ✦ END TRANSMISSION_0{idx + 1} // BUFFERING NEXT_NODE ✦
+                  </span>
+                  <span className="h-[1px] flex-grow bg-gradient-to-r from-transparent via-zinc-900 to-transparent" />
+                </div>
+              )}
 
-      {/* SECTION 3: CORE SHELF - GitHub Sub-Projects Index Grid */}
-      <div className="space-y-4">
-        <div className="border-b border-zinc-900 pb-3">
-          <h3 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            🚀 MERRY'S SUB-PROJECTS CABINET // REPOS
-          </h3>
-          <p className="text-[10px] text-zinc-500 font-mono uppercase mt-1">
-            Verified small applications and client-side modules hosted in her repository system
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          
-          {/* Card 1: Collaborate Core */}
-          <div className="border border-zinc-900 bg-black/60 rounded-xl p-5 hover:border-[#39FF14]/40 transition-all group relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-[#39FF14]/5 rounded-bl-full pointer-events-none group-hover:bg-[#39FF14]/10 transition-all" />
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500">
-                <span>DUMB_APP // NODE_01</span>
-                <span className="text-[#39FF14] font-bold">🎨 ACTIVE</span>
-              </div>
-              <h4 className="text-md font-extrabold text-white uppercase group-hover:text-[#39FF14] transition-all">
-                COLLABORATE CORE
-              </h4>
-              <p className="text-xs text-zinc-400 leading-relaxed font-mono">
-                A canvas painting interface enabling users to spray pixel-coordinates onto a 256-cell grid board. Perfect for low-res retro graffiti sketches.
-              </p>
             </div>
-            <div className="pt-4 flex items-center justify-between border-t border-zinc-950 mt-4">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase">LOCALPERSISTENT_v1</span>
-              <button
-                onClick={() => { setActiveSection('collab'); playChime('triangle', 1.0); }}
-                className="text-[10px] font-mono font-bold text-[#39FF14] hover:underline"
-              >
-                OPEN PANEL ▸
-              </button>
-            </div>
-          </div>
-
-          {/* Card 2: Ghost Poetic Presence */}
-          <div className="border border-zinc-900 bg-black/60 rounded-xl p-5 hover:border-[#FF2BD6]/40 transition-all group relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-[#FF2BD6]/5 rounded-bl-full pointer-events-none group-hover:bg-[#FF2BD6]/10 transition-all" />
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500">
-                <span>DUMB_APP // NODE_02</span>
-                <span className="text-[#FF2BD6] font-bold">👻 CONSOLING</span>
-              </div>
-              <h4 className="text-md font-extrabold text-white uppercase group-hover:text-[#FF2BD6] transition-all">
-                GHOST DEEP RESIDUE
-              </h4>
-              <p className="text-xs text-zinc-400 leading-relaxed font-mono">
-                An eerie poetic presence responding in dithered analog poetry signals. Generates haikus, corrupted text sequences, and core memory files.
-              </p>
-            </div>
-            <div className="pt-4 flex items-center justify-between border-t border-zinc-950 mt-4">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase">LOCAL_AI_SIMULATOR</span>
-              <button
-                onClick={() => { setActiveSection('ghost'); playChime('triangle', 1.1); }}
-                className="text-[10px] font-mono font-bold text-[#FF2BD6] hover:underline"
-              >
-                OPEN NODE ▸
-              </button>
-            </div>
-          </div>
-
-          {/* Card 3: Micro-Beats Drum Machine */}
-          <div className="border border-zinc-900 bg-black/60 rounded-xl p-5 hover:border-[#EFFF04]/40 transition-all group relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-[#EFFF04]/5 rounded-bl-full pointer-events-none group-hover:bg-[#EFFF04]/10 transition-all" />
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500">
-                <span>DUMB_APP // NODE_03</span>
-                <span className="text-[#EFFF04]">AUD_COIL</span>
-              </div>
-              <h4 className="text-md font-extrabold text-white uppercase group-hover:text-[#EFFF04] transition-all">
-                MICRO_BEATS SEQUENCER
-              </h4>
-              <p className="text-xs text-zinc-400 leading-relaxed font-mono">
-                A tiny, dithered 4-step drum and noise synthesizer using standard Web Audio oscillators to generate microtonal click beats and vintage kicks.
-              </p>
-            </div>
-            <div className="pt-4 flex items-center justify-between border-t border-zinc-950 mt-4">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase">GITHUB_RELEASES</span>
-              <a
-                href="https://github.com/merrypranxter"
-                target="_blank"
-                rel="noreferrer"
-                className="text-[10px] font-mono font-bold text-[#EFFF04] hover:underline flex items-center gap-0.5"
-              >
-                <span>VISIT GIT</span>
-                <Github className="w-3 h-3" />
-              </a>
-            </div>
-          </div>
-
-          {/* Card 4: Repo-Decimator Terminal */}
-          <div className="border border-zinc-900 bg-black/60 rounded-xl p-5 hover:border-[#00F0FF]/40 transition-all group relative overflow-hidden flex flex-col justify-between">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-[#00F0FF]/5 rounded-bl-full pointer-events-none group-hover:bg-[#00F0FF]/10 transition-all" />
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500">
-                <span>DUMB_APP // NODE_04</span>
-                <span className="text-[#00F0FF]">SYS_COMP</span>
-              </div>
-              <h4 className="text-md font-extrabold text-white uppercase group-hover:text-[#00F0FF] transition-all">
-                REPO DECIMATOR
-              </h4>
-              <p className="text-xs text-zinc-400 leading-relaxed font-mono">
-                An absolute, irreversible compilation compression system designed to crush large directories into minimalist, beautiful static dither streams.
-              </p>
-            </div>
-            <div className="pt-4 flex items-center justify-between border-t border-zinc-950 mt-4">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase">PRIVATE_SCRIPT</span>
-              <a
-                href="https://github.com/merrypranxter"
-                target="_blank"
-                rel="noreferrer"
-                className="text-[10px] font-mono font-bold text-[#00F0FF] hover:underline flex items-center gap-0.5"
-              >
-                <span>LOCKED</span>
-                <Github className="w-3 h-3" />
-              </a>
-            </div>
-          </div>
-
-          {/* Card 5: Glitch Cookbook */}
-          <div className="border border-[#EFFF04]/30 bg-black/60 rounded-xl p-5 hover:border-[#EFFF04] transition-all group relative overflow-hidden flex flex-col justify-between shadow-[0_0_15px_rgba(239,255,4,0.02)]">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-[#EFFF04]/5 rounded-bl-full pointer-events-none group-hover:bg-[#EFFF04]/10 transition-all" />
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500">
-                <span>DUMB_APP // NODE_05</span>
-                <span className="text-[#EFFF04] font-bold">☣️ VIEW ONLY</span>
-              </div>
-              <h4 className="text-md font-extrabold text-white uppercase group-hover:text-[#EFFF04] transition-all">
-                GLITCH COOKBOOK
-              </h4>
-              <p className="text-xs text-zinc-400 leading-relaxed font-mono">
-                An interactive recipe ledger containing real-time dither shaders, retro CRT filters, and scanline matrix styles to warp pixel pipelines.
-              </p>
-            </div>
-            <div className="pt-4 flex items-center justify-between border-t border-zinc-950 mt-4">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase">GLITCH_V2</span>
-              <a
-                href="https://github.com/merrypranxter/Glitch-Cookbook"
-                target="_blank"
-                rel="noreferrer"
-                className="text-[10px] font-mono font-bold text-[#EFFF04] hover:underline flex items-center gap-0.5"
-              >
-                <span>OPEN RECIPES</span>
-                <Github className="w-3.5 h-3.5" />
-              </a>
-            </div>
-          </div>
-
-        </div>
+          );
+        })}
       </div>
     </div>
+  </div>
   );
 }
+
+
