@@ -4,110 +4,261 @@ import { Play, Pause, Settings, Plus, Trash2, Sliders, RefreshCw } from 'lucide-
 interface BucketVideo {
   id: string;
   title: string;
+  artist?: string;
   desc: string;
   fileName: string;
   duration?: string;
   tag?: string;
 }
 
+const topSongsOrder = [
+  'Whatta_Man_by_Salt_n_Pepa.mov',
+  'Work_It_by_Missy_Elliott.mov',
+  'Girl_Anachronism_by_The_Dresden_Dolls.mp4',
+  'Faith_by_George_Michael.mov',
+  'Hi_Dee_Ho.mov',
+  'Bouncing_Around_The_Room_by_Phish.mp4',
+  'Too_Many_Dicks_On_The_Dancefloor_by_Flight_of_the_Conchords.mp4',
+  'Whoomp_There_It_Is_by_Tag_Team.mov',
+  'The_Medical_Love_Song_by_Monty_Python.mp4',
+  'Smell_Yo_Dick_by_Risquay.mov',
+  'Walk_It_Out_by_DJ_Unk.mov'
+];
+
 const defaultBucketVideos: BucketVideo[] = [
   {
-    id: '1',
-    title: 'ASTRAL_GLITCH_CORES_4',
-    desc: 'Low-res rendering feedback loops and dither streams',
-    fileName: '043cc61ba55647cf9255de096ddcc570.mov',
-    duration: '3:40',
+    id: 'whatta_man',
+    title: 'Whatta Man',
+    artist: 'Salt n Pepa',
+    desc: "Mary's favorite - retro jam slotted and ready to spin!",
+    fileName: 'Whatta_Man_by_Salt_n_Pepa.mov',
+    duration: '4:52',
+    tag: 'FAV'
+  },
+  {
+    id: 'work_it',
+    title: 'Work It',
+    artist: 'Missy Elliott',
+    desc: 'Rewind and flip it, retro dither glitch jam',
+    fileName: 'Work_It_by_Missy_Elliott.mov',
+    duration: '4:24',
     tag: 'GLITCH'
   },
   {
-    id: '2',
-    title: 'MICROTONAL FEEDBACK COILS',
-    desc: 'Vocal pitch variance and tape speed hum experiments',
-    fileName: '0ccfabac170d4647ad236b4c3650bde.mov',
-    duration: '5:04',
-    tag: 'VOX'
+    id: 'girl_anachronism',
+    title: 'Girl Anachronism',
+    artist: 'The Dresden Dolls',
+    desc: 'High-octane piano punk performance',
+    fileName: 'Girl_Anachronism_by_The_Dresden_Dolls.mp4',
+    duration: '3:02',
+    tag: 'PUNK'
   },
   {
-    id: '3',
-    title: 'DECAYING RESONANCE FLUX',
-    desc: 'Ambient CRT scanlines and fluorescent light patterns',
-    fileName: '0eb5bbb4779143a6a87e9958421ba6bc.mov',
-    duration: '4:12',
+    id: 'faith',
+    title: 'Faith',
+    artist: 'George Michael',
+    desc: 'Classic acoustic rock and roll leather jacket vibe',
+    fileName: 'Faith_by_George_Michael.mov',
+    duration: '3:12',
+    tag: 'CLASSIC'
+  },
+  {
+    id: 'hi_dee_ho',
+    title: 'Hi Dee Ho',
+    artist: '',
+    desc: 'Big band vintage swing and microphone coils',
+    fileName: 'Hi_Dee_Ho.mov',
+    duration: '3:45',
+    tag: 'VINTAGE'
+  },
+  {
+    id: 'bouncing_around',
+    title: 'Bouncing Around The Room',
+    artist: 'Phish',
+    desc: 'Live looping jam and ambient dithered crowd echo',
+    fileName: 'Bouncing_Around_The_Room_by_Phish.mp4',
+    duration: '3:50',
     tag: 'LIVE'
   },
   {
-    id: '4',
-    title: 'ORBITAL STATIC DRIFT',
-    desc: 'Handheld tracking shot of cathode ray monitors',
-    fileName: '1f3ae0ba040248be93daaa2c71c12c28.mov',
-    duration: '2:55',
-    tag: 'DITHER'
-  },
-  {
-    id: '5',
-    title: 'COGNITIVE NOISE COUPLING',
-    desc: 'Purple dithered feedback loop dithered and re-filmed',
-    fileName: '283cebcdbfd448babf9dccd5e74bdfda.mov',
-    duration: '6:12',
-    tag: 'VISUAL'
-  },
-  {
-    id: '6',
-    title: 'PHOSPHOR TAPE REEL A',
-    desc: 'Shouting into tin cups, microtonal synth distortion',
-    fileName: '2fbbc3569943457fbb96d394fd77b5c5.mov',
-    duration: '3:18',
-    tag: 'VOX'
-  },
-  {
-    id: '7',
-    title: 'STARMAKER SEQUENCE V',
-    desc: 'Singing with heavy dithered space echo',
-    fileName: 'starmaker_3096224821203124.mp4',
-    duration: '2:30',
-    tag: 'VOX'
-  },
-  {
-    id: '8',
-    title: 'DYNAMIC VOID VOX',
-    desc: 'Screaming through analog low-pass filters',
-    fileName: 'starmaker_3096224821253725.mp4',
-    duration: '3:15',
-    tag: 'GLITCH'
-  },
-  {
-    id: '9',
-    title: 'VINTAGE DEBRIS FINALE',
-    desc: 'Deep sub frequencies and fluorescent noise coupling',
-    fileName: 'v15044gf0000cvgnad7og65oo0kocv60.mp4',
-    duration: '1:45',
-    tag: 'NOISE'
-  },
-  {
-    id: '10',
-    title: 'MICRO Beats & COILS',
-    desc: 'Four-step dither dithered generator testing speed shifts',
-    fileName: 'v15044gf0000cvgq3j7og65rq2s9ncs0.mp4',
-    duration: '3:05',
+    id: 'too_many_dicks',
+    title: 'Too Many Dicks On The Dancefloor',
+    artist: 'Flight of the Conchords',
+    desc: 'Comedic electronic synth hum and beats',
+    fileName: 'Too_Many_Dicks_On_The_Dancefloor_by_Flight_of_the_Conchords.mp4',
+    duration: '2:40',
     tag: 'BEATS'
   },
   {
-    id: '11',
-    title: 'FLUORESCENT OSCILLATOR',
-    desc: 'Tones under heavy room hum and electrical hum',
-    fileName: 'v15044gf0000cvskdknog65sujcql5tg.mp4',
-    duration: '2:20',
-    tag: 'COILS'
+    id: 'whoomp',
+    title: 'Whoomp There It Is',
+    artist: 'Tag Team',
+    desc: 'Unmatched 90s party anthem and analog bass waves',
+    fileName: 'Whoomp_There_It_Is_by_Tag_Team.mov',
+    duration: '4:01',
+    tag: 'VOX'
   },
   {
-    id: '12',
-    title: 'REVERB PORTRAIT FEED',
-    desc: 'Corrupted MP4 frame dither sequencing',
-    fileName: 'v15044gf0000d0eddb7og65gstnum4n0.mp4',
-    duration: '4:02',
-    tag: 'VISUAL'
+    id: 'medical_love_song',
+    title: 'The Medical Love Song',
+    artist: 'Monty Python',
+    desc: 'Classic British musical satire and dither coils',
+    fileName: 'The_Medical_Love_Song_by_Monty_Python.mp4',
+    duration: '3:10',
+    tag: 'SATIRE'
+  },
+  {
+    id: 'smell_yo_dick',
+    title: 'Smell Yo Dick',
+    artist: 'Risquay',
+    desc: 'Smooth late night R&B tape distortion',
+    fileName: 'Smell_Yo_Dick_by_Risquay.mov',
+    duration: '3:30',
+    tag: 'R&B'
+  },
+  {
+    id: 'walk_it_out',
+    title: 'Walk It Out',
+    artist: 'DJ Unk',
+    desc: 'Hypnotic Southern hip-hop step sync',
+    fileName: 'Walk_It_Out_by_DJ_Unk.mov',
+    duration: '3:15',
+    tag: 'DANCE'
+  },
+  {
+    id: '88_lines',
+    title: '88 Lines About 44 Women',
+    artist: 'The Nails',
+    desc: 'Synthesizer wave and spoken word lyric tape',
+    fileName: '88_Lines_About_44_Women_by_The_Nails.mov',
+    duration: '4:20',
+    tag: 'WAVE'
+  },
+  {
+    id: 'america_fuck_this',
+    title: 'America Fuck This',
+    artist: '',
+    desc: 'Satirical political retro mashup',
+    fileName: 'America_Fuck_This.mov',
+    duration: '2:50',
+    tag: 'SATIRE'
+  },
+  {
+    id: 'ballroom_blitz',
+    title: 'Ballroom Blitz',
+    artist: '',
+    desc: 'Glam rock high energy rhythm coil',
+    fileName: 'Ballroom_Blitz.mov',
+    duration: '3:40',
+    tag: 'CLASSIC'
+  },
+  {
+    id: 'big_me',
+    title: 'Big Me',
+    artist: 'The Foo Fighters',
+    desc: 'Melodic 95 alternative rock classic',
+    fileName: 'Big_Me_by_The_Foo_Fighters.mov',
+    duration: '2:15',
+    tag: 'CLASSIC'
+  },
+  {
+    id: 'funky_crime',
+    title: 'Funky Crime',
+    artist: 'The Red Hot Chili Peppers',
+    desc: 'Early slap bass funk dithered video tape',
+    fileName: 'Funky_Crime_by_The_Red_Hot_Chili_Peppers.mp4',
+    duration: '2:58',
+    tag: 'FUNK'
+  },
+  {
+    id: 'gettin_jiggy',
+    title: 'Gettin Jiggy Wit It',
+    artist: 'Will Smith',
+    desc: 'Late 90s gold plated party tape',
+    fileName: 'Gettin_Jiggy_Wit_It_by_Will_Smith.mov',
+    duration: '3:48',
+    tag: 'BEATS'
+  },
+  {
+    id: 'here_it_goes',
+    title: 'Here It Goes Again',
+    artist: 'OK Go',
+    desc: 'Treadmill sync choreography classic',
+    fileName: 'Here_It_Goes_Again_by_OK_Go.mov',
+    duration: '3:00',
+    tag: 'DANCE'
+  },
+  {
+    id: 'loser',
+    title: 'Loser',
+    artist: 'Beck',
+    desc: 'Dadaist alternative rock landmark tape',
+    fileName: 'Loser_by_Beck.mov',
+    duration: '3:55',
+    tag: 'CLASSIC'
+  },
+  {
+    id: 'once_in_a_lifetime',
+    title: 'Once In A Lifetime',
+    artist: 'The Talking Heads',
+    desc: 'Slightly decaying art pop live stream',
+    fileName: 'Once_In_A_Lifetime_by_The_Talking_Heads.mp4',
+    duration: '4:19',
+    tag: 'LIVE'
+  },
+  {
+    id: 'one_night_in_bangkok',
+    title: 'One Night In Bangkok',
+    artist: 'Murray Head',
+    desc: '80s theatrical pop chess master dither',
+    fileName: 'One_Night_In_Bangkok_by_Murray_Head.mp4',
+    duration: '3:54',
+    tag: 'CLASSIC'
+  },
+  {
+    id: 'roll_out',
+    title: 'Roll Out',
+    artist: 'Ludacris',
+    desc: 'Heavy brass hip-hop dither loop',
+    fileName: 'Roll_Out_by_Ludacris.mov',
+    duration: '4:01',
+    tag: 'BEATS'
+  },
+  {
+    id: 'shakedown_street',
+    title: 'Shakedown Street',
+    artist: 'The Grateful Dead',
+    desc: 'Disco-inflected jam band groove reel',
+    fileName: 'Shakedown_Street_by_The_Grateful_Dead.mp4',
+    duration: '4:55',
+    tag: 'LIVE'
+  },
+  {
+    id: 'truckin',
+    title: 'Truckin',
+    artist: 'The Grateful Dead',
+    desc: 'Long roadtrip classic country jam spool',
+    fileName: 'Truckin_by_The_Grateful_Dead.mov',
+    duration: '5:05',
+    tag: 'LIVE'
   }
 ];
+
+function formatVideoMetadata(fileName: string) {
+  // Remove extension
+  let base = fileName.replace(/\.(mov|mp4|avi|mpeg|mpg|wmv)$/i, '');
+  // Replace underscores with spaces
+  base = base.replace(/_/g, ' ').trim();
+  
+  // Find " by " (case-insensitive)
+  const byMatch = base.match(/\s+by\s+/i);
+  if (byMatch && byMatch.index !== undefined) {
+    const title = base.substring(0, byMatch.index).trim();
+    const artist = base.substring(byMatch.index + byMatch[0].length).trim();
+    return { title, artist };
+  }
+  return { title: base, artist: '' };
+}
 
 interface ShittyKaraokeProps {
   playChime: (type: 'sine' | 'triangle' | 'sawtooth' | 'square', pitchModifier: number) => void;
@@ -125,9 +276,9 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // If any video fileName does not contain '.' (old legacy mocks did not have extensions like .mov or .mp4), ignore cache
-          const hasOldMocks = parsed.some(v => !v.fileName.includes('.') && !v.fileName.startsWith('http'));
-          if (!hasOldMocks) {
+          // Verify it contains our default first video
+          const hasFirst = parsed.some(v => v.fileName === 'Whatta_Man_by_Salt_n_Pepa.mov');
+          if (hasFirst) {
             return parsed;
           }
         }
@@ -149,9 +300,17 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
 
   const [isEditingDeck, setIsEditingDeck] = useState<boolean>(false);
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
+
+  // Hover state for lag-free thumbnails
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  // Bandwidth & quality resolution toggle
+  const [resolution, setResolution] = useState<'480p' | '720p' | '1080p'>('720p');
 
   // Edit fields
   const [editTitle, setEditTitle] = useState('');
+  const [editArtist, setEditArtist] = useState('');
   const [editFileName, setEditFileName] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editDuration, setEditDuration] = useState('');
@@ -169,6 +328,97 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
     }
     return `https://storage.googleapis.com/${bucketName}/${fileName}`;
   };
+
+  // Dynamic Bucket XML Scanning on mount & bucketName change
+  useEffect(() => {
+    let active = true;
+    const scanBucket = async () => {
+      setIsScanning(true);
+      addLog(`CONNECT_GCS: Scanning bucket [${bucketName}] for video clips...`);
+      try {
+        const response = await fetch(`https://storage.googleapis.com/${bucketName}`);
+        if (!response.ok) {
+          throw new Error(`HTTP status ${response.status}`);
+        }
+        const xmlText = await response.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+        const contentsNodes = xmlDoc.getElementsByTagName('Contents');
+        
+        const foundKeys: string[] = [];
+        for (let i = 0; i < contentsNodes.length; i++) {
+          const keyNode = contentsNodes[i].getElementsByTagName('Key')[0];
+          if (keyNode && keyNode.textContent) {
+            const key = keyNode.textContent;
+            if (key.match(/\.(mov|mp4|avi|mpeg|mpg|wmv)$/i)) {
+              foundKeys.push(key);
+            }
+          }
+        }
+
+        if (!active) return;
+
+        if (foundKeys.length === 0) {
+          addLog(`GCS_SCAN: No video clips detected in gs://${bucketName}`);
+          setIsScanning(false);
+          return;
+        }
+
+        addLog(`GCS_SCAN: Detected ${foundKeys.length} files in bucket. Recalibrating VHS rack...`);
+
+        // Sort: topSongsOrder strictly first in exact order, then other keys
+        const sortedKeys = [...topSongsOrder.filter(tk => foundKeys.includes(tk))];
+        const otherKeys = foundKeys.filter(k => !topSongsOrder.includes(k));
+        const combinedKeys = [...sortedKeys, ...otherKeys];
+
+        const mappedVideos = combinedKeys.map((key, idx) => {
+          // Check if it's already in our current state list to preserve descriptions/tags
+          const existing = videos.find(v => v.fileName === key);
+          const { title, artist } = formatVideoMetadata(key);
+          
+          let tag = 'VOX';
+          if (key.includes('Glitch') || key.includes('glitch')) tag = 'GLITCH';
+          else if (key.includes('Phish') || key.includes('Live')) tag = 'LIVE';
+          else if (key.includes('Pepa') || key === 'Whatta_Man_by_Salt_n_Pepa.mov') tag = 'FAV';
+          else if (key.includes('Conchords') || key.includes('Unk')) tag = 'BEATS';
+          else if (key.includes('Dresden')) tag = 'PUNK';
+
+          return {
+            id: existing?.id || `gcs-${idx}-${key.substring(0, 8)}`,
+            title: existing?.title || title,
+            artist: existing?.artist || artist,
+            desc: existing?.desc || (artist ? `Tape extracted with title: "${title}" by ${artist}.` : `GCS tape clip: "${title}".`),
+            fileName: key,
+            duration: existing?.duration || '3:30',
+            tag: existing?.tag || tag
+          };
+        });
+
+        setVideos(mappedVideos);
+        localStorage.setItem('astraltrash_karaoke_bucket_videos', JSON.stringify(mappedVideos));
+        
+        // Auto-select Whatta Man or the first video if selection is invalid
+        const stillExists = mappedVideos.find(v => v.fileName === selectedVideo.fileName);
+        if (!stillExists && mappedVideos.length > 0) {
+          setSelectedVideo(mappedVideos[0]);
+        }
+        addLog(`GCS_SCAN_SUCCESS: Loaded ${mappedVideos.length} cassette tapes into memory.`);
+      } catch (err: any) {
+        if (active) {
+          addLog(`GCS_SCAN_WARNING: Could not fetch public directory list (${err.message}). Using offline backup rack.`);
+        }
+      } finally {
+        if (active) {
+          setIsScanning(false);
+        }
+      }
+    };
+
+    scanBucket();
+    return () => {
+      active = false;
+    };
+  }, [bucketName]);
 
   // Sync state to selected video
   const activeUrl = getResolvedUrl(selectedVideo.fileName);
@@ -215,9 +465,10 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
   const startEditing = (video: BucketVideo) => {
     setEditingVideoId(video.id);
     setEditTitle(video.title);
+    setEditArtist(video.artist || '');
     setEditFileName(video.fileName);
     setEditDesc(video.desc);
-    setEditDuration(video.duration || '0:00');
+    setEditDuration(video.duration || '3:30');
     setEditTag(video.tag || 'VOX');
     playChime('triangle', 1.0);
   };
@@ -229,6 +480,7 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
         return {
           ...v,
           title: editTitle,
+          artist: editArtist,
           fileName: editFileName,
           desc: editDesc,
           duration: editDuration,
@@ -265,9 +517,10 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
     const nextId = String(Date.now());
     const newTape: BucketVideo = {
       id: nextId,
-      title: `COIL_RECORD_${videos.length + 1}`,
-      desc: 'raw microtonal recording',
-      fileName: '043cc61ba55647cf9255de096ddca3b0',
+      title: 'New Custom Recording',
+      artist: 'Self',
+      desc: 'Manual dither recording file path',
+      fileName: 'new_recording.mov',
       duration: '3:00',
       tag: 'VOX'
     };
@@ -322,17 +575,25 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
             A Clean Archive of raw audio and recording clips straight from Google Storage
           </p>
         </div>
-        <div className="bg-black/60 border border-[#FF6B00]/40 px-3 py-1 font-mono text-[10px] text-[#FF6B00] uppercase tracking-widest">
-          VCR MODEM: ACTIVE
+        <div className="flex items-center gap-3">
+          {isScanning && (
+            <div className="flex items-center gap-1.5 font-mono text-[10px] text-[#39FF14]">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <span>GCS LIST SCANNING...</span>
+            </div>
+          )}
+          <div className="bg-black/60 border border-[#FF6B00]/40 px-3 py-1 font-mono text-[10px] text-[#FF6B00] uppercase tracking-widest">
+            VCR MODEM: ACTIVE
+          </div>
         </div>
       </div>
 
       {/* Grid: Player Area (Left) & Current Case Details (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         
-        {/* TV CRT Screen Box */}
-        <div className="lg:col-span-8 space-y-4">
-          <div className="relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(255,107,0,0.15)] p-2 rounded-2xl overflow-hidden aspect-[16/10] flex flex-col justify-between">
+        {/* TV CRT Screen Box (Vertical 9:16 aspect ratio) */}
+        <div className="md:col-span-5 lg:col-span-4 space-y-4">
+          <div className="relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(255,107,0,0.15)] p-2 rounded-2xl overflow-hidden aspect-[9/16] w-full max-w-[340px] mx-auto flex flex-col justify-between">
             {/* Ambient Scanline Filter */}
             <div className="absolute inset-0 pointer-events-none z-10 bg-scanlines opacity-10" />
             
@@ -340,85 +601,105 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
             <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 p-2 border-b border-zinc-950 bg-[#050505]/80 z-20">
               <div className="flex items-center gap-1.5">
                 <span className="text-[#FF6B00] animate-pulse">● PLAY_MONITOR</span>
-                <span className="text-zinc-600">|</span>
-                <span className="text-zinc-300">GCS_SOURCE: {bucketName}</span>
               </div>
               <div className="text-right text-[#39FF14]">
                 {isPlaying ? '📼 PLAYING' : '📼 STANDBY'}
               </div>
             </div>
 
-            {/* Main Video Element */}
+            {/* Main Video Element (Fills vertical screen perfectly with object-cover) */}
             <div className="flex-grow bg-black relative flex items-center justify-center overflow-hidden">
               <video
                 ref={videoRef}
                 src={activeUrl}
                 controls
-                className="w-full h-full object-contain z-10"
+                width={resolution === '480p' ? 480 : resolution === '720p' ? 720 : undefined}
+                className="w-full h-full object-cover z-10"
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
               
               {!isPlaying && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm pointer-events-none z-0">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-none z-0 p-4 text-center">
                   <div className="font-mono text-[11px] text-[#FF6B00] tracking-widest uppercase mb-1">
                     [ SLOTTED: {selectedVideo.title} ]
                   </div>
-                  <div className="text-[10px] text-zinc-500 font-mono">
+                  <div className="text-[9px] text-zinc-500 font-mono">
                     Press Play below or inside screen to spin tape
                   </div>
                 </div>
               )}
             </div>
 
-            {/* TV Bezel Control Strip */}
-            <div className="flex items-center justify-between border-t border-zinc-950 p-2.5 bg-[#030303] z-20">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handlePlayPause}
-                  className={`px-4 py-1 text-xs font-mono font-bold border transition-all flex items-center gap-1.5 ${
-                    isPlaying 
-                      ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
-                      : 'bg-black text-[#39FF14] border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
-                  }`}
-                >
-                  {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-                  <span>{isPlaying ? 'STOP TAPE' : 'SPIN TAPE'}</span>
-                </button>
-              </div>
-
-              {/* External Fallbacks (EXTREMELY IMPORTANT FOR BROWSERS WITHOUT QUICKTIME CODECS) */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    playChime('triangle', 1.0);
-                    window.open(activeUrl, '_blank');
-                  }}
-                  className="px-2.5 py-1 bg-black border border-zinc-850 hover:border-zinc-600 text-zinc-300 hover:text-white font-mono text-[10px] uppercase transition-all flex items-center gap-1"
-                >
-                  🔗 Open Raw Video
-                </button>
-                <a
-                  href={activeUrl}
-                  download
-                  className="px-2.5 py-1 bg-black border border-zinc-850 hover:border-zinc-600 text-zinc-300 hover:text-white font-mono text-[10px] uppercase transition-all flex items-center gap-1"
-                >
-                  📥 Download Video
-                </a>
-              </div>
+            {/* TV Bezel Control Strip (Clean VCR mechanical key) */}
+            <div className="flex items-center justify-center border-t border-zinc-950 p-2.5 bg-[#030303] z-20">
+              <button
+                onClick={handlePlayPause}
+                className={`w-full py-2 text-xs font-mono font-bold border transition-all flex items-center justify-center gap-2 ${
+                  isPlaying 
+                    ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
+                    : 'bg-black text-[#39FF14] border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
+                }`}
+              >
+                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                <span>{isPlaying ? 'STOP TAPE' : 'SPIN TAPE'}</span>
+              </button>
             </div>
           </div>
 
-          <div className="bg-zinc-950 border border-zinc-900 p-3.5 rounded-lg space-y-1">
-            <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-widest font-semibold">💡 Browser Compatibility Notice</h4>
-            <p className="text-[10px] text-zinc-500 leading-normal">
-              Some karaoke videos are exported in standard Apple QuickTime format. If the video player screen above displays a black screen or shows a decoder error, simply click the <span className="text-[#FF6B00]">"Open Raw Video"</span> button to launch the file directly in a browser tab, or <span className="text-[#FF6B00]">"Download Video"</span> to play it with VLC.
+          {/* VCR Stream Quality Resolution Dial (Optimizes GPU decoding overhead) */}
+          <div className="bg-zinc-950 border border-zinc-900 rounded-lg p-3 max-w-[340px] mx-auto w-full space-y-2">
+            <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
+              <span>📺 CRT Resolution Engine</span>
+              <span className="text-[#39FF14] font-bold">MODE: {resolution}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(['480p', '720p', '1080p'] as const).map((res) => (
+                <button
+                  key={res}
+                  onClick={() => {
+                    setResolution(res);
+                    playChime('sine', res === '480p' ? 0.85 : res === '720p' ? 1.05 : 1.25);
+                    addLog(`RESOLVE_SHIFT: Swapped decoder resolution ceiling to ${res}`);
+                  }}
+                  className={`py-1.5 px-1.5 border font-mono text-[9px] font-bold rounded transition-all text-center ${
+                    resolution === res
+                      ? 'bg-[#FF6B00] text-black border-[#FF6B00]'
+                      : 'bg-black text-zinc-400 border-zinc-850 hover:border-zinc-700 hover:text-white'
+                  }`}
+                >
+                  <span>{res === '480p' ? '480p (FAST)' : res === '720p' ? '720p (VHS)' : '1080p (HQ)'}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[8px] text-zinc-500 font-mono leading-normal">
+              * Caps browser hardware decode canvas size to minimize buffer lag & stuttering on slower computers.
             </p>
+          </div>
+
+          {/* External Action Row (Direct Fallbacks - perfectly centered below player) */}
+          <div className="flex gap-2 justify-center max-w-[340px] mx-auto w-full">
+            <button
+              onClick={() => {
+                playChime('triangle', 1.0);
+                window.open(activeUrl, '_blank');
+              }}
+              className="flex-1 py-2 bg-black border border-zinc-850 hover:border-zinc-600 text-zinc-300 hover:text-white font-mono text-[10px] uppercase transition-all flex items-center justify-center gap-1.5 rounded-lg"
+            >
+              <span>🔗 Open in New Tab</span>
+            </button>
+            <a
+              href={activeUrl}
+              download
+              className="flex-1 py-2 bg-black border border-zinc-850 hover:border-zinc-600 text-zinc-300 hover:text-white font-mono text-[10px] uppercase transition-all flex items-center justify-center gap-1.5 rounded-lg text-center"
+            >
+              <span>📥 Download File</span>
+            </a>
           </div>
         </div>
 
-        {/* Right Sidebar: Active Cassette Sleeve & Metadata */}
-        <div className="lg:col-span-4 flex flex-col justify-between">
+        {/* Right Sidebar: Active Cassette Sleeve, Metadata & Options */}
+        <div className="md:col-span-7 lg:col-span-8 flex flex-col justify-between space-y-6">
           <div className="border border-zinc-900 bg-[#050505] p-5 rounded-xl space-y-4">
             <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
               <span className="text-[10px] font-mono text-zinc-500 uppercase">ACTIVE_CASSETTE_SLEEVE</span>
@@ -429,8 +710,13 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
 
             <div className="space-y-3">
               <div className="font-mono text-[10px] text-zinc-500 uppercase">TITLE sticker label:</div>
-              <h3 className="text-lg font-black text-white uppercase tracking-wider font-sans leading-tight border-b border-dashed border-zinc-900 pb-2">
-                {selectedVideo.title}
+              <h3 className="text-lg font-black text-white uppercase tracking-wider font-sans leading-tight border-b border-dashed border-zinc-900 pb-2 flex flex-col sm:flex-row sm:items-baseline gap-1">
+                <span>{selectedVideo.title}</span>
+                {selectedVideo.artist && (
+                  <span className="text-xs font-mono font-normal text-zinc-400">
+                    by {selectedVideo.artist}
+                  </span>
+                )}
               </h3>
 
               <div className="font-mono text-[10px] text-zinc-500 uppercase">FILE name:</div>
@@ -445,67 +731,70 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
 
               <div className="flex justify-between items-center pt-2 border-t border-zinc-950 font-mono text-xs">
                 <span className="text-zinc-600">EST_DURATION:</span>
-                <span className="text-zinc-300 font-bold">{selectedVideo.duration || '0:00'}</span>
+                <span className="text-zinc-300 font-bold">{selectedVideo.duration || '3:30'}</span>
               </div>
             </div>
           </div>
 
-          {/* Quick instructions block */}
-          <div className="mt-4 border border-zinc-900 bg-black/40 p-4 rounded-xl">
-            <h4 className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest mb-1.5 font-bold">📼 How to spin video cassettes</h4>
-            <ol className="text-[10px] text-zinc-500 font-mono space-y-1 list-decimal list-inside">
-              <li>Select any magnetic VHS cassette from the shelf below.</li>
-              <li>Click <span className="text-[#39FF14]">LOAD CASSETTE</span> to slot it in.</li>
-              <li>The tape will load and play inside the monitor.</li>
-              <li>Click configure below to rename or re-label your videos.</li>
-            </ol>
+          {/* Guidelines & Compatibility Side-by-Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Quick instructions block */}
+            <div className="border border-zinc-900 bg-black/40 p-4 rounded-xl">
+              <h4 className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest mb-1.5 font-bold">📼 How to spin video cassettes</h4>
+              <ol className="text-[10px] text-zinc-500 font-mono space-y-1 list-decimal list-inside">
+                <li>Select any magnetic VHS cassette from the shelf below.</li>
+                <li>Click <span className="text-[#39FF14]">LOAD CASSETTE</span> to slot it in.</li>
+                <li>The tape will load and play inside the monitor.</li>
+                <li>Click configure below to rename or re-label your videos.</li>
+              </ol>
+            </div>
+
+            {/* Browser Compatibility Notice */}
+            <div className="bg-zinc-950 border border-zinc-900 p-4 rounded-xl space-y-1">
+              <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-widest font-semibold">💡 Browser Compatibility Notice</h4>
+              <p className="text-[10px] text-zinc-500 leading-normal font-mono">
+                Some karaoke videos use advanced codecs. If the player displays a blank screen or audio-only, click the <span className="text-[#FF6B00]">"Open in New Tab"</span> button to view the clip instantly, or download it to play locally.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* VHS TAPE SHELF */}
-      <div className="space-y-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-zinc-900 pb-3 gap-3">
+      {/* Cassette Tape Storage Shelf */}
+      <div className="border border-zinc-900 bg-black/25 p-6 rounded-2xl space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-900 pb-3 gap-2">
           <div>
-            <h3 className="text-lg font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              📼 THE MAGNETIC VIDEO RACK // SHELF
-            </h3>
-            <p className="text-[10px] text-zinc-500 font-mono uppercase mt-1">
-              Hand-written magnetic cassette tapes. Drag, reorder, or edit sticker details on the fly.
+            <h3 className="text-base font-bold font-mono text-white uppercase tracking-wider">📦 MAGNETIC CASSETTE STORAGE SHELF</h3>
+            <p className="text-[10px] text-zinc-500 font-mono uppercase">
+              Current storage shelf capacity: {videos.length} cassettes loaded
             </p>
           </div>
-
           <div className="flex gap-2">
             <button
               onClick={() => {
                 setIsEditingDeck(!isEditingDeck);
-                setEditingVideoId(null);
-                playChime('triangle', 1.0);
+                playChime('sine', 1.0);
               }}
-              className={`px-3 py-1 text-xs font-mono border transition-all uppercase tracking-wider ${
-                isEditingDeck
-                  ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]'
-                  : 'bg-black text-[#FF6B00] border-[#FF6B00]/40 hover:border-[#FF6B00] hover:bg-[#FF6B00]/10'
-              }`}
+              className="text-xs font-mono font-bold px-3 py-1 bg-black border border-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white transition-all flex items-center gap-1.5 rounded-md"
             >
-              ⚙ {isEditingDeck ? 'CLOSE LABELLER' : 'LABEL CONSOLE'}
+              <Sliders className="w-3.5 h-3.5" />
+              <span>{isEditingDeck ? '🔒 CLOSE DECK MANAGER' : '⚙️ DECK CONFIG MANAGER'}</span>
             </button>
-
             <button
               onClick={createVideo}
-              className="px-3 py-1 text-xs font-mono border bg-black text-[#39FF14] border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10 uppercase tracking-wider flex items-center gap-1"
+              className="text-xs font-mono font-bold px-3 py-1 bg-[#39FF14]/10 border border-[#39FF14]/40 hover:border-[#39FF14] text-[#39FF14] transition-all flex items-center gap-1.5 rounded-md"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>MANIFEST TAPE</span>
+              <span>RECORD_NEW_TAPE</span>
             </button>
           </div>
         </div>
 
-        {/* LABELLER MODAL PANEL */}
+        {/* Deck Config Editor Panel */}
         {isEditingDeck && (
-          <div className="border border-dashed border-[#FF6B00]/60 bg-black/95 p-5 rounded-xl font-mono space-y-4 text-xs animate-glow">
-            <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
-              <span className="text-xs font-bold text-[#FF6B00] uppercase tracking-widest">⚡ VCR CABINET MODEM / CONSOLE</span>
+          <div className="bg-[#050505] border border-zinc-900 p-4 rounded-xl space-y-4 animate-fade-in">
+            <div className="flex justify-between items-center border-b border-zinc-950 pb-2">
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">⚙️ VHS Deck Setup Controls</span>
               <button
                 onClick={handleReset}
                 className="text-[10px] text-zinc-500 hover:text-red-400 border border-zinc-900 hover:border-red-500/30 px-2 py-0.5 bg-black transition-all uppercase"
@@ -529,10 +818,10 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
                   />
                   <button
                     onClick={() => {
-                      addLog(`BUCKET_SCAN: Connected to bucket [${bucketName}]`);
+                      addLog(`BUCKET_SCAN: Re-connecting to GCS bucket gs://${bucketName}`);
                       playChime('sine', 1.0);
                     }}
-                    className="bg-zinc-900 border border-zinc-800 hover:border-zinc-750 text-white px-3 py-1.5"
+                    className="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-white px-3 py-1.5 text-xs font-mono font-bold"
                   >
                     SYNC
                   </button>
@@ -562,8 +851,8 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
-                  <div className="md:col-span-4">
-                    <label className="text-[9px] text-zinc-500 block mb-1">SONG TITLE / STICKER LABEL</label>
+                  <div className="md:col-span-3">
+                    <label className="text-[9px] text-zinc-500 block mb-1">SONG TITLE / LABEL</label>
                     <input
                       type="text"
                       value={editTitle}
@@ -572,8 +861,18 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
                     />
                   </div>
 
-                  <div className="md:col-span-5">
-                    <label className="text-[9px] text-zinc-500 block mb-1">GCS FILENAME / OBJECT PATH / URL</label>
+                  <div className="md:col-span-3">
+                    <label className="text-[9px] text-zinc-500 block mb-1">ORIGINAL ARTIST</label>
+                    <input
+                      type="text"
+                      value={editArtist}
+                      onChange={(e) => setEditArtist(e.target.value)}
+                      className="w-full bg-zinc-950 border border-zinc-850 p-2 text-white text-xs rounded outline-none focus:border-[#FF2BD6]"
+                    />
+                  </div>
+
+                  <div className="md:col-span-4">
+                    <label className="text-[9px] text-zinc-500 block mb-1">GCS FILENAME / OBJECT PATH</label>
                     <input
                       type="text"
                       value={editFileName}
@@ -582,7 +881,7 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
                     />
                   </div>
 
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-1">
                     <label className="text-[9px] text-zinc-500 block mb-1">DURATION</label>
                     <input
                       type="text"
@@ -616,13 +915,13 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
                 <div className="flex justify-end gap-2 pt-2 border-t border-zinc-950">
                   <button
                     onClick={() => setEditingVideoId(null)}
-                    className="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white px-3 py-1 rounded"
+                    className="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white px-3 py-1 rounded text-xs"
                   >
                     CANCEL
                   </button>
                   <button
                     onClick={saveEdit}
-                    className="bg-[#FF2BD6] hover:bg-[#FF2BD6]/80 text-black font-bold px-4 py-1 rounded"
+                    className="bg-[#FF2BD6] hover:bg-[#FF2BD6]/80 text-black font-bold px-4 py-1 rounded text-xs"
                   >
                     SAVE CHANGES
                   </button>
@@ -636,9 +935,13 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
           {videos.map((item, index) => {
             const isCurrent = selectedVideo.id === item.id;
+            const isHovered = hoveredId === item.id;
+            
             return (
               <div
                 key={item.id}
+                onMouseEnter={() => setHoveredId(item.id)}
+                onMouseLeave={() => setHoveredId(null)}
                 className={`group border relative transition-all rounded-lg overflow-hidden flex flex-col justify-between ${
                   isCurrent
                     ? 'border-[#39FF14] bg-[#39FF14]/5 shadow-[0_0_15px_rgba(57,255,20,0.12)]'
@@ -656,46 +959,56 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
                     </span>
                   </div>
 
-                  {/* Real Video Thumbnail Art */}
+                  {/* Real Video Thumbnail Art with Lazy-Preview */}
                   <div className="aspect-[16/10] bg-zinc-950 border border-zinc-900 rounded relative overflow-hidden flex items-center justify-center group-hover:border-zinc-700 transition-all">
-                    <video
-                      src={getResolvedUrl(item.fileName)}
-                      preload="metadata"
-                      playsInline
-                      muted
-                      loop
-                      className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity"
-                      onMouseEnter={(e) => {
-                        e.currentTarget.play().catch(() => {});
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.pause();
-                        e.currentTarget.currentTime = 0;
-                      }}
-                    />
+                    {isHovered ? (
+                      <video
+                        src={getResolvedUrl(item.fileName)}
+                        preload="auto"
+                        playsInline
+                        muted
+                        autoPlay
+                        loop
+                        className="absolute inset-0 w-full h-full object-cover opacity-100 transition-opacity duration-300"
+                      />
+                    ) : (
+                      // Performance Optimization: #t=1 requests a single poster frame, avoiding concurrent decode streams
+                      <video
+                        src={getResolvedUrl(item.fileName) + '#t=1'}
+                        preload="metadata"
+                        playsInline
+                        muted
+                        className="absolute inset-0 w-full h-full object-cover opacity-60 transition-opacity duration-300 pointer-events-none"
+                      />
+                    )}
                     
-                    {/* Tiny cassette tape reels on top corner for that retro mechanical dither flavor */}
-                    <div className="absolute top-1 left-1.5 flex gap-1 items-center bg-black/75 px-1 py-0.5 rounded border border-zinc-900 text-[6px] text-zinc-500 font-mono tracking-tighter">
+                    {/* Tiny cassette tape reels on top corner for that retro mechanical flavor */}
+                    <div className="absolute top-1 left-1.5 flex gap-1 items-center bg-black/75 px-1 py-0.5 rounded border border-zinc-900 text-[6px] text-zinc-500 font-mono tracking-tighter z-10">
                       <div className={`w-1.5 h-1.5 rounded-full border border-zinc-700 ${
-                        isCurrent && isPlaying ? 'animate-spin' : ''
+                        isHovered || (isCurrent && isPlaying) ? 'animate-spin' : ''
                       }`} style={{ animationDuration: '3s' }} />
                       <div className={`w-1.5 h-1.5 rounded-full border border-zinc-700 ${
-                        isCurrent && isPlaying ? 'animate-spin' : ''
+                        isHovered || (isCurrent && isPlaying) ? 'animate-spin' : ''
                       }`} style={{ animationDuration: '3s' }} />
-                      <span>REEL</span>
+                      <span>{isHovered ? 'PREVIEW' : 'REEL'}</span>
                     </div>
 
                     {/* Scanning CRT Grid Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent h-[150%] pointer-events-none opacity-25" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent h-[150%] pointer-events-none opacity-25 z-10" />
                   </div>
 
                   {/* Handwritten label sticker */}
-                  <div className="bg-zinc-100 border border-zinc-200 text-zinc-950 p-2 font-mono text-[11px] leading-tight select-none rotate-[-0.5deg] shadow-[1px_2px_4px_rgba(0,0,0,0.15)]">
-                    <div className="font-bold uppercase tracking-wider truncate mb-0.5">
+                  <div className="bg-zinc-100 border border-zinc-200 text-zinc-950 p-2 font-mono text-[11px] leading-tight select-none rotate-[-0.5deg] shadow-[1px_2px_4px_rgba(0,0,0,0.15)] h-[58px] flex flex-col justify-between">
+                    <div className="font-bold uppercase tracking-wider truncate" title={item.title}>
                       {item.title}
                     </div>
-                    <div className="text-[9px] text-zinc-500 flex justify-between">
-                      <span>STILL: {item.duration || '0:00'}</span>
+                    {item.artist && (
+                      <div className="text-[9px] text-zinc-600 truncate italic">
+                        by {item.artist}
+                      </div>
+                    )}
+                    <div className="text-[8px] text-zinc-500 flex justify-between border-t border-zinc-200/50 pt-0.5 mt-0.5">
+                      <span>TIME: {item.duration || '3:30'}</span>
                       <span className="opacity-60"># {index + 1}</span>
                     </div>
                   </div>
@@ -743,7 +1056,7 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
                           : 'border-zinc-900 hover:border-zinc-700 text-zinc-500 hover:text-zinc-300'
                       }`}
                     >
-                      ◀ MOVE LEFT
+                      ◀ MOVE
                     </button>
                     <button
                       disabled={index === videos.length - 1}
@@ -754,7 +1067,7 @@ export function ShittyKaraoke({ playChime }: ShittyKaraokeProps) {
                           : 'border-zinc-900 hover:border-zinc-700 text-zinc-500 hover:text-zinc-300'
                       }`}
                     >
-                      MOVE RIGHT ▶
+                      MOVE ▶
                     </button>
                   </div>
                 </div>
