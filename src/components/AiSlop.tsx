@@ -93,50 +93,103 @@ export default function AiSlop({
       setIsScanning(true);
       addLog(`RESOLVING_BUCKET: Fetching files from [gs://${bucketName}]...`);
       try {
-        const response = await fetch(`https://storage.googleapis.com/${bucketName}`);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const xmlText = await response.text();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-        const contentsNodes = xmlDoc.getElementsByTagName('Contents');
-        
-        const foundItems: BucketItem[] = [];
-        for (let i = 0; i < contentsNodes.length; i++) {
-          const keyNode = contentsNodes[i].getElementsByTagName('Key')[0];
-          const sizeNode = contentsNodes[i].getElementsByTagName('Size')[0];
-          
-          if (keyNode && keyNode.textContent) {
-            const key = keyNode.textContent;
-            const bytes = sizeNode && sizeNode.textContent ? parseInt(sizeNode.textContent) : 0;
-            const sizeString = bytes > 1024 * 1024 
-              ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-              : `${(bytes / 1024).toFixed(0)} KB`;
+        let foundItems: BucketItem[] = [];
+        let fetchedSuccess = false;
+
+        try {
+          // Try standard XML API first
+          const response = await fetch(`https://storage.googleapis.com/${bucketName}`);
+          if (response.ok) {
+            const xmlText = await response.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+            const contentsNodes = xmlDoc.getElementsByTagName('Contents');
             
-            let type: 'video' | 'image' | null = null;
-            let tag = 'RAW';
+            for (let i = 0; i < contentsNodes.length; i++) {
+              const keyNode = contentsNodes[i].getElementsByTagName('Key')[0];
+              const sizeNode = contentsNodes[i].getElementsByTagName('Size')[0];
+              
+              if (keyNode && keyNode.textContent) {
+                const key = keyNode.textContent;
+                const bytes = sizeNode && sizeNode.textContent ? parseInt(sizeNode.textContent) : 0;
+                const sizeString = bytes > 1024 * 1024 
+                  ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+                  : `${(bytes / 1024).toFixed(0)} KB`;
+                
+                let type: 'video' | 'image' | null = null;
+                let tag = 'RAW';
 
-            if (key.match(/\.(mov|mp4|avi|mpeg|mpg|wmv|webm)$/i)) {
-              type = 'video';
-              tag = 'SLOP_CLIP';
-            } else if (key.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)) {
-              type = 'image';
-              tag = 'SLOP_IMG';
+                if (key.match(/\.(mov|mp4|avi|mpeg|mpg|wmv|webm)$/i)) {
+                  type = 'video';
+                  tag = 'SLOP_CLIP';
+                } else if (key.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)) {
+                  type = 'image';
+                  tag = 'SLOP_IMG';
+                }
+
+                if (type) {
+                  const baseTitle = formatSlopTitle(key);
+                  foundItems.push({
+                    id: `slop-${i}-${key.substring(0, 6)}`,
+                    title: baseTitle,
+                    fileName: key,
+                    desc: `Artifact compiled under index: "${baseTitle}"`,
+                    size: sizeString,
+                    tag: tag,
+                    type: type
+                  });
+                }
+              }
             }
+            fetchedSuccess = true;
+          } else {
+            throw new Error(`HTTP XML status ${response.status}`);
+          }
+        } catch (xmlErr) {
+          addLog(`RESOLVING_BUCKET: XML connection blocked/CORS error. Switching to JSON API proxy fallback...`);
+          try {
+            const response = await fetch(`https://storage.googleapis.com/storage/v1/b/${bucketName}/o`);
+            if (response.ok) {
+              const data = await response.json();
+              const itemsList = data.items || [];
+              itemsList.forEach((item: any, idx: number) => {
+                const key = item.name;
+                if (!key) return;
+                const bytes = parseInt(item.size) || 0;
+                const sizeString = bytes > 1024 * 1024 
+                  ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+                  : `${(bytes / 1024).toFixed(0)} KB`;
+                
+                let type: 'video' | 'image' | null = null;
+                let tag = 'RAW';
 
-            if (type) {
-              const baseTitle = formatSlopTitle(key);
-              foundItems.push({
-                id: `slop-${i}-${key.substring(0, 6)}`,
-                title: baseTitle,
-                fileName: key,
-                desc: `Artifact compiled under index: "${baseTitle}"`,
-                size: sizeString,
-                tag: tag,
-                type: type
+                if (key.match(/\.(mov|mp4|avi|mpeg|mpg|wmv|webm)$/i)) {
+                  type = 'video';
+                  tag = 'SLOP_CLIP';
+                } else if (key.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)) {
+                  type = 'image';
+                  tag = 'SLOP_IMG';
+                }
+
+                if (type) {
+                  const baseTitle = formatSlopTitle(key);
+                  foundItems.push({
+                    id: `slop-${idx}-${key.substring(0, 6)}`,
+                    title: baseTitle,
+                    fileName: key,
+                    desc: `Artifact compiled under index: "${baseTitle}"`,
+                    size: sizeString,
+                    tag: tag,
+                    type: type
+                  });
+                }
               });
+              fetchedSuccess = true;
+            } else {
+              throw new Error(`HTTP JSON status ${response.status}`);
             }
+          } catch (jsonErr: any) {
+            throw new Error(`Both XML & JSON API listing fell back: ${jsonErr.message}`);
           }
         }
 

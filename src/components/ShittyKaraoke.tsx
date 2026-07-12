@@ -346,23 +346,50 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
       setIsScanning(true);
       addLog(`CONNECT_GCS: Scanning bucket [${bucketName}] for video clips...`);
       try {
-        const response = await fetch(`https://storage.googleapis.com/${bucketName}`);
-        if (!response.ok) {
-          throw new Error(`HTTP status ${response.status}`);
-        }
-        const xmlText = await response.text();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-        const contentsNodes = xmlDoc.getElementsByTagName('Contents');
-        
-        const foundKeys: string[] = [];
-        for (let i = 0; i < contentsNodes.length; i++) {
-          const keyNode = contentsNodes[i].getElementsByTagName('Key')[0];
-          if (keyNode && keyNode.textContent) {
-            const key = keyNode.textContent;
-            if (key.match(/\.(mov|mp4|avi|mpeg|mpg|wmv)$/i)) {
-              foundKeys.push(key);
+        let foundKeys: string[] = [];
+        let fetchedSuccess = false;
+
+        try {
+          // Try standard XML API first
+          const response = await fetch(`https://storage.googleapis.com/${bucketName}`);
+          if (response.ok) {
+            const xmlText = await response.text();
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+            const contentsNodes = xmlDoc.getElementsByTagName('Contents');
+            
+            for (let i = 0; i < contentsNodes.length; i++) {
+              const keyNode = contentsNodes[i].getElementsByTagName('Key')[0];
+              if (keyNode && keyNode.textContent) {
+                const key = keyNode.textContent;
+                if (key.match(/\.(mov|mp4|avi|mpeg|mpg|wmv)$/i)) {
+                  foundKeys.push(key);
+                }
+              }
             }
+            fetchedSuccess = true;
+          } else {
+            throw new Error(`HTTP XML status ${response.status}`);
+          }
+        } catch (xmlErr) {
+          addLog(`CONNECT_GCS: XML connection blocked/CORS error. Switching to JSON API proxy fallback...`);
+          try {
+            const response = await fetch(`https://storage.googleapis.com/storage/v1/b/${bucketName}/o`);
+            if (response.ok) {
+              const data = await response.json();
+              const itemsList = data.items || [];
+              itemsList.forEach((item: any) => {
+                const key = item.name;
+                if (key && key.match(/\.(mov|mp4|avi|mpeg|mpg|wmv)$/i)) {
+                  foundKeys.push(key);
+                }
+              });
+              fetchedSuccess = true;
+            } else {
+              throw new Error(`HTTP JSON status ${response.status}`);
+            }
+          } catch (jsonErr: any) {
+            throw new Error(`Both XML & JSON API listing fell back: ${jsonErr.message}`);
           }
         }
 

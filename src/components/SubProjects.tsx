@@ -417,6 +417,35 @@ export function SubProjects({
             </div>
           </div>
 
+          {/* Card 5: Glitch Cookbook */}
+          <div className="border border-[#EFFF04]/30 bg-black/60 rounded-xl p-5 hover:border-[#EFFF04] transition-all group relative overflow-hidden flex flex-col justify-between shadow-[0_0_15px_rgba(239,255,4,0.02)]">
+            <div className="absolute top-0 right-0 w-16 h-16 bg-[#EFFF04]/5 rounded-bl-full pointer-events-none group-hover:bg-[#EFFF04]/10 transition-all" />
+            <div className="space-y-3">
+              <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500">
+                <span>DUMB_APP // NODE_05</span>
+                <span className="text-[#EFFF04] font-bold">☣️ VIEW ONLY</span>
+              </div>
+              <h4 className="text-md font-extrabold text-white uppercase group-hover:text-[#EFFF04] transition-all">
+                GLITCH COOKBOOK
+              </h4>
+              <p className="text-xs text-zinc-400 leading-relaxed font-mono">
+                An interactive recipe ledger containing real-time dither shaders, retro CRT filters, and scanline matrix styles to warp pixel pipelines.
+              </p>
+            </div>
+            <div className="pt-4 flex items-center justify-between border-t border-zinc-950 mt-4">
+              <span className="text-[9px] font-mono text-zinc-600 uppercase">GLITCH_V2</span>
+              <a
+                href="https://github.com/merrypranxter/Glitch-Cookbook"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] font-mono font-bold text-[#EFFF04] hover:underline flex items-center gap-0.5"
+              >
+                <span>OPEN RECIPES</span>
+                <Github className="w-3.5 h-3.5" />
+              </a>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
