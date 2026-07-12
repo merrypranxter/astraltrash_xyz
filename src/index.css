@@ -82,6 +82,12 @@ main{position:relative}
 .shader-iframe-clean {
   position: relative;
   z-index: 60 !important;
+  pointer-events: auto !important;
+}
+.clean-container {
+  position: relative;
+  z-index: 60 !important;
+  pointer-events: auto !important;
 }
 .frame{max-width:1100px;margin:0 auto;padding:0 20px}
 

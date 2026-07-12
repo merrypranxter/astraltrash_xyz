@@ -17,7 +17,13 @@ import {
   Atom, 
   Maximize2,
   ChevronRight,
-  Eye
+  Eye,
+  Clock,
+  Pause,
+  RotateCcw,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { ShaderThumbnail } from './components/ShaderThumbnail';
 
@@ -107,6 +113,12 @@ export default function App() {
   // Aspect ratio and Resolution controls for high-res shader rendering
   const [selectedAspect, setSelectedAspect] = useState<string>('1:1');
   const [selectedResolution, setSelectedResolution] = useState<string>('high');
+
+  // Shader Time Virtualization and Controls
+  const [currentShaderTime, setCurrentShaderTime] = useState<number>(0);
+  const [isShaderPlaying, setIsShaderPlaying] = useState<boolean>(true);
+  const [shaderStartTimeOffset, setShaderStartTimeOffset] = useState<number>(0);
+  const [customJumpInput, setCustomJumpInput] = useState<string>('');
 
   // AI Slop State
   const [rawPrompt, setRawPrompt] = useState<string>('glowing robotic garbage floating in low orbit');
@@ -703,6 +715,81 @@ export default function App() {
     }
   }, []);
 
+  // Shader virtual time message listener
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'SHADER_TIME_REPORT') {
+        setCurrentShaderTime(event.data.virtualTime);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // Reset time state when active shader changes
+  useEffect(() => {
+    if (selectedShader) {
+      setIsShaderPlaying(true);
+      setShaderStartTimeOffset(0);
+      setCurrentShaderTime(0);
+      setCustomJumpInput('');
+    }
+  }, [selectedShader?.id]);
+
+  const sendTimeCommand = (action: 'play' | 'pause' | 'set_offset', value?: number) => {
+    if (!selectedShader) return;
+    const iframe = document.getElementById(`gallery-iframe-${selectedShader.id}`) as HTMLIFrameElement;
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.postMessage({
+        type: 'SHADER_TIME_CONTROL',
+        action,
+        value
+      }, '*');
+    }
+  };
+
+  const toggleShaderPlayback = () => {
+    if (isShaderPlaying) {
+      setIsShaderPlaying(false);
+      sendTimeCommand('pause');
+      playChime('square', 0.8);
+    } else {
+      setIsShaderPlaying(true);
+      sendTimeCommand('play');
+      playChime('triangle', 1.2);
+    }
+  };
+
+  const adjustShaderTime = (seconds: number) => {
+    const nextTime = Math.max(0, currentShaderTime + seconds);
+    setShaderStartTimeOffset(nextTime);
+    setCurrentShaderTime(nextTime);
+    sendTimeCommand('set_offset', nextTime);
+    playChime('sine', 1.1);
+  };
+
+  const jumpToShaderTime = (seconds: number) => {
+    const nextTime = Math.max(0, seconds);
+    setShaderStartTimeOffset(nextTime);
+    setCurrentShaderTime(nextTime);
+    sendTimeCommand('set_offset', nextTime);
+    playChime('sine', 1.3);
+  };
+
+  const formatShaderTime = (timeInSeconds: number) => {
+    const hours = Math.floor(timeInSeconds / 3600);
+    const minutes = Math.floor((timeInSeconds % 3600) / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    const centiseconds = Math.floor((timeInSeconds % 1) * 100);
+
+    const pad = (num: number) => String(num).padStart(2, '0');
+
+    if (hours > 0) {
+      return `${hours}:${pad(minutes)}:${pad(seconds)}.${pad(centiseconds)}`;
+    }
+    return `${pad(minutes)}:${pad(seconds)}.${pad(centiseconds)}`;
+  };
+
   // Helper to inject a style tag to completely hide the interactive HUD box in files
   const injectHudHidingStyle = (htmlString: string) => {
     const styleTag = `
@@ -733,7 +820,7 @@ export default function App() {
   };
 
   // Helper to dynamically inject resolution multipliers and security constraints (anti-theft)
-  const injectRuntimeLabMods = (htmlString: string, resolutionKey: string) => {
+  const injectRuntimeLabMods = (htmlString: string, resolutionKey: string, initialOffset = 0, initialPaused = false) => {
     if (!htmlString) return '';
     
     const multipliers: { [key: string]: number } = {
@@ -763,6 +850,106 @@ export default function App() {
       </style>
       <script>
         (function() {
+          let virtualBase = ${initialOffset * 1000}; // in ms
+          let isPaused = ${initialPaused};
+          
+          let originalPerformanceNow;
+          try {
+            originalPerformanceNow = window.performance.now.bind(window.performance);
+          } catch(e) {
+            originalPerformanceNow = function() { return Date.now(); };
+          }
+          
+          let startTime = originalPerformanceNow();
+          let pauseTime = originalPerformanceNow();
+
+          // Report function
+          let lastReportedTime = -1;
+          function reportTime() {
+            try {
+              const vt = (isPaused ? (virtualBase + (pauseTime - startTime)) : (virtualBase + (originalPerformanceNow() - startTime))) / 1000;
+              if (Math.abs(vt - lastReportedTime) > 0.05) {
+                window.parent.postMessage({
+                  type: 'SHADER_TIME_REPORT',
+                  virtualTime: vt
+                }, '*');
+                lastReportedTime = vt;
+              }
+            } catch(e) {}
+          }
+
+          window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'SHADER_TIME_CONTROL') {
+              const payload = event.data;
+              if (payload.action === 'set_offset') {
+                virtualBase = payload.value * 1000;
+                startTime = originalPerformanceNow();
+                pauseTime = originalPerformanceNow();
+                reportTime();
+              } else if (payload.action === 'play') {
+                if (isPaused) {
+                  const pausedDuration = originalPerformanceNow() - pauseTime;
+                  startTime += pausedDuration;
+                  isPaused = false;
+                  reportTime();
+                }
+              } else if (payload.action === 'pause') {
+                if (!isPaused) {
+                  pauseTime = originalPerformanceNow();
+                  isPaused = true;
+                  reportTime();
+                }
+              }
+            }
+          });
+
+          // Override performance.now
+          try {
+            window.performance.now = function() {
+              if (isPaused) {
+                return virtualBase + (pauseTime - startTime);
+              } else {
+                return virtualBase + (originalPerformanceNow() - startTime);
+              }
+            };
+          } catch(e) {}
+
+          // Override Date.now
+          const originalDateNow = Date.now;
+          try {
+            Date.now = function() {
+              return originalDateNow() - originalPerformanceNow() + window.performance.now();
+            };
+          } catch(e) {}
+
+          // Override Date constructor
+          const OriginalDate = Date;
+          try {
+            window.Date = function(...args) {
+              if (args.length === 0) {
+                return new OriginalDate(Date.now());
+              }
+              return new OriginalDate(...args);
+            };
+            window.Date.prototype = OriginalDate.prototype;
+            window.Date.now = Date.now;
+            window.Date.UTC = OriginalDate.UTC;
+            window.Date.parse = OriginalDate.parse;
+          } catch(e) {}
+
+          // Intercept requestAnimationFrame
+          try {
+            const originalRAF = window.requestAnimationFrame.bind(window);
+            window.requestAnimationFrame = function(callback) {
+              return originalRAF(function(timestamp) {
+                reportTime();
+                callback(window.performance.now());
+              });
+            };
+          } catch(e) {}
+
+          setInterval(reportTime, 100);
+
           try {
             // Override browser Device Pixel Ratio inside sandbox for speed control
             Object.defineProperty(window, 'devicePixelRatio', { 
@@ -1900,7 +2087,7 @@ export default function App() {
                           
                           {galleryHtml ? (
                             <iframe 
-                              srcDoc={injectRuntimeLabMods(galleryHtml, selectedResolution)}
+                              srcDoc={injectRuntimeLabMods(galleryHtml, selectedResolution, shaderStartTimeOffset, !isShaderPlaying)}
                               className="w-full h-full border-0 block bg-black shader-iframe-clean"
                               title={selectedShader.title}
                               allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
@@ -1922,6 +2109,152 @@ export default function App() {
 
                           <div className="absolute bottom-2 right-2 bg-black/90 border border-gray-800 text-gray-500 font-mono text-[8px] px-2 py-0.5 backdrop-blur-md select-none pointer-events-none">
                             RES: {selectedResolution.toUpperCase()} // FILE: {selectedShader.fileName}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Interactive Time & Simulation Controller */}
+                      <div className="bg-zinc-950 border border-[#FF2BD6]/30 p-3 font-mono text-xs space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-900 pb-2">
+                          <div className="flex items-center gap-1.5 text-gray-400">
+                            <Clock className="w-4 h-4 text-[#00F0FF]" />
+                            <span className="uppercase text-[11px] tracking-wider">WebGL Simulation Clock</span>
+                          </div>
+                          
+                          {/* Digital Matrix Display */}
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded-none font-bold ${
+                              isShaderPlaying 
+                                ? 'bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/30' 
+                                : 'bg-red-500/10 text-red-500 border border-red-500/30'
+                            }`}>
+                              {isShaderPlaying ? 'ACTIVE // RENDERING' : 'PAUSED // HALTED'}
+                            </span>
+                            <span className="text-[#00F0FF] font-bold text-sm tracking-widest bg-black px-2 py-0.5 border border-zinc-900 shadow-inner">
+                              {formatShaderTime(currentShaderTime)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Interactive Timeline Scrub Slider */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-gray-500">
+                            <span>00:00.00</span>
+                            <span className="text-[#FF2BD6]">SCRUB TO TEMPORAL COORDINATE (MAX 20m)</span>
+                            <span>20:00.00</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="1200" 
+                            step="0.5"
+                            value={currentShaderTime}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              jumpToShaderTime(val);
+                            }}
+                            className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-900 h-1 rounded-none border border-zinc-850"
+                          />
+                        </div>
+
+                        {/* Controls Panel */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                          {/* Playback Buttons */}
+                          <div className="flex items-center gap-1">
+                            <button 
+                              onClick={() => adjustShaderTime(-30)}
+                              className="text-[10px] border border-zinc-800 hover:border-[#FF2BD6] px-2 py-1 text-gray-400 hover:text-white transition-all cursor-crosshair flex items-center gap-0.5"
+                              title="Rewind 30 seconds"
+                            >
+                              <ChevronsLeft className="w-3.5 h-3.5" />
+                              <span>-30s</span>
+                            </button>
+                            <button 
+                              onClick={() => adjustShaderTime(-10)}
+                              className="text-[10px] border border-zinc-800 hover:border-[#FF2BD6] px-2 py-1 text-gray-400 hover:text-white transition-all cursor-crosshair flex items-center gap-0.5"
+                              title="Rewind 10 seconds"
+                            >
+                              <ChevronLeft className="w-3.5 h-3.5" />
+                              <span>-10s</span>
+                            </button>
+                            
+                            <button 
+                              onClick={toggleShaderPlayback}
+                              className={`border px-3 py-1 flex items-center gap-1.5 transition-all font-bold cursor-crosshair ${
+                                isShaderPlaying 
+                                  ? 'bg-red-500/10 border-red-500/40 text-red-400 hover:bg-red-500/20' 
+                                  : 'bg-[#39FF14]/10 border-[#39FF14]/40 text-[#39FF14] hover:bg-[#39FF14]/20'
+                              }`}
+                              title={isShaderPlaying ? "Pause rendering" : "Play rendering"}
+                            >
+                              {isShaderPlaying ? (
+                                <>
+                                  <Pause className="w-3.5 h-3.5" />
+                                  <span>PAUSE</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-3.5 h-3.5 fill-current" />
+                                  <span>PLAY</span>
+                                </>
+                              )}
+                            </button>
+
+                            <button 
+                              onClick={() => adjustShaderTime(10)}
+                              className="text-[10px] border border-zinc-800 hover:border-[#FF2BD6] px-2 py-1 text-gray-400 hover:text-white transition-all cursor-crosshair flex items-center gap-0.5"
+                              title="Fast-forward 10 seconds"
+                            >
+                              <span>+10s</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                            <button 
+                              onClick={() => adjustShaderTime(30)}
+                              className="text-[10px] border border-zinc-800 hover:border-[#FF2BD6] px-2 py-1 text-gray-400 hover:text-white transition-all cursor-crosshair flex items-center gap-0.5"
+                              title="Fast-forward 30 seconds"
+                            >
+                              <span>+30s</span>
+                              <ChevronsRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          {/* Instant Jump Input Field & Reset */}
+                          <div className="flex items-center gap-1">
+                            <button 
+                              onClick={() => jumpToShaderTime(0)}
+                              className="text-[10px] border border-zinc-800 hover:border-white px-2 py-1 text-gray-400 hover:text-white transition-all cursor-crosshair flex items-center gap-1"
+                              title="Reset simulation to 0.00"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              <span>RESET</span>
+                            </button>
+
+                            <div className="h-4 w-[1px] bg-zinc-900 mx-1" />
+
+                            <form 
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                const parsed = parseFloat(customJumpInput);
+                                if (!isNaN(parsed) && parsed >= 0) {
+                                  jumpToShaderTime(parsed);
+                                }
+                              }}
+                              className="flex items-center gap-1"
+                            >
+                              <input 
+                                type="text"
+                                placeholder="JUMP TO SEC..."
+                                value={customJumpInput}
+                                onChange={(e) => setCustomJumpInput(e.target.value)}
+                                className="bg-black border border-zinc-800 text-white font-mono px-1.5 py-0.5 text-[10px] w-20 focus:border-[#FF2BD6] focus:outline-none placeholder:text-gray-600 rounded-none text-right"
+                              />
+                              <button 
+                                type="submit"
+                                className="text-[10px] bg-[#FF2BD6]/10 border border-[#FF2BD6]/30 text-[#FF2BD6] hover:bg-[#FF2BD6]/20 px-2 py-1 transition-all cursor-crosshair"
+                              >
+                                GO
+                              </button>
+                            </form>
                           </div>
                         </div>
                       </div>
@@ -1983,114 +2316,22 @@ export default function App() {
                         </p>
                       </div>
 
-                      {/* Interactive Custom Sliders */}
-                      <div className="bg-zinc-950 p-4 border border-zinc-900 space-y-3 font-mono">
-                        <div className="flex items-center gap-2 text-[11px] text-gray-400 border-b border-zinc-900 pb-1.5 uppercase tracking-wider">
-                          <Sliders className="w-3.5 h-3.5 text-[#FF2BD6]" />
-                          <span>Modify WebGL Shader Parameters</span>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Speed */}
-                          <div>
-                            <div className="flex justify-between text-[11px] mb-1 text-gray-400">
-                              <span>SPEED_MULT</span>
-                              <span className="text-[#FF2BD6] font-bold">{shaderSpeed.toFixed(2)}x</span>
-                            </div>
-                            <input 
-                              type="range" 
-                              min="0.1" 
-                              max="4.0" 
-                              step="0.05"
-                              value={shaderSpeed}
-                              onChange={(e) => setShaderSpeed(parseFloat(e.target.value))}
-                              className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
-                            />
-                          </div>
-
-                          {/* Scale */}
-                          <div>
-                            <div className="flex justify-between text-[11px] mb-1 text-gray-400">
-                              <span>SCALE_FACTOR</span>
-                              <span className="text-[#FF2BD6] font-bold">{shaderScale.toFixed(2)}x</span>
-                            </div>
-                            <input 
-                              type="range" 
-                              min="0.2" 
-                              max="3.0" 
-                              step="0.05"
-                              value={shaderScale}
-                              onChange={(e) => setShaderScale(parseFloat(e.target.value))}
-                              className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
-                            />
-                          </div>
-
-                          {/* Intensity */}
-                          <div>
-                            <div className="flex justify-between text-[11px] mb-1 text-gray-400">
-                              <span>WARPING_FORCE</span>
-                              <span className="text-[#FF2BD6] font-bold">{shaderIntensity.toFixed(2)}x</span>
-                            </div>
-                            <input 
-                              type="range" 
-                              min="0.1" 
-                              max="3.0" 
-                              step="0.05"
-                              value={shaderIntensity}
-                              onChange={(e) => setShaderIntensity(parseFloat(e.target.value))}
-                              className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
-                            />
-                          </div>
-
-                          {/* Hue Shift */}
-                          <div>
-                            <div className="flex justify-between text-[11px] mb-1 text-gray-400">
-                              <span>CHROMATIC_HUE</span>
-                              <span className="text-[#FF2BD6] font-bold">+{Math.round(shaderHue * 360)}°</span>
-                            </div>
-                            <input 
-                              type="range" 
-                              min="0.0" 
-                              max="1.0" 
-                              step="0.01"
-                              value={shaderHue}
-                              onChange={(e) => setShaderHue(parseFloat(e.target.value))}
-                              className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-800 h-1 rounded-none"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Reset and View Source Buttons */}
-                        <div className="flex justify-between items-center pt-2 gap-2">
-                          <button 
-                            onClick={() => {
-                              setShaderSpeed(selectedShader.defaultParams.speed);
-                              setShaderScale(selectedShader.defaultParams.scale);
-                              setShaderIntensity(selectedShader.defaultParams.intensity);
-                              setShaderHue(selectedShader.defaultParams.hue);
-                              playChime('sine', 1.0);
-                            }}
-                            className="text-[10px] border border-gray-800 hover:border-white px-2 py-1 text-gray-400 hover:text-white transition-all flex items-center gap-1 cursor-crosshair"
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                            <span>RESET DEFAULTS</span>
-                          </button>
-
-                          <button 
-                            onClick={() => {
-                              setShowGLSL(!showGLSL);
-                              playChime('sine', 1.4);
-                            }}
-                            className={`text-[10px] border px-2 py-1 transition-all flex items-center gap-1 cursor-crosshair ${
-                              showGLSL 
-                                ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
-                                : 'border-[#FF2BD6]/30 text-[#FF2BD6] hover:bg-[#FF2BD6]/10'
-                            }`}
-                          >
-                            <Code className="w-3 h-3" />
-                            <span>{showGLSL ? 'HIDE FILE CODE' : 'VIEW RAW FILE CODE'}</span>
-                          </button>
-                        </div>
+                      {/* View Source Code Block Button */}
+                      <div className="flex justify-end pt-2">
+                        <button 
+                          onClick={() => {
+                            setShowGLSL(!showGLSL);
+                            playChime('sine', 1.4);
+                          }}
+                          className={`text-[10px] border px-3 py-1.5 transition-all flex items-center gap-1.5 cursor-crosshair font-mono ${
+                            showGLSL 
+                              ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
+                              : 'border-[#FF2BD6]/30 text-[#FF2BD6] hover:bg-[#FF2BD6]/10'
+                          }`}
+                        >
+                          <Code className="w-3.5 h-3.5" />
+                          <span>{showGLSL ? 'HIDE FILE CODE' : 'VIEW RAW FILE CODE'}</span>
+                        </button>
                       </div>
 
                       {/* Explicit Tezos NFT OBJKT Collection Banner */}
