@@ -221,6 +221,8 @@ export default function App() {
   // 'rando' = Synth & Chaos Playground
   // 'about' = About the Artist
   const [activeTab, setActiveTab] = useState<'hub' | 'shaderslop' | 'aislop' | 'rando' | 'about' | 'karaoke' | 'projects'>('hub');
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => localStorage.getItem('astraltrash_sound_enabled') !== 'false');
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => localStorage.getItem('astraltrash_theme') !== 'light');
 
   // Core App states
   const [booting, setBooting] = useState(true);
@@ -610,9 +612,47 @@ export default function App() {
   // 3. Visitor Counter logic
   useEffect(() => {
     const base = 1337421;
-    const n = base + Math.floor((Date.now() - 1760000000000) / 60000);
-    setVisitorCount(String(Math.max(n, base)).padStart(7, '0'));
+    
+    // Fetch and increment persistent visitor counter
+    fetch('https://api.counterapi.dev/v1/astraltrash_marygray/visitor/up')
+      .then(res => {
+        if (!res.ok) throw new Error('CounterAPI offline or rate-limited');
+        return res.json();
+      })
+      .then(data => {
+        if (data && typeof data.count === 'number') {
+          const totalCount = base + data.count;
+          setVisitorCount(String(totalCount).padStart(7, '0'));
+        } else {
+          throw new Error('Response format unrecognized');
+        }
+      })
+      .catch(err => {
+        console.info('Using dynamic time fallback for visitor counter:', err.message);
+        // Fallback to safe simulated dynamic value if API is offline
+        const n = base + Math.floor((Date.now() - 1760000000000) / 60000);
+        setVisitorCount(String(Math.max(n, base)).padStart(7, '0'));
+      });
   }, []);
+
+  // 3c. Scroll to top on tab change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
+
+  // 3d. Persistent config states
+  useEffect(() => {
+    localStorage.setItem('astraltrash_sound_enabled', String(soundEnabled));
+  }, [soundEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('astraltrash_theme', isDarkMode ? 'dark' : 'light');
+    if (isDarkMode) {
+      document.body.classList.remove('light-theme');
+    } else {
+      document.body.classList.add('light-theme');
+    }
+  }, [isDarkMode]);
 
   // 3b. Dossier photo carousel auto-rotation and voice helper
   useEffect(() => {
@@ -705,6 +745,7 @@ export default function App() {
   };
 
   const playChime = (type: 'sine' | 'square' | 'triangle' = 'triangle', pitchScaler: number = 1.0) => {
+    if (!soundEnabled) return;
     try {
       const ctx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
       if (!audioCtxRef.current) audioCtxRef.current = ctx;
@@ -2176,7 +2217,7 @@ export default function App() {
                   : 'bg-black text-[#39FF14] border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
               }`}
             >
-              ⟡ PORTFOLIO_HUB
+              ⟡ HOME
             </button>
             <button 
               onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }}
@@ -2197,16 +2238,6 @@ export default function App() {
               }`}
             >
               ☣ AI_SLOP
-            </button>
-            <button 
-              onClick={() => { setActiveTab('rando'); playChime('triangle', 1.4); }}
-              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
-                activeTab === 'rando' 
-                  ? 'bg-[#EFFF04] text-black border-[#EFFF04] shadow-[0_0_12px_rgba(239,255,4,0.5)]' 
-                  : 'bg-black text-[#EFFF04] border-[#EFFF04]/40 hover:border-[#EFFF04] hover:bg-[#EFFF04]/10'
-              }`}
-            >
-              💩 RANDO_SYNTH
             </button>
             <button 
               onClick={() => { setActiveTab('about'); playChime('triangle', 1.6); }}
@@ -2237,6 +2268,16 @@ export default function App() {
               }`}
             >
               🚀 PROJECTS
+            </button>
+            <button 
+              onClick={() => { setActiveTab('rando'); playChime('triangle', 1.4); }}
+              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
+                activeTab === 'rando' 
+                  ? 'bg-white text-black border-white shadow-[0_0_12px_rgba(255,255,255,0.5)]' 
+                  : 'bg-black text-white border-white/40 hover:border-white hover:bg-white/10'
+              }`}
+            >
+              ⚙️ SETTINGS
             </button>
           </div>
         </div>
@@ -3547,154 +3588,137 @@ export default function App() {
           )}
 
           {/* ========================================================================= */}
-          {/* SECTION D: RANDO💩 - SYNTH & CHAOS PLAYGROUND                             */}
+          {/* SECTION D: SETTINGS⚙️ - ENVIRONMENT CONFIGURATION                         */}
           {/* ========================================================================= */}
           {activeTab === 'rando' && (
-            <div className="frame py-8">
+            <div className="frame py-8 animate-fade-in">
               <div className="mb-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#EFFF04]/30 pb-3 mb-2 gap-2">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-white/20 pb-3 mb-2 gap-2">
                   <h2 
                     className="text-3xl font-bold font-sans text-white tracking-wider uppercase"
                     style={{
                       fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
-                      textShadow: '0 0 8px var(--phosphor), 0 0 30px rgba(57,255,20,0.5), 3px 0 0 rgba(255,43,214,0.8), -3px 0 0 rgba(0,240,255,0.8)',
-                      animation: 'jitter 6s infinite'
+                      textShadow: '0 0 10px rgba(255,255,255,0.4)',
                     }}
                   >
-                    💩 RANDO SYNTH CHAOS 💩
+                    ⚙️ SYSTEM SETTINGS
                   </h2>
-                  <span className="text-[11px] text-gray-500 font-mono">SOUNDS_MATRIX: ONLINE</span>
+                  <span className="text-[11px] text-zinc-500 font-mono">STATION_CONTROL: LOCAL</span>
                 </div>
-                <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-2xl">
-                  An interactive Y3K toy. Tweak, randomize, and abuse WebGL parameters while playing cyber sweeps 
-                  using our dynamic Web Audio Oscillators!
+                <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-2xl font-mono">
+                  Configure your visual interface parameters, audio feedback options, and aesthetic environment variables.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
                 
-                {/* Left Side: Wave Oscillator Pad */}
-                <div className="lg:col-span-7 bg-black/95 border border-[#EFFF04] p-5 shadow-[0_0_20px_rgba(239,255,4,0.15)] space-y-4">
+                {/* Left Side: Interface Options */}
+                <div className="bg-black/95 border border-zinc-800 p-6 space-y-6 shadow-[0_0_20px_rgba(255,255,255,0.02)]">
                   <div className="flex items-center gap-2 text-white font-bold font-sans uppercase text-[15px] border-b border-zinc-900 pb-2">
-                    <Volume2 className="w-5 h-5 text-[#EFFF04]" />
-                    <span>Hacker Glitch Synth Pad</span>
+                    <Sliders className="w-5 h-5 text-white" />
+                    <span>User Interface Preferences</span>
                   </div>
 
-                  <p className="text-gray-400 text-[12px] font-mono leading-relaxed">
-                    Move your mouse across the matrix or interact with the sliders to change wave parameters and trigger retro retrofuturism sweeps!
-                  </p>
-
-                  {/* Synth trigger/visual control container */}
-                  <div 
-                    className="relative aspect-video w-full border border-[#EFFF04]/40 bg-[#030303] overflow-hidden flex flex-col items-center justify-center cursor-crosshair group"
-                    onMouseMove={(e) => {
-                      if (isSynthPlaying) {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const xRatio = (e.clientX - rect.left) / rect.width;
-                        // Frequency range from 150Hz to 1200Hz
-                        const calculatedFreq = 150 + xRatio * 1050;
-                        updateSynthFreq(calculatedFreq);
-                      }
-                    }}
-                    onMouseEnter={() => {
-                      startSynth();
-                    }}
-                    onMouseLeave={() => {
-                      stopSynth();
-                    }}
-                  >
-                    {/* Decorative matrix crosshairs */}
-                    <div className="absolute inset-x-0 h-px bg-[#EFFF04]/10 top-1/2" />
-                    <div className="absolute inset-y-0 w-px bg-[#EFFF04]/10 left-1/2" />
-
-                    <div className="text-center font-mono z-10 space-y-2 pointer-events-none p-4 bg-black/80 border border-zinc-900">
-                      <div className="text-[#EFFF04] font-bold text-[14px] uppercase animate-pulse">
-                        {isSynthPlaying ? '● FM WAVE GENERATOR ACTIVE' : '✖ OSCILLATOR IDLE'}
-                      </div>
-                      <p className="text-gray-500 text-[10px] max-w-xs leading-normal mx-auto">
-                        {isSynthPlaying 
-                          ? 'Wandering around complex coordinate vectors. Drag mouse to alter pitch.' 
-                          : 'Hover your cursor inside this dark vector field to activate Web Audio synthesis.'}
-                      </p>
-                      <div className="text-[12px] text-white font-mono bg-zinc-950 px-2 py-1 inline-block border border-zinc-900">
-                        ACTIVE_VALUE: <span className="text-[#39FF14] font-bold">{activeNote}</span>
-                      </div>
-                    </div>
-
-                    {/* Fake retro grid */}
-                    <div className="absolute inset-0 bg-repeat bg-[radial-gradient(circle,rgba(239,255,4,0.15)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
-                  </div>
-
-                  {/* Static Slider Option */}
-                  <div className="bg-[#050505] p-4 border border-zinc-900 space-y-3 font-mono">
-                    <div className="flex justify-between text-[11px] text-gray-400">
-                      <span>STATIC OSCILLATION FREQUENCY</span>
-                      <span className="text-[#EFFF04] font-bold">{synthFrequency.toFixed(0)} Hz</span>
-                    </div>
-                    <input 
-                      type="range"
-                      min="100"
-                      max="1500"
-                      step="10"
-                      value={synthFrequency}
-                      onChange={(e) => updateSynthFreq(parseFloat(e.target.value))}
-                      className="w-full accent-[#EFFF04] bg-zinc-800 h-1 cursor-crosshair"
-                    />
-                    <div className="flex justify-between">
-                      <button 
-                        onMouseDown={startSynth}
-                        onMouseUp={stopSynth}
-                        className="text-[10px] bg-black text-[#EFFF04] border border-[#EFFF04] hover:bg-[#EFFF04] hover:text-black py-1 px-3 uppercase tracking-widest cursor-crosshair font-bold"
+                  {/* Sound Effects Toggle */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center gap-4">
+                      <span className="text-white text-[13px] font-bold uppercase tracking-wider font-sans">
+                        Audio Chimes & Feedback
+                      </span>
+                      <button
+                        onClick={() => {
+                          const nextVal = !soundEnabled;
+                          setSoundEnabled(nextVal);
+                          if (nextVal) {
+                            try {
+                              const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                              const osc = ctx.createOscillator();
+                              const gain = ctx.createGain();
+                              osc.type = 'triangle';
+                              osc.frequency.setValueAtTime(440, ctx.currentTime);
+                              gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                              gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+                              osc.connect(gain);
+                              gain.connect(ctx.destination);
+                              osc.start();
+                              osc.stop(ctx.currentTime + 0.15);
+                            } catch (e) {}
+                          }
+                        }}
+                        className={`text-xs px-4 py-2 font-mono uppercase tracking-wider border font-extrabold cursor-crosshair transition-all ${
+                          soundEnabled
+                            ? 'bg-white text-black border-white shadow-[0_0_10px_rgba(255,255,255,0.3)]'
+                            : 'bg-black text-zinc-500 border-zinc-800 hover:border-zinc-700'
+                        }`}
                       >
-                        ⚡ TRIGGER SINGLE IMPULSE
+                        {soundEnabled ? '[✓] SOUNDS ON' : '[ ] SOUNDS MUTED'}
                       </button>
-                      <span className="text-[9px] text-gray-600 uppercase self-center">WAVE_TYPE: SAWTOOTH_retro</span>
                     </div>
+                    <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">
+                      Toggle active feedback chimes, menu select sweeps, and custom UI synthesis waves.
+                    </p>
+                  </div>
+
+                  {/* Dark / Light Theme Toggle */}
+                  <div className="space-y-2 pt-4 border-t border-zinc-900">
+                    <div className="flex justify-between items-center gap-4">
+                      <span className="text-white text-[13px] font-bold uppercase tracking-wider font-sans">
+                        Aesthetic Theme Mode
+                      </span>
+                      <button
+                        onClick={() => {
+                          setIsDarkMode(!isDarkMode);
+                          playChime('triangle', 1.0);
+                        }}
+                        className={`text-xs px-4 py-2 font-mono uppercase tracking-wider border font-extrabold cursor-crosshair transition-all ${
+                          isDarkMode
+                            ? 'bg-zinc-900 text-white border-zinc-700 hover:border-zinc-600'
+                            : 'bg-white text-black border-white shadow-[0_0_10px_rgba(255,255,255,0.3)]'
+                        }`}
+                      >
+                        {isDarkMode ? '🌙 DARK_VOID' : '☀️ LIGHT_PHOSPHOR'}
+                      </button>
+                    </div>
+                    <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">
+                      Switch between default retro cyber void layout and a high-contrast inverted paper/phosphor layout.
+                    </p>
                   </div>
 
                 </div>
 
                 {/* Right Side: Shader Randomizer & Logs */}
-                <div className="lg:col-span-5 bg-black/90 border border-zinc-800 p-5 space-y-5">
+                <div className="bg-black/95 border border-zinc-800 p-6 space-y-6 shadow-[0_0_20px_rgba(255,255,255,0.02)]">
                   
                   <div className="flex items-center gap-2 text-white font-bold font-sans uppercase text-[15px] border-b border-zinc-900 pb-2">
-                    <RefreshCw className="w-5 h-5 text-[#EFFF04]" />
+                    <RefreshCw className="w-5 h-5 text-white" />
                     <span>Aesthetic Background Shifter</span>
                   </div>
 
-                  <p className="text-gray-400 text-[12px] font-mono leading-relaxed">
+                  <p className="text-zinc-400 text-[12px] font-mono leading-relaxed">
                     Don't like the main background shader's vibe? Smash the chaotic matrix scrambler below to randomize uniforms!
                   </p>
 
                   <button
-                    onClick={triggerRandomizer}
-                    className="w-full bg-[#EFFF04] hover:bg-[#EFFF04]/90 text-black font-bold py-4 px-4 font-sans uppercase text-[14px] tracking-widest cursor-crosshair transition-all shadow-[0_0_15px_rgba(239,255,4,0.1)] hover:shadow-[0_0_25px_rgba(239,255,4,0.3)]"
+                    onClick={() => {
+                      triggerRandomizer();
+                      playChime('square', 1.2);
+                    }}
+                    className="w-full bg-white hover:bg-white/95 text-black font-extrabold py-4 px-4 font-sans uppercase text-[13px] tracking-widest cursor-crosshair transition-all shadow-[0_0_12px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.25)]"
                   >
-                    💩 SHIFT BACKGROUND MATRIX 💩
+                    ⚡ SHIFT BACKGROUND MATRIX ⚡
                   </button>
 
                   {/* Global settings values readout */}
-                  <div className="bg-[#050505] p-4 border border-zinc-900 font-mono text-[11px] space-y-2">
-                    <div className="text-gray-500 text-[10px] border-b border-zinc-900 pb-1 uppercase">
+                  <div className="bg-zinc-950 p-4 border border-zinc-900 font-mono text-[11px] space-y-2">
+                    <div className="text-zinc-500 text-[10px] border-b border-zinc-900 pb-1 uppercase font-bold">
                       ACTIVE_GLOBAL_SHADERS_UNIFORMS
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-gray-300">
-                      <div>u_speed: <span className="text-[#EFFF04] font-bold">{bgSpeed.toFixed(4)}</span></div>
-                      <div>u_warp: <span className="text-[#EFFF04] font-bold">{bgWarp.toFixed(2)}</span></div>
-                      <div>u_colorShift: <span className="text-[#EFFF04] font-bold">{bgColorShift.toFixed(3)}</span></div>
-                      <div>u_vignette: <span className="text-[#EFFF04] font-bold">{bgVignette.toFixed(2)}</span></div>
+                    <div className="grid grid-cols-2 gap-2 text-zinc-300">
+                      <div>u_speed: <span className="text-white font-bold">{bgSpeed.toFixed(4)}</span></div>
+                      <div>u_warp: <span className="text-white font-bold">{bgWarp.toFixed(2)}</span></div>
+                      <div>u_colorShift: <span className="text-white font-bold">{bgColorShift.toFixed(3)}</span></div>
+                      <div>u_vignette: <span className="text-white font-bold">{bgVignette.toFixed(2)}</span></div>
                     </div>
-                  </div>
-
-                  {/* Simulated Terminal Readout */}
-                  <div className="bg-[#020202] border border-zinc-950 p-4 font-mono text-[10px] text-[#39FF14] space-y-1 max-h-[150px] overflow-y-auto">
-                    <div className="text-[#EFFF04] text-[9px] uppercase border-b border-zinc-900 pb-1 mb-2 tracking-widest flex justify-between">
-                      <span>DEBRIS_TELEMETRY_TERMINAL</span>
-                      <span className="animate-ping">●</span>
-                    </div>
-                    {terminalOutputs.map((line, index) => (
-                      <div key={index} className="truncate">{line}</div>
-                    ))}
                   </div>
 
                 </div>

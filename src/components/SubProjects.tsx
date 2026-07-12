@@ -78,18 +78,18 @@ const PROJECTS: ProjectItem[] = [
     ]
   },
   {
-    id: 'glitch-cookbook',
-    title: 'GLITCH COOKBOOK',
-    subtitle: 'A comprehensive repository of modular visual distortion formulas, digital decay mockups, and performance benchmarks for glitch aesthetics.',
-    liveUrl: '',
+    id: 'tensor-tantrum',
+    title: 'TENSOR TANTRUM',
+    subtitle: 'A high-energy interactive neural shader playground and model weight visualizer.',
+    liveUrl: 'https://tensortantrum.netlify.app/',
     repoUrl: 'https://github.com/merrypranxter/Glitch-Cookbook',
-    description: 'A developer-focused reference library containing canvas raster corruption logic, retro color filters, and dither algorithms.',
-    tag: 'GLITCH_COOKBOOK_REPO',
+    description: 'An immersive interactive sandbox visualizing cognitive vector spaces, multi-dimensional tensor matrices, and dynamic feedback structures.',
+    tag: 'TENSOR_TANTRUM_PORT_80',
     accentColor: '#00F0FF', // Cyan
     specs: [
-      { num: '01/', name: 'Glitch Matrices', desc: 'Standard formulaic references for web canvas and asset corruption.' },
-      { num: '02/', name: 'Modular Retro Shaders', desc: 'Highly scalable custom retro CRT scanline templates.' },
-      { num: '03/', name: 'Interactive Code Recipes', desc: 'Directly customizable CSS/JS codeblocks to destroy visual symmetry beautifully.' }
+      { num: '01/', name: 'Neural Tensor Visualization', desc: 'Real-time multi-dimensional vector array mapping.' },
+      { num: '02/', name: 'Dynamic Feedback Matrix', desc: 'Generative interactive feedback loops responsive to cursor vectors.' },
+      { num: '03/', name: 'Cognitive WebGL Shaders', desc: 'High-energy color-shifting WebGL render passes simulating network layers.' }
     ]
   }
 ];
@@ -107,6 +107,7 @@ export function SubProjects({
 }: SubProjectsProps) {
   const [crtFilter, setCrtFilter] = useState<boolean>(true);
   const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({});
+  const [loadedProjects, setLoadedProjects] = useState<Record<string, boolean>>({});
 
   const handleRefreshIframe = (id: string) => {
     playChime('square', 1.2);
@@ -118,10 +119,13 @@ export function SubProjects({
 
   const scrollToSection = (id: string) => {
     playChime('triangle', 1.1);
-    const element = document.getElementById(`section-${id}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    setLoadedProjects(prev => ({ ...prev, [id]: true }));
+    setTimeout(() => {
+      const element = document.getElementById(`section-${id}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 50);
   };
 
   const scrollToTop = () => {
@@ -130,91 +134,128 @@ export function SubProjects({
   };
 
   return (
-    <div className="w-full flex flex-col items-center py-16 px-4 animate-fade-in" id="projects-mainframe">
+    <div className="w-full flex flex-col items-center pt-28 md:pt-36 pb-16 px-4 animate-fade-in" id="projects-mainframe">
       <div className="w-full max-w-5xl space-y-24">
       
       {/* 1. Header Segment: Spacious and Atmospheric */}
-      <div className="text-center space-y-4">
+      <div className="w-full flex flex-col items-center justify-center text-center space-y-5">
         <h1 
-          className="text-4xl md:text-5xl font-extrabold uppercase tracking-widest text-white select-none"
+          className="text-2xl sm:text-3xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold uppercase tracking-wider text-white select-none leading-none text-center"
           style={{
             fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
-            textShadow: '0 0 10px #EFFF04, 0 0 40px rgba(239,255,4,0.2)'
+            textShadow: '0 0 15px #EFFF04, 0 0 50px rgba(239,255,4,0.3)'
           }}
         >
-          ☄️ Projects Cabinet ☄️
+          Projects Cabinet
         </h1>
-        <p className="text-xs md:text-sm text-[#EFFF04]/90 font-mono max-w-2xl mx-auto leading-relaxed uppercase tracking-widest font-semibold">
+        <p className="text-sm sm:text-base md:text-lg text-[#EFFF04] font-mono max-w-5xl mx-auto leading-relaxed uppercase tracking-[0.15em] font-bold text-center">
           Hosting interactive micro-synthesizers, generative linguistic typewriters, and retro emulations.
         </p>
       </div>
 
       {/* 2. Table of Contents: Cute, Pixely Index (NOT in a Box) */}
-      <div className="py-4 font-mono text-xs text-zinc-400 space-y-6 text-center">
-        <div className="text-zinc-600 uppercase tracking-widest text-[10px] font-bold">
-          ◄◄ TRANSMISSION INDEX // SMOOTH SCROLL ROUTING ►►
+      <div className="w-full max-w-5xl mx-auto py-8 space-y-10 flex flex-col items-center justify-center text-center">
+        <div 
+          className="text-zinc-500 uppercase tracking-[0.3em] text-[10px] sm:text-xs font-bold select-none flex items-center justify-center gap-3"
+          style={{ fontFamily: "'Silkscreen', sans-serif" }}
+        >
+          <span className="text-[#EFFF04] animate-pulse">◄◄</span>
+          <span>Transmission Index // Smooth Scroll Routing</span>
+          <span className="text-[#EFFF04] animate-pulse">►►</span>
         </div>
         
-        <div className="flex flex-wrap justify-center gap-x-8 gap-y-4 max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full justify-center px-4">
           {PROJECTS.map((proj, idx) => (
             <button
               key={proj.id}
               onClick={() => scrollToSection(proj.id)}
-              className="group flex items-center gap-2 hover:text-[#EFFF04] transition-all cursor-crosshair py-1 px-2.5"
+              className="group relative flex flex-col items-center justify-between text-center p-6 bg-zinc-950/40 hover:bg-zinc-900/30 border border-zinc-900 hover:border-zinc-700/80 transition-all duration-300 cursor-crosshair h-36 select-none overflow-hidden"
+              style={{ fontFamily: "'Silkscreen', sans-serif" }}
             >
-              <span style={{ color: proj.accentColor }} className="font-bold">
-                [0{idx + 1}]
-              </span>
-              <span className="text-white uppercase font-bold tracking-widest group-hover:underline decoration-1 decoration-[#EFFF04]/50 underline-offset-4">
+              {/* Corner bracket decorations */}
+              <span className="absolute top-1 left-2 text-[10px] text-zinc-800 group-hover:text-zinc-500 transition-colors">┌</span>
+              <span className="absolute top-1 right-2 text-[10px] text-zinc-800 group-hover:text-zinc-500 transition-colors">┐</span>
+              <span className="absolute bottom-1 left-2 text-[10px] text-zinc-800 group-hover:text-zinc-500 transition-colors">└</span>
+              <span className="absolute bottom-1 right-2 text-[10px] text-zinc-800 group-hover:text-zinc-500 transition-colors">┘</span>
+
+              {/* Header Index tag with LED indicator */}
+              <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest mb-1 transition-colors duration-300" style={{ color: proj.accentColor }}>
+                <span className="text-zinc-600 font-normal">#</span>
+                <span>0{idx + 1}</span>
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse ml-0.5" style={{ backgroundColor: proj.accentColor, boxShadow: `0 0 8px ${proj.accentColor}` }} />
+              </div>
+              
+              {/* Title label in headline font style */}
+              <div 
+                className="text-sm sm:text-base font-extrabold tracking-widest text-zinc-200 group-hover:text-white group-hover:scale-105 transition-all duration-300 uppercase py-1"
+                style={{ fontFamily: "'Chakra Petch', sans-serif" }}
+              >
                 {proj.title}
-              </span>
-              <span className="text-[10px] text-zinc-600 group-hover:text-[#EFFF04]/80 transition-colors">
-                ↳
-              </span>
+              </div>
+
+              {/* Accent-colored decorative custom divider */}
+              <div className="w-8 h-[2px] transition-all duration-350 bg-zinc-800 group-hover:w-full" style={{ backgroundColor: proj.accentColor }} />
+              
+              {/* Vibe subtitle status */}
+              <div className="mt-2 text-[9px] text-zinc-500 tracking-wider group-hover:text-zinc-300 transition-colors uppercase font-mono">
+                [ {proj.tag} ]
+              </div>
+
+              {/* Underline glow */}
+              <div className="absolute bottom-0 left-0 h-[2px] w-0 transition-all duration-300" style={{ backgroundColor: proj.accentColor }} />
             </button>
           ))}
         </div>
       </div>
 
       {/* 3. The Sequential Stream */}
-      <div className="space-y-32 pt-8">
+      <div className="space-y-72 lg:space-y-[26rem] pt-16">
         {PROJECTS.map((proj, idx) => {
           const iframeKey = refreshKeys[proj.id] || 0;
           return (
             <div 
               key={proj.id} 
               id={`section-${proj.id}`} 
-              className="space-y-12 scroll-mt-24"
+              className="space-y-20 scroll-mt-24 pt-24 pb-12"
             >
               
               {/* Project Header Info: Breathable and Minimalist */}
-              <div className="space-y-4 border-b border-zinc-900 pb-6">
+              <div className="space-y-6 border-b border-zinc-900/80 pb-8">
                 <div className="flex flex-wrap justify-between items-center gap-3 text-xs font-mono">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: proj.accentColor }} />
-                    <span className="text-zinc-500 uppercase tracking-wider">SYSTEM_NODE // 0{idx + 1}</span>
-                    <span className="text-zinc-700">|</span>
-                    <span className="font-bold tracking-wider" style={{ color: proj.accentColor }}>{proj.tag}</span>
+                    <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: proj.accentColor }} />
+                    <span className="text-zinc-500 uppercase tracking-widest font-semibold">SYSTEM_NODE // 0{idx + 1}</span>
+                    <span className="text-zinc-800">|</span>
+                    <span className="font-bold tracking-widest uppercase" style={{ color: proj.accentColor }}>{proj.tag}</span>
                   </div>
                   {proj.liveUrl && (
                     <div className="flex items-center gap-3 text-zinc-500">
                       <span className="hidden sm:inline font-mono text-[10px] tracking-tight">{proj.liveUrl}</span>
                       <button 
                         onClick={() => handleRefreshIframe(proj.id)}
-                        className="hover:text-white p-1 rounded hover:bg-zinc-900 transition-all"
+                        className="hover:text-white p-1.5 rounded hover:bg-zinc-900/60 transition-all"
                         title="Re-Initialize Frame"
                       >
-                        <RotateCcw className="w-4 h-4" style={{ color: proj.accentColor }} />
+                        <RotateCcw className="w-4 h-4 animate-spin-hover" style={{ color: proj.accentColor }} />
                       </button>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <h2 className="text-2xl md:text-3xl font-extrabold text-white uppercase tracking-wider">
+                <div className="space-y-6">
+                  <h2 
+                    className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold uppercase tracking-widest text-white select-all leading-none"
+                    style={{
+                      fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
+                      textShadow: `0 0 18px ${proj.accentColor}50, 0 0 50px rgba(255,255,255,0.1)`
+                    }}
+                  >
                     {proj.title}
                   </h2>
-                  <p className="text-xs sm:text-sm text-zinc-400 font-mono leading-relaxed max-w-4xl uppercase">
+                  <p 
+                    className="text-base sm:text-lg md:text-xl lg:text-2xl text-zinc-100 font-mono tracking-wider leading-relaxed max-w-5xl uppercase font-bold"
+                    style={{ textShadow: '0 0 10px rgba(255, 255, 255, 0.15)' }}
+                  >
                     {proj.subtitle}
                   </p>
                 </div>
@@ -222,19 +263,52 @@ export function SubProjects({
 
               {/* Live Interactive Node Container (Spacious, non-enclosed, full vertical room) */}
               {proj.liveUrl ? (
-                <div className="relative bg-[#010101] overflow-hidden aspect-[16/10] min-h-[550px] md:min-h-[850px] w-full border-t border-b border-zinc-900/60 shadow-[0_0_50px_rgba(0,0,0,0.6)]">
-                  {crtFilter && (
-                    <div className="absolute inset-0 pointer-events-none z-30 bg-scanlines opacity-[0.14]" />
-                  )}
-                  <iframe
-                    key={`${proj.id}-${iframeKey}`}
-                    src={proj.liveUrl}
-                    title={`${proj.title} Live Node`}
-                    className="w-full h-full border-0 bg-black z-10"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                  />
-                </div>
+                loadedProjects[proj.id] ? (
+                  <div className="relative bg-[#010101] overflow-hidden aspect-[16/10] min-h-[550px] md:min-h-[850px] w-full border-t border-b border-zinc-900/60 shadow-[0_0_50px_rgba(0,0,0,0.6)]">
+                    {crtFilter && (
+                      <div className="absolute inset-0 pointer-events-none z-30 bg-scanlines opacity-[0.14]" />
+                    )}
+                    <iframe
+                      key={`${proj.id}-${iframeKey}`}
+                      src={proj.liveUrl}
+                      title={`${proj.title} Live Node`}
+                      className="w-full h-full border-0 bg-black z-10"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                    />
+                  </div>
+                ) : (
+                  <div className="relative bg-black/95 overflow-hidden aspect-[16/10] min-h-[550px] md:min-h-[850px] w-full border border-zinc-900 flex flex-col items-center justify-center p-8 space-y-6 select-none group">
+                    <div className="absolute inset-0 bg-repeat bg-[radial-gradient(circle,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+                    <div className="crt-scanlines opacity-10" />
+                    
+                    <div className="z-10 text-center space-y-6 max-w-lg">
+                      <div className="inline-block border border-zinc-800 bg-zinc-950/80 px-4 py-2 font-mono text-[11px] tracking-[0.2em] text-zinc-500 uppercase rounded">
+                        [ NODE_STATUS: STANDBY // CONNECTION_IDLE ]
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <h3 className="text-2xl font-bold uppercase text-white tracking-widest font-sans" style={{ fontFamily: "'Chakra Petch', sans-serif" }}>
+                          Initialize {proj.title} Node
+                        </h3>
+                        <p className="text-zinc-500 text-xs font-mono uppercase tracking-wider leading-relaxed">
+                          Clicking below will boot this interactive iframe capsule, connect the Web Audio matrix, and run GLSL render passes.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          playChime('square', 1.2);
+                          setLoadedProjects(prev => ({ ...prev, [proj.id]: true }));
+                        }}
+                        className="px-8 py-4 bg-zinc-950 border font-mono text-xs font-black tracking-widest transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] rounded cursor-crosshair uppercase"
+                        style={{ borderColor: proj.accentColor, color: proj.accentColor }}
+                      >
+                        ⚡ BOOT INTERACTIVE TRANSMISSION
+                      </button>
+                    </div>
+                  </div>
+                )
               ) : (
                 /* Glitch Cookbook Standalone Code Console */
                 <div className="bg-zinc-950/20 border border-zinc-900/60 rounded-2xl p-8 font-mono text-xs text-zinc-400 space-y-6">
@@ -261,13 +335,13 @@ export function SubProjects({
                       <pre className="text-[11px] text-[#00F0FF] font-mono leading-relaxed select-all overflow-x-auto whitespace-pre-wrap">
                         {`# Clone the repository
 git clone https://github.com/merrypranxter/Glitch-Cookbook.git
-
+ 
 # Navigate to workspace
 cd Glitch-Cookbook
-
+ 
 # Install visual compiler packages
 npm install
-
+ 
 # Start local server node
 npm run dev`}
                       </pre>
@@ -376,7 +450,7 @@ npm run dev`}
                         <button
                           key={opt.label}
                           onClick={() => playChime(opt.t, opt.p * (idx * 0.2 + 0.8))}
-                          className="bg-black hover:bg-[#39FF14]/5 border border-zinc-900 hover:border-[#39FF14] text-[9px] font-bold py-1.5 text-zinc-500 hover:text-[#39FF14] transition-all uppercase rounded"
+                          className="bg-black hover:bg-[#39FF14]/5 border border-zinc-900 hover:border-[#39FF14] text-[9px] font-bold py-1.5 text-zinc-500 hover:text-[#39FF14] transition-all uppercase rounded font-mono"
                         >
                           {opt.label}
                         </button>
@@ -415,12 +489,38 @@ npm run dev`}
 
               {/* Decorative Vibe Divider between stream entries */}
               {idx < PROJECTS.length - 1 && (
-                <div className="flex items-center justify-center gap-4 py-20 text-zinc-800">
-                  <span className="h-[1px] flex-grow bg-gradient-to-r from-transparent via-zinc-900 to-transparent" />
-                  <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-zinc-600 font-extrabold">
-                    ✦ END TRANSMISSION_0{idx + 1} // BUFFERING NEXT_NODE ✦
-                  </span>
-                  <span className="h-[1px] flex-grow bg-gradient-to-r from-transparent via-zinc-900 to-transparent" />
+                <div className="w-full flex flex-col items-center justify-center py-36 lg:py-52 select-none">
+                  {/* Vertical coordinate ticks */}
+                  <div className="h-16 w-[1px] bg-gradient-to-b from-zinc-800/50 via-zinc-700/20 to-transparent mb-8" />
+                  
+                  {/* Glowing ASCII symbol ribbon */}
+                  <div 
+                    className="text-white text-xs sm:text-sm md:text-base tracking-[0.25em] opacity-80 max-w-5xl px-4 select-none leading-none uppercase font-extrabold text-center select-none"
+                    style={{
+                      fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
+                      textShadow: '0 0 12px rgba(255, 255, 255, 0.7), 0 0 35px rgba(255, 255, 255, 0.2)'
+                    }}
+                  >
+                    ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
+                  </div>
+                  
+                  <div className="flex items-center gap-6 my-5 font-mono text-[10px] text-zinc-500 tracking-[0.35em] uppercase">
+                    <span className="text-zinc-700 font-bold select-none">✦</span>
+                    <span className="animate-pulse">END TRANSMISSION_0{idx + 1} // LOADING NEXT NODE</span>
+                    <span className="text-zinc-700 font-bold select-none">✦</span>
+                  </div>
+
+                  <div 
+                    className="text-white text-xs sm:text-sm md:text-base tracking-[0.25em] opacity-80 max-w-5xl px-4 select-none leading-none uppercase font-extrabold text-center select-none"
+                    style={{
+                      fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
+                      textShadow: '0 0 12px rgba(255, 255, 255, 0.7), 0 0 35px rgba(255, 255, 255, 0.2)'
+                    }}
+                  >
+                    ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
+                  </div>
+
+                  <div className="h-16 w-[1px] bg-gradient-to-t from-zinc-800/50 via-zinc-700/20 to-transparent mt-8" />
                 </div>
               )}
 
