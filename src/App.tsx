@@ -23,9 +23,12 @@ import {
   RotateCcw,
   ChevronLeft,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Mic,
+  Music
 } from 'lucide-react';
 import { ShaderThumbnail } from './components/ShaderThumbnail';
+import localExplanations from './explanations.json';
 
 // Define structure for our shader items
 interface ShaderItem {
@@ -46,6 +49,73 @@ interface ShaderItem {
   };
   fieldNotes?: string;
 }
+
+export interface Top8Item {
+  id: number;
+  title: string;
+  fileName: string;
+  desc: string;
+  tag: string;
+}
+
+const defaultTop8: Top8Item[] = [
+  {
+    id: 1,
+    title: 'spectral_candy_garden_20260624_134032',
+    fileName: 'spectral_candy_garden_20260624_134032.html',
+    desc: 'vivid cosmic bloom of dithered particles and chromatic feedback loops',
+    tag: 'GLSL'
+  },
+  {
+    id: 2,
+    title: 'repo-chroma-soup_20260701_223130.html',
+    fileName: 'repo-chroma-soup_20260701_223130.html',
+    desc: 'feral liquid soup of orbital repositories bleeding into chroma gradients',
+    tag: 'FLUID'
+  },
+  {
+    id: 3,
+    title: 'rainblown_math.html',
+    fileName: 'rainblown_math.html',
+    desc: 'psychedelic wave formulas folded across a spectral field',
+    tag: 'MATH'
+  },
+  {
+    id: 4,
+    title: 'chimeric-prism-cathedral_20260624_203924.html',
+    fileName: 'chimeric-prism-cathedral_20260624_203924.html',
+    desc: 'sacred space of refracting glass vectors and spectral light rays',
+    tag: 'CMY'
+  },
+  {
+    id: 5,
+    title: 'spectral_candy_garden_20260626_151932.html',
+    fileName: 'spectral_candy_garden_20260626_151932.html',
+    desc: 'alternate candy seed blooming across recursive feedback planes',
+    tag: 'GLSL'
+  },
+  {
+    id: 6,
+    title: 'repo-viz.html',
+    fileName: 'repo-viz.html',
+    desc: 'visualization of 100+ sacred artifacts glowing in raw orbit',
+    tag: 'GLITCH'
+  },
+  {
+    id: 7,
+    title: 'rainblow-ditherscape (1).html',
+    fileName: 'rainblow-ditherscape (1).html',
+    desc: 'infinite horizontal dithering landscape under a chromatic sky',
+    tag: 'VHS'
+  },
+  {
+    id: 8,
+    title: 'prismatic_tape_oracle_20260625_161140 (2).html',
+    fileName: 'prismatic_tape_oracle_20260625_161140 (2).html',
+    desc: 'prismatic feedback structures predicting the collapse of the database',
+    tag: 'VOID'
+  }
+];
 
 // Dossier section photos and timing for the About Me Section on the Home/Hub Tab
 const DOSSIER_PHOTOS: string[] = [
@@ -68,7 +138,7 @@ export default function App() {
   // 'aislop' = AI Hallucination Lab
   // 'rando' = Synth & Chaos Playground
   // 'about' = About the Artist
-  const [activeTab, setActiveTab] = useState<'hub' | 'shaderslop' | 'aislop' | 'rando' | 'about'>('hub');
+  const [activeTab, setActiveTab] = useState<'hub' | 'shaderslop' | 'aislop' | 'rando' | 'about' | 'karaoke'>('hub');
 
   // Core App states
   const [booting, setBooting] = useState(true);
@@ -84,6 +154,11 @@ export default function App() {
 
   // ShaderSlop Gallery states
   const [selectedShader, setSelectedShader] = useState<ShaderItem | null>(null);
+  const [allShaders, setAllShaders] = useState<ShaderItem[]>([]);
+  const [galleryFilter, setGalleryFilter] = useState<string>('ALL');
+  const [isFetchingRepoList, setIsFetchingRepoList] = useState<boolean>(false);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  
   const [shaderSpeed, setShaderSpeed] = useState<number>(1.0);
   const [shaderScale, setShaderScale] = useState<number>(1.0);
   const [shaderIntensity, setShaderIntensity] = useState<number>(1.0);
@@ -97,7 +172,7 @@ export default function App() {
       technicalDetails?: string;
       fieldNotes?: string;
     }
-  }>({});
+  }>(localExplanations);
 
   // HTML source streams for sandboxed IFrame rendering (with HUD overlays hidden)
   const [featuredHtml, setFeaturedHtml] = useState<string>('');
@@ -140,6 +215,113 @@ export default function App() {
     'STATUS: COLLECTING COSMIC DEBRIS FIELDS...',
     'MUTAGEN_INDEX: 99.8% // SCAN RATE: APPROX 120HZ'
   ]);
+
+  // Top 8 Debris customizable states
+  const [top8Debris, setTop8Debris] = useState<Top8Item[]>(() => {
+    try {
+      const saved = localStorage.getItem('astraltrash_top8_debris');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Failed to parse saved Top 8 debris', e);
+    }
+    return defaultTop8;
+  });
+
+  const [isEditingTop8, setIsEditingTop8] = useState<boolean>(false);
+  const [editingSlotId, setEditingSlotId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState<string>('');
+  const [editFileName, setEditFileName] = useState<string>('');
+  const [editDesc, setEditDesc] = useState<string>('');
+  const [editTag, setEditTag] = useState<string>('');
+
+  // Helper to normalize and search shaders
+  const findShader = (fileNameInput: string) => {
+    if (!fileNameInput) return null;
+    let normInput = fileNameInput.toLowerCase().trim();
+    // Remove protocol prefixes if user pastes file://... or http://...
+    if (normInput.startsWith('file:///')) {
+      normInput = normInput.replace('file:///', '');
+    }
+    // Get last path segment
+    const parts = normInput.split('/');
+    let cleanName = parts[parts.length - 1];
+    // Decode url encoding
+    try {
+      cleanName = decodeURIComponent(cleanName);
+    } catch (_) {}
+    
+    // Clean up trailing extensions or spacing
+    cleanName = cleanName.trim();
+    
+    // Look for match in allShaders
+    const found = allShaders.find((s) => {
+      const sFile = s.fileName.toLowerCase();
+      return sFile === cleanName || 
+             sFile.replace('.html', '') === cleanName.replace('.html', '') ||
+             s.id === cleanName.replace('.html', '').replace(/[\s\(\)-]+/g, '_');
+    });
+    
+    if (found) return found;
+
+    // Substring fallback
+    const part = cleanName.replace('.html', '');
+    const partial = allShaders.find((s) => 
+      s.fileName.toLowerCase().includes(part) || 
+      s.title.toLowerCase().includes(part)
+    );
+    return partial || null;
+  };
+
+  const handleTop8Click = (item: Top8Item) => {
+    const shader = findShader(item.fileName);
+    if (shader) {
+      setSelectedShader(shader);
+      setActiveTab('shaderslop');
+      playChime('triangle', 1.2);
+    } else {
+      // If the shader is not loaded yet (e.g. rate limit or cached file), 
+      // dynamically create a virtual ShaderItem and push it to allShaders so it compiles in shaderslop!
+      let cleanFileName = item.fileName;
+      if (cleanFileName.startsWith('file:///')) {
+        cleanFileName = cleanFileName.replace('file:///', '');
+      }
+      const parts = cleanFileName.split('/');
+      cleanFileName = parts[parts.length - 1];
+      try {
+        cleanFileName = decodeURIComponent(cleanFileName);
+      } catch (_) {}
+      
+      if (!cleanFileName.toLowerCase().endsWith('.html')) {
+        cleanFileName += '.html';
+      }
+
+      const tempId = cleanFileName.replace('.html', '').replace(/[\s\(\)-]+/g, '_').toLowerCase();
+      const tempTitle = cleanFileName.replace('.html', '');
+      const tempShader: ShaderItem = {
+        id: tempId,
+        title: tempTitle,
+        tag: item.tag || 'DYNAMIC',
+        tagColor: 'var(--cyan)',
+        thumbClass: 'dynamic',
+        explanation: item.desc || `Discovered custom debris item.`,
+        technicalDetails: `Compiled live. Source: ${cleanFileName}`,
+        fileName: cleanFileName,
+        fragmentShader: '/* LOADING LIVE CODE FROM REPOSITORY... */',
+        defaultParams: { speed: 1.0, scale: 1.0, intensity: 1.0, hue: 0.0 }
+      };
+
+      setAllShaders(prev => {
+        if (prev.some(s => s.fileName.toLowerCase() === cleanFileName.toLowerCase())) return prev;
+        return [...prev, tempShader];
+      });
+
+      setSelectedShader(tempShader);
+      setActiveTab('shaderslop');
+      playChime('square', 1.4);
+    }
+  };
 
   // Dossier Carousel State
   const [dossierIdx, setDossierIdx] = useState<number>(0);
@@ -232,6 +414,35 @@ export default function App() {
   ]);
   const [newCommentName, setNewCommentName] = useState('');
   const [newCommentText, setNewCommentText] = useState('');
+
+  // Shitty Karaoke States
+  const [karTrack, setKarTrack] = useState<string>('procedural_synth');
+  const [karCustomUrl, setKarCustomUrl] = useState<string>('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4');
+  const [karMicEnabled, setKarMicEnabled] = useState<boolean>(false);
+  const [karMicVol, setKarMicVol] = useState<number>(0.8);
+  const [karEcho, setKarEcho] = useState<number>(0.3);
+  const [karBitcrush, setKarBitcrush] = useState<boolean>(false);
+  const [karPitchJitter, setKarPitchJitter] = useState<number>(0.2);
+  const [karIsPlaying, setKarIsPlaying] = useState<boolean>(false);
+  const [karLyricsSpeed, setKarLyricsSpeed] = useState<number>(3); // words speed modifier
+  const [karTerminal, setKarTerminal] = useState<string[]>([
+    'SHITTY_KARAOKE_OS // INITIALIZED...',
+    'AWAITING INPUT_DEVICES...',
+    'READY FOR LOUD MAXIMALIST SCREECHING.'
+  ]);
+  const [karLyricsOffset, setKarLyricsOffset] = useState<number>(0);
+  const [micLevelVal, setMicLevelVal] = useState<number>(0);
+
+  const karVideoRef = useRef<HTMLVideoElement | null>(null);
+  const karMicStreamRef = useRef<MediaStream | null>(null);
+  const karAnalyserRef = useRef<AnalyserNode | null>(null);
+  const karAnimationFrameRef = useRef<number | null>(null);
+  const karAudioNodesRef = useRef<{
+    source: MediaStreamAudioSourceNode | null;
+    gain: GainNode | null;
+    delay: DelayNode | null;
+    feedback: GainNode | null;
+  }>({ source: null, gain: null, delay: null, feedback: null });
 
   // 1. Initial boot screen sequence
   useEffect(() => {
@@ -696,10 +907,10 @@ export default function App() {
 
   // 7. Initialize default selected shader on mount
   useEffect(() => {
-    if (!selectedShader && shadersList.length > 6) {
-      setSelectedShader(shadersList[6]); // default to neon-void-material.html
+    if (!selectedShader && allShaders.length > 6) {
+      setSelectedShader(allShaders[6]); // default to neon-void-material.html
     }
-  }, [selectedShader]);
+  }, [selectedShader, allShaders]);
 
   // Autodetect CPU capabilities for resolution defaults
   useEffect(() => {
@@ -788,6 +999,18 @@ export default function App() {
       return `${hours}:${pad(minutes)}:${pad(seconds)}.${pad(centiseconds)}`;
     }
     return `${pad(minutes)}:${pad(seconds)}.${pad(centiseconds)}`;
+  };
+
+  const scrollDeck = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const scrollAmount = 450; // scrolls roughly 3 thumbnail slots
+      container.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+      playChime('triangle', 1.1);
+    }
   };
 
   // Helper to inject a style tag to completely hide the interactive HUD box in files
@@ -1087,6 +1310,74 @@ export default function App() {
       });
   }, []);
 
+  // Fetch all HTML designs from github repo dynamically
+  useEffect(() => {
+    // Seed state immediately with local shadersList
+    setAllShaders(shadersList);
+    setIsFetchingRepoList(true);
+    fetch('https://api.github.com/repos/merrypranxter/shaderslop_designs/contents')
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const htmlFiles = data.filter((file: any) => file.name.endsWith('.html'));
+          
+          const dynamicShaders = htmlFiles.map((file: any) => {
+            const fileName = file.name;
+            const id = fileName.replace('.html', '').replace(/[\s\(\)-]+/g, '_').toLowerCase();
+            const title = fileName.replace('.html', '');
+            
+            // Deduplicate against already hardcoded static list
+            const alreadyExists = shadersList.some((s) => s.fileName.toLowerCase() === fileName.toLowerCase());
+            if (alreadyExists) return null;
+
+            // Intelligently guess category tags
+            let tag = 'GLSL';
+            let tagColor = 'var(--cyan)';
+            const nameLower = fileName.toLowerCase();
+            if (nameLower.includes('vhs') || nameLower.includes('decay') || nameLower.includes('rot') || nameLower.includes('glitch')) {
+              tag = 'VHS';
+              tagColor = 'var(--magenta)';
+            } else if (nameLower.includes('crystal') || nameLower.includes('sierpinski') || nameLower.includes('mandelbrot') || nameLower.includes('ship') || nameLower.includes('automata')) {
+              tag = 'MATH';
+              tagColor = 'var(--phosphor)';
+            } else if (nameLower.includes('chroma') || nameLower.includes('color') || nameLower.includes('cmy') || nameLower.includes('prism')) {
+              tag = 'CMY';
+              tagColor = 'var(--magenta)';
+            } else if (nameLower.includes('soup') || nameLower.includes('fungi') || nameLower.includes('mycelium') || nameLower.includes('fabric')) {
+              tag = 'FLUID';
+              tagColor = 'var(--acid)';
+            } else if (nameLower.includes('matrix') || nameLower.includes('void') || nameLower.includes('shrine') || nameLower.includes('oracle')) {
+              tag = 'GLITCH';
+              tagColor = 'var(--violet)';
+            }
+
+            return {
+              id,
+              title,
+              tag,
+              tagColor,
+              thumbClass: 'dynamic',
+              explanation: `Discovered remote shader artifact in merrypranxter/shaderslop_designs repository. Compiled in real-time.`,
+              technicalDetails: `Sourced dynamically from the ${fileName} file. Generates interactive fractal, feedback, or continuous wave mathematics.`,
+              fileName,
+              fragmentShader: '/* LOADING LIVE CODE FROM REPOSITORY... */',
+              defaultParams: { speed: 1.0, scale: 1.0, intensity: 1.0, hue: 0.0 }
+            };
+          }).filter((s): s is ShaderItem => s !== null);
+
+          setAllShaders([...shadersList, ...dynamicShaders]);
+        }
+        setIsFetchingRepoList(false);
+      })
+      .catch((err) => {
+        console.warn('Unable to fetch directory listing from GitHub (using static fallback):', err);
+        setIsFetchingRepoList(false);
+      });
+  }, []);
+
   // 7dd. Render procedural sacred geometry avatar for About Page
   useEffect(() => {
     if (activeTab === 'about' && avatarCanvasRef.current) {
@@ -1175,6 +1466,357 @@ export default function App() {
       ctx.shadowBlur = 0;
     }
   }, [activeTab, avatarSeed, avatarSymmetry, avatarColor]);
+
+  // Shitty Karaoke Microphone & Audio Functions
+  const toggleMicrophone = async () => {
+    if (karMicEnabled) {
+      cleanupMicrophone();
+      setKarMicEnabled(false);
+      setKarTerminal(prev => [...prev.slice(-15), 'SYSTEM: MICROPHONE_NODE_DEACTIVATED // RETURNING TO SILENT VOID']);
+      setMicLevelVal(0);
+      playChime('sine', 0.6);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        karMicStreamRef.current = stream;
+        
+        const ctx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+        if (!audioCtxRef.current) audioCtxRef.current = ctx;
+        if (ctx.state === 'suspended') await ctx.resume();
+
+        const source = ctx.createMediaStreamSource(stream);
+        const gain = ctx.createGain();
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        karAnalyserRef.current = analyser;
+
+        gain.gain.value = karMicVol;
+
+        const delay = ctx.createDelay(1.0);
+        delay.delayTime.value = karEcho;
+        const feedback = ctx.createGain();
+        feedback.gain.value = karEcho > 0 ? 0.45 : 0.0;
+
+        delay.connect(feedback);
+        feedback.connect(delay);
+
+        source.connect(analyser);
+        source.connect(gain);
+        delay.connect(gain);
+        source.connect(delay);
+
+        gain.connect(ctx.destination);
+
+        karAudioNodesRef.current = { source, gain, delay, feedback };
+        setKarMicEnabled(true);
+        setKarTerminal(prev => [
+          ...prev.slice(-15),
+          'SYSTEM: MICROPHONE_NODE_ACTIVE // PERMISSION_GRANTED',
+          `MIC_SAMPLING_RATE: ${ctx.sampleRate}HZ`,
+          'ROUTING: SOUNDCARD_LOOPBACK -> COMPRESSION_COIL -> ANALYSER'
+        ]);
+        playChime('triangle', 1.4);
+      } catch (err: any) {
+        setKarMicEnabled(false);
+        setKarTerminal(prev => [
+          ...prev.slice(-15),
+          `ERROR: MICROPHONE_NODE_FAILED // ${err.message?.toUpperCase() || 'PERMISSION_DENIED'}`,
+          'SYSTEM: STANDBY FOR SIMULATED SIGNAL'
+        ]);
+        playChime('square', 0.5);
+      }
+    }
+  };
+
+  const cleanupMicrophone = () => {
+    if (karMicStreamRef.current) {
+      karMicStreamRef.current.getTracks().forEach(t => t.stop());
+      karMicStreamRef.current = null;
+    }
+    if (karAudioNodesRef.current.source) {
+      try { karAudioNodesRef.current.source.disconnect(); } catch (e) {}
+    }
+    if (karAudioNodesRef.current.gain) {
+      try { karAudioNodesRef.current.gain.disconnect(); } catch (e) {}
+    }
+    if (karAudioNodesRef.current.delay) {
+      try { karAudioNodesRef.current.delay.disconnect(); } catch (e) {}
+    }
+    if (karAudioNodesRef.current.feedback) {
+      try { karAudioNodesRef.current.feedback.disconnect(); } catch (e) {}
+    }
+    karAudioNodesRef.current = { source: null, gain: null, delay: null, feedback: null };
+    karAnalyserRef.current = null;
+    setMicLevelVal(0);
+  };
+
+  const playKaraokeSFX = (type: 'applause' | 'boo' | 'laser' | 'screech') => {
+    try {
+      const ctx = audioCtxRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (!audioCtxRef.current) audioCtxRef.current = ctx;
+      if (ctx.state === 'suspended') ctx.resume();
+
+      const duration = type === 'applause' ? 2.5 : type === 'boo' ? 2.0 : type === 'laser' ? 0.4 : 0.6;
+      
+      if (type === 'laser') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + duration);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } else if (type === 'screech') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1200, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(1600, ctx.currentTime + 0.1);
+        osc.frequency.linearRampToValueAtTime(1400, ctx.currentTime + duration);
+        gain.gain.setValueAtTime(0.06, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } else {
+        const bufferSize = ctx.sampleRate * duration;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = ctx.createBiquadFilter();
+        if (type === 'applause') {
+          filter.type = 'bandpass';
+          filter.frequency.value = 1000;
+          filter.Q.value = 1.0;
+          const mod = ctx.createOscillator();
+          mod.frequency.value = 8;
+          const modGain = ctx.createGain();
+          modGain.gain.value = 300;
+          mod.connect(modGain);
+          modGain.connect(filter.frequency);
+          mod.start();
+          mod.stop(ctx.currentTime + duration);
+        } else {
+          filter.type = 'lowpass';
+          filter.frequency.value = 350;
+        }
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        noise.start();
+        noise.stop(ctx.currentTime + duration);
+      }
+
+      setKarTerminal(prev => [
+        ...prev.slice(-15),
+        `TRIGGER_SFX: ${type.toUpperCase()} // EMITTING ANALOG_PULSE`
+      ]);
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    if (karAudioNodesRef.current.gain) {
+      karAudioNodesRef.current.gain.gain.value = karMicVol;
+    }
+  }, [karMicVol]);
+
+  useEffect(() => {
+    if (karAudioNodesRef.current.delay && karAudioNodesRef.current.feedback) {
+      karAudioNodesRef.current.delay.delayTime.value = karEcho;
+      karAudioNodesRef.current.feedback.gain.value = karEcho > 0 ? 0.45 : 0.0;
+    }
+  }, [karEcho]);
+
+  // Karaoke Visualizer drawing loop
+  useEffect(() => {
+    if (activeTab !== 'karaoke') {
+      cleanupMicrophone();
+      if (karAnimationFrameRef.current) {
+        cancelAnimationFrame(karAnimationFrameRef.current);
+        karAnimationFrameRef.current = null;
+      }
+      return;
+    }
+
+    const canvas = document.getElementById('karaoke-visualizer-canvas') as HTMLCanvasElement | null;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let time = 0;
+    const draw = () => {
+      if (!canvas || !ctx) return;
+      time += 0.05;
+
+      const width = canvas.width;
+      const height = canvas.height;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.18)';
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = 'rgba(57, 255, 20, 0.15)';
+      ctx.lineWidth = 1;
+      
+      for (let x = 0; x < width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += 30) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+
+      let dataArray = new Uint8Array(0);
+      let bufferLength = 0;
+
+      if (karAnalyserRef.current) {
+        const analyser = karAnalyserRef.current;
+        bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        analyser.getByteTimeDomainData(dataArray);
+
+        let sumSq = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          const val = (dataArray[i] - 128) / 128;
+          sumSq += val * val;
+        }
+        const rms = Math.sqrt(sumSq / bufferLength);
+        const peak = Math.min(100, Math.round(rms * 450 * karMicVol));
+        setMicLevelVal(peak);
+      } else {
+        if (karIsPlaying) {
+          const simulatedPeak = Math.round(35 + Math.sin(time * 2.5) * 15 + Math.random() * 10);
+          setMicLevelVal(simulatedPeak);
+        } else {
+          setMicLevelVal(0);
+        }
+      }
+
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 4;
+
+      if (karAnalyserRef.current && dataArray.length > 0) {
+        ctx.strokeStyle = '#39FF14';
+        ctx.shadowColor = '#39FF14';
+        ctx.beginPath();
+
+        const sliceWidth = width / bufferLength;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const v = dataArray[i] / 128.0;
+          const y = (v * height) / 2;
+
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+
+          x += sliceWidth;
+        }
+
+        ctx.lineTo(width, height / 2);
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = karIsPlaying ? '#FF2BD6' : '#39FF14';
+        ctx.shadowColor = karIsPlaying ? '#FF2BD6' : '#39FF14';
+        ctx.beginPath();
+
+        for (let x = 0; x < width; x++) {
+          const rawY = height / 2;
+          const oscMultiplier = karIsPlaying ? (15 + Math.sin(time * 0.5) * 10) : 3;
+          const noise = karIsPlaying ? (Math.sin(x * 0.05 + time * 5) * Math.cos(x * 0.02 - time * 2) * oscMultiplier) : (Math.sin(x * 0.08 + time * 3) * 1.5);
+          
+          let jitter = 0;
+          if (karIsPlaying && Math.random() > 0.97) {
+            jitter = (Math.random() - 0.5) * 35;
+          }
+
+          const y = rawY + noise + jitter;
+
+          if (x === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+      }
+
+      ctx.shadowBlur = 0;
+
+      // Draw high-performance vintage CRT static snow on screen-static canvas
+      const staticCanvas = document.getElementById('karaoke-screen-static') as HTMLCanvasElement | null;
+      if (staticCanvas) {
+        const sCtx = staticCanvas.getContext('2d');
+        if (sCtx) {
+          const sW = staticCanvas.width;
+          const sH = staticCanvas.height;
+          const imgData = sCtx.createImageData(sW, sH);
+          const data = imgData.data;
+          const isStaticActive = !karIsPlaying || (karTrack !== 'custom_url');
+          if (isStaticActive) {
+            for (let i = 0; i < data.length; i += 4) {
+              const r = Math.random();
+              const noiseVal = r > 0.5 ? 240 : 15;
+              data[i] = noiseVal;
+              data[i + 1] = noiseVal;
+              data[i + 2] = noiseVal;
+              data[i + 3] = r > 0.92 ? 70 : 20; // soft overlay of snow
+            }
+            sCtx.putImageData(imgData, 0, 0);
+          } else {
+            sCtx.clearRect(0, 0, sW, sH);
+          }
+        }
+      }
+
+      karAnimationFrameRef.current = requestAnimationFrame(draw);
+    };
+
+    karAnimationFrameRef.current = requestAnimationFrame(draw);
+
+    return () => {
+      cleanupMicrophone();
+      if (karAnimationFrameRef.current) {
+        cancelAnimationFrame(karAnimationFrameRef.current);
+        karAnimationFrameRef.current = null;
+      }
+    };
+  }, [activeTab, karMicEnabled, karIsPlaying, karMicVol]);
+
+  // Synchronized lyric scrolling effect
+  useEffect(() => {
+    if (!karIsPlaying) return;
+
+    const interval = setInterval(() => {
+      setKarLyricsOffset(prev => prev + 1);
+    }, 1000 / (karLyricsSpeed || 1));
+
+    return () => clearInterval(interval);
+  }, [karIsPlaying, karLyricsSpeed]);
 
   // Helper to convert ipfs:// to a public gateway URL
   const getIpfsUrl = (uri?: string) => {
@@ -1345,6 +1987,17 @@ export default function App() {
     return externalExplanations[item.id]?.fieldNotes || item.fieldNotes || '';
   };
 
+  const filteredShaders = allShaders.filter(shader => {
+    if (galleryFilter === 'ALL') return true;
+    if (galleryFilter === 'VHS') return shader.tag === 'VHS' || shader.tag === 'CRT';
+    if (galleryFilter === 'MATH') return shader.tag === 'MATH' || shader.tag === 'CYCLE';
+    if (galleryFilter === 'CMY') return shader.tag === 'CMY' || shader.tag === 'PRISM' || shader.tag === 'FBM';
+    if (galleryFilter === 'FLUID') return shader.tag === 'FLUID' || shader.tag === 'BIO' || shader.tag === 'SILK';
+    if (galleryFilter === 'GLITCH') return shader.tag === 'GLITCH' || shader.tag === 'Y2K' || shader.tag === 'VOID';
+    if (galleryFilter === 'DYNAMIC') return shader.thumbClass === 'dynamic';
+    return true;
+  });
+
   return (
     <>
       {/* Background canvas */}
@@ -1390,56 +2043,66 @@ export default function App() {
           </div>
 
           {/* Quick-Access Aesthetic Tabs */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2 flex-wrap">
             <button 
               onClick={() => { setActiveTab('hub'); playChime('triangle', 0.8); }}
-              className={`px-3 py-1 text-[11px] font-bold border transition-all cursor-crosshair ${
+              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
                 activeTab === 'hub' 
-                  ? 'bg-[#39FF14] text-black border-[#39FF14]' 
-                  : 'bg-black text-[#39FF14] border-[#39FF14]/20 hover:border-[#39FF14]'
+                  ? 'bg-[#39FF14] text-black border-[#39FF14] shadow-[0_0_12px_rgba(57,255,20,0.5)]' 
+                  : 'bg-black text-[#39FF14] border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
               }`}
             >
               ⟡ PORTFOLIO_HUB
             </button>
             <button 
               onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }}
-              className={`px-3 py-1 text-[11px] font-bold border transition-all cursor-crosshair ${
+              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
                 activeTab === 'shaderslop' 
-                  ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
-                  : 'bg-black text-[#FF2BD6] border-[#FF2BD6]/20 hover:border-[#FF2BD6]'
+                  ? 'bg-[#FF2BD6] text-black border-[#FF2BD6] shadow-[0_0_12px_rgba(255,43,214,0.5)]' 
+                  : 'bg-black text-[#FF2BD6] border-[#FF2BD6]/40 hover:border-[#FF2BD6] hover:bg-[#FF2BD6]/10'
               }`}
             >
               ☢ SHADERSLOP
             </button>
             <button 
               onClick={() => { setActiveTab('aislop'); playChime('triangle', 1.2); }}
-              className={`px-3 py-1 text-[11px] font-bold border transition-all cursor-crosshair ${
+              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
                 activeTab === 'aislop' 
-                  ? 'bg-[#00F0FF] text-black border-[#00F0FF]' 
-                  : 'bg-black text-[#00F0FF] border-[#00F0FF]/20 hover:border-[#00F0FF]'
+                  ? 'bg-[#00F0FF] text-black border-[#00F0FF] shadow-[0_0_12px_rgba(0,240,255,0.5)]' 
+                  : 'bg-black text-[#00F0FF] border-[#00F0FF]/40 hover:border-[#00F0FF] hover:bg-[#00F0FF]/10'
               }`}
             >
               ☣ AI_SLOP
             </button>
             <button 
               onClick={() => { setActiveTab('rando'); playChime('triangle', 1.4); }}
-              className={`px-3 py-1 text-[11px] font-bold border transition-all cursor-crosshair ${
+              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
                 activeTab === 'rando' 
-                  ? 'bg-[#EFFF04] text-black border-[#EFFF04]' 
-                  : 'bg-black text-[#EFFF04] border-[#EFFF04]/20 hover:border-[#EFFF04]'
+                  ? 'bg-[#EFFF04] text-black border-[#EFFF04] shadow-[0_0_12px_rgba(239,255,4,0.5)]' 
+                  : 'bg-black text-[#EFFF04] border-[#EFFF04]/40 hover:border-[#EFFF04] hover:bg-[#EFFF04]/10'
               }`}
             >
               💩 RANDO_SYNTH
             </button>
             <button 
               onClick={() => { setActiveTab('about'); playChime('triangle', 1.6); }}
-              className={`px-3 py-1 text-[11px] font-bold border transition-all cursor-crosshair ${
+              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
                 activeTab === 'about' 
-                  ? 'bg-[#9D4DFF] text-black border-[#9D4DFF]' 
-                  : 'bg-black text-[#9D4DFF] border-[#9D4DFF]/20 hover:border-[#9D4DFF]'
+                  ? 'bg-[#9D4DFF] text-black border-[#9D4DFF] shadow-[0_0_12px_rgba(157,77,255,0.5)]' 
+                  : 'bg-black text-[#9D4DFF] border-[#9D4DFF]/40 hover:border-[#9D4DFF] hover:bg-[#9D4DFF]/10'
               }`}
             >
               ░ ABOUT_ME
+            </button>
+            <button 
+              onClick={() => { setActiveTab('karaoke'); playChime('square', 1.8); }}
+              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
+                activeTab === 'karaoke' 
+                  ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-[0_0_12px_rgba(255,107,0,0.5)]' 
+                  : 'bg-black text-[#FF6B00] border-[#FF6B00]/40 hover:border-[#FF6B00] hover:bg-[#FF6B00]/10'
+              }`}
+            >
+              🎤 SHITTY_KARAOKE
             </button>
           </div>
         </div>
@@ -1477,8 +2140,8 @@ export default function App() {
                         Cosmic debris, lovingly rendered. <em>GLSL shaders</em>, generative math, and twenty years of documented psychedelic phenomenology — salvaged, glitched, and left glowing in orbit by <em>astraltrash</em>. One artist's trash is the same artist's treasure.
                       </div>
                       <div className="btn-row">
-                        <button onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }} className="btn speak cursor-crosshair" data-say="Entering the gallery">
-                          ENTER GALLERY ▸
+                        <button onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }} className="btn alt speak cursor-crosshair" data-say="Entering the shaderslop gallery">
+                          SHADERSLOP ▸
                         </button>
                         <a
                           className="btn speak border-[#EFFF04] text-[#EFFF04] hover:bg-[#EFFF04] hover:text-black hover:shadow-[0_0_24px_#EFFF04]"
@@ -1684,91 +2347,242 @@ export default function App() {
                     
                     {/* Top 8 Debris Section */}
                     <section className="sect pt-2" id="top8">
-                      <h2 className="sect-head">▓▒░ TOP 8 DEBRIS ░▒▓</h2>
+                      <div className="flex flex-wrap justify-between items-center gap-4 mb-2">
+                        <h2 className="sect-head mb-0">▓▒░ TOP 8 DEBRIS ░▒▓</h2>
+                        <button
+                          onClick={() => {
+                            setIsEditingTop8(!isEditingTop8);
+                            setEditingSlotId(null);
+                            playChime('triangle', 1.0);
+                          }}
+                          className={`px-3 py-1 text-xs font-mono border transition-all uppercase tracking-wider ${
+                            isEditingTop8
+                              ? 'bg-[#FF2BD6] text-black border-[#FF2BD6] shadow-[0_0_10px_rgba(255,43,214,0.4)]'
+                              : 'bg-black text-[#39FF14] border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
+                          }`}
+                        >
+                          {isEditingTop8 ? '✖ CLOSE COIL PANEL' : '⚙ CONFIGURE TOP 8'}
+                        </button>
+                      </div>
+                      
                       <div className="sect-sub">
                         yes, like that. my top friends are all repos and they are all garbage i refuse to throw away.
                       </div>
+
+                      {/* CONFIGURE PANEL */}
+                      {isEditingTop8 && (
+                        <div className="border-2 border-dashed border-[#FF2BD6] bg-black/95 p-4 mb-6 rounded-none font-mono space-y-4 shadow-[0_0_15px_rgba(255,43,214,0.2)]">
+                          <div className="flex justify-between items-center border-b border-[#FF2BD6]/30 pb-2">
+                            <span className="text-sm font-bold text-[#FF2BD6] tracking-wider uppercase">⚡ RE-MAP ORBITAL DEBRIS COILS</span>
+                            <button
+                              onClick={() => {
+                                if (window.confirm('Reset Top 8 debris array to original factory settings?')) {
+                                  localStorage.removeItem('astraltrash_top8_debris');
+                                  setTop8Debris(defaultTop8);
+                                  setIsEditingTop8(false);
+                                  playChime('square', 1.5);
+                                }
+                              }}
+                              className="text-[10px] text-zinc-500 hover:text-white border border-zinc-700 hover:border-white px-2 py-0.5 transition-all"
+                            >
+                              RESET TO FACTORY DEFAULTS
+                            </button>
+                          </div>
+
+                          {/* Slot selection grid */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2">
+                            {top8Debris.map((item) => (
+                              <button
+                                key={item.id}
+                                onClick={() => {
+                                  setEditingSlotId(item.id);
+                                  setEditTitle(item.title);
+                                  setEditFileName(item.fileName);
+                                  setEditDesc(item.desc);
+                                  setEditTag(item.tag);
+                                  playChime('triangle', 0.9);
+                                }}
+                                className={`p-2 border text-center transition-all ${
+                                  editingSlotId === item.id
+                                    ? 'bg-[#39FF14] text-black border-[#39FF14] font-bold shadow-[0_0_8px_rgba(57,255,20,0.4)]'
+                                    : 'bg-zinc-950 text-white border-zinc-800 hover:border-zinc-500'
+                                }`}
+                              >
+                                <div className="text-[10px] opacity-70">SLOT {item.id}</div>
+                                <div className="text-xs truncate max-w-[80px] mx-auto mt-1">
+                                  {item.title || '[empty]'}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Active editing slot form */}
+                          {editingSlotId !== null ? (
+                            <div className="bg-zinc-950/80 p-3 border border-zinc-800 space-y-3">
+                              <div className="text-xs font-bold text-[#00F0FF] uppercase tracking-wider border-b border-zinc-800 pb-1">
+                                EDITING COIL SLOT {editingSlotId}
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {/* Autopopulate selection dropdown */}
+                                <div className="space-y-1">
+                                  <label className="block text-[11px] text-zinc-400 uppercase">ASTRAL_TRASH DEBRIS ARCHIVE (PRE-POPULATE)</label>
+                                  <select
+                                    onChange={(e) => {
+                                      const matchedVal = e.target.value;
+                                      if (matchedVal) {
+                                        const foundS = allShaders.find(s => s.fileName === matchedVal);
+                                        if (foundS) {
+                                          setEditTitle(foundS.title);
+                                          setEditFileName(foundS.fileName);
+                                          // Intelligently clean description from technicalDetails / explanation or let user write
+                                          setEditDesc(foundS.explanation || `interactive experimental shader artifact`);
+                                          setEditTag(foundS.tag || 'GLSL');
+                                          playChime('square', 0.8);
+                                        }
+                                      }
+                                    }}
+                                    className="w-full bg-black border border-zinc-800 text-xs text-white p-2 outline-none focus:border-[#FF2BD6]"
+                                    defaultValue=""
+                                  >
+                                    <option value="" disabled>-- CHOOSE FROM GENERATIVE ARCHIVE --</option>
+                                    {allShaders.map((sh, idx) => (
+                                      <option key={idx} value={sh.fileName}>
+                                        {sh.title} ({sh.fileName})
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                {/* Custom Tag */}
+                                <div className="space-y-1">
+                                  <label className="block text-[11px] text-zinc-400 uppercase">CLASSIFICATION_TAG (e.g. GLSL, VHS, MATH)</label>
+                                  <input
+                                    type="text"
+                                    value={editTag}
+                                    onChange={(e) => setEditTag(e.target.value)}
+                                    placeholder="GLSL"
+                                    className="w-full bg-black border border-zinc-800 text-xs text-white p-2 outline-none focus:border-[#FF2BD6]"
+                                  />
+                                </div>
+
+                                {/* Display Title */}
+                                <div className="space-y-1">
+                                  <label className="block text-[11px] text-zinc-400 uppercase">DISPLAY_NAME</label>
+                                  <input
+                                    type="text"
+                                    value={editTitle}
+                                    onChange={(e) => setEditTitle(e.target.value)}
+                                    placeholder="spectral_candy_garden"
+                                    className="w-full bg-black border border-zinc-800 text-xs text-white p-2 outline-none focus:border-[#FF2BD6]"
+                                  />
+                                </div>
+
+                                {/* Source File / Path */}
+                                <div className="space-y-1">
+                                  <label className="block text-[11px] text-zinc-400 uppercase">SOURCE_FILE_OR_PATH</label>
+                                  <input
+                                    type="text"
+                                    value={editFileName}
+                                    onChange={(e) => setEditFileName(e.target.value)}
+                                    placeholder="spectral_candy_garden_20260624_134032.html"
+                                    className="w-full bg-black border border-zinc-800 text-xs text-[#39FF14] p-2 outline-none focus:border-[#FF2BD6] font-mono"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Custom description */}
+                              <div className="space-y-1">
+                                <label className="block text-[11px] text-zinc-400 uppercase">AESTHETIC_DESCRIPTION</label>
+                                <textarea
+                                  value={editDesc}
+                                  onChange={(e) => setEditDesc(e.target.value)}
+                                  placeholder="vivid cosmic bloom of dithered particles..."
+                                  rows={2}
+                                  className="w-full bg-black border border-zinc-800 text-xs text-white p-2 outline-none focus:border-[#FF2BD6]"
+                                />
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex justify-end gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingSlotId(null);
+                                    playChime('triangle', 0.5);
+                                  }}
+                                  className="bg-black border border-zinc-800 hover:bg-zinc-900 text-zinc-400 text-xs px-4 py-1.5 transition-all"
+                                >
+                                  CANCEL
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = top8Debris.map(item => {
+                                      if (item.id === editingSlotId) {
+                                        return {
+                                          ...item,
+                                          title: editTitle.trim() || `Debris #${editingSlotId}`,
+                                          fileName: editFileName.trim(),
+                                          desc: editDesc.trim(),
+                                          tag: editTag.trim() || 'GLSL'
+                                        };
+                                      }
+                                      return item;
+                                    });
+                                    setTop8Debris(updated);
+                                    localStorage.setItem('astraltrash_top8_debris', JSON.stringify(updated));
+                                    setEditingSlotId(null);
+                                    playChime('triangle', 1.5);
+                                    setTerminalOutputs(prev => [
+                                      ...prev,
+                                      `SUCCESS: Re-mapped debris slot #${editingSlotId} -> ${editTitle}`
+                                    ]);
+                                  }}
+                                  className="bg-[#FF2BD6] text-black font-bold text-xs px-5 py-1.5 hover:bg-white hover:shadow-[0_0_10px_rgba(255,43,214,0.6)] transition-all"
+                                >
+                                  SAVE COIL SLOT
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center py-6 text-xs text-zinc-500 border border-zinc-900 bg-zinc-950/20">
+                              ▲ SELECT A COIL SLOT ABOVE TO RE-MAP IT ▲
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* TOP 8 GRID */}
                       <div className="top8">
-                        <div
-                          onClick={() => { setSelectedShader(shadersList[0]); setActiveTab('shaderslop'); }}
-                          className="card speak"
-                          data-say="Structural color. Thin film interference and morpho butterfly shaders."
-                        >
-                          <div className="thumb t1" />
-                          <h3>structural_color</h3>
-                          <p>thin-film interference, morpho wings, Rayleigh scattering — 11 shaders, one dat.gui</p>
-                          <span className="tag">GLSL</span>
-                        </div>
-                        <div
-                          onClick={() => { setSelectedShader(shadersList[1]); setActiveTab('shaderslop'); }}
-                          className="card speak"
-                          data-say="Dither. 24 files of ordered chaos."
-                        >
-                          <div className="thumb t4" />
-                          <h3>dither</h3>
-                          <p>Bayer, blue noise, Floyd-Steinberg, Atkinson, Sierra + the merry palette</p>
-                          <span className="tag">ALGORITHMS</span>
-                        </div>
-                        <div
-                          onClick={() => { setSelectedShader(shadersList[3]); setActiveTab('shaderslop'); }}
-                          className="card speak"
-                          data-say="Impossible. Twelve rooms that should not exist."
-                        >
-                          <div className="thumb t5" />
-                          <h3>impossible</h3>
-                          <p>12 impossible architectural rooms, each isolating one spatial math trick</p>
-                          <span className="tag">RAYMARCH</span>
-                        </div>
-                        <div
-                          onClick={() => { setSelectedShader(shadersList[2]); setActiveTab('shaderslop'); }}
-                          className="card speak"
-                          data-say="Sacred geometry. The Tetragrammaton renders."
-                        >
-                          <div className="thumb t8" />
-                          <h3>sacred_geometry</h3>
-                          <p>Platonic solids, tradition data, hyperbolic honeycombs — the constants</p>
-                          <span className="tag">GEOMETRY</span>
-                        </div>
-                        <div
-                          onClick={() => { setSelectedShader(shadersList[5]); setActiveTab('shaderslop'); }}
-                          className="card speak"
-                          data-say="Dream physics. Non Euclidean space in Three JS."
-                        >
-                          <div className="thumb t2" />
-                          <h3>dream_physics</h3>
-                          <p>phenomenology taxonomy + non-Euclidean Three.js space</p>
-                          <span className="tag">THREE.JS</span>
-                        </div>
-                        <div
-                          onClick={() => { setSelectedShader(shadersList[4]); setActiveTab('shaderslop'); }}
-                          className="card speak"
-                          data-say="U F O. Fifteen craft archetypes as JSON."
-                        >
-                          <div className="thumb t6" />
-                          <h3>ufo</h3>
-                          <p>15 craft archetypes, 12 sighting cases, shaders — ufology as dataset</p>
-                          <span className="tag">DATASET</span>
-                        </div>
-                        <div
-                          onClick={() => { setSelectedShader(shadersList[4]); setActiveTab('shaderslop'); }}
-                          className="card speak"
-                          data-say="Crop circles. The fields are generative."
-                        >
-                          <div className="thumb t7" />
-                          <h3>crop_circles</h3>
-                          <p>procedural field formations, part of the little green ecosystem</p>
-                          <span className="tag">GENERATIVE</span>
-                        </div>
-                        <div
-                          onClick={() => { setSelectedShader(shadersList[5]); setActiveTab('shaderslop'); }}
-                          className="card speak"
-                          data-say="The visual bible. Where everything begins."
-                        >
-                          <div className="thumb t3" />
-                          <h3>astraltrash_visual_bible</h3>
-                          <p>the aesthetic grounding layer — exact GLSL for the recurring phenomena</p>
-                          <span className="tag">CANON</span>
-                        </div>
+                        {top8Debris.map((item, index) => {
+                          const isLoaded = !!findShader(item.fileName);
+                          return (
+                            <div
+                              key={item.id}
+                              onClick={() => handleTop8Click(item)}
+                              className="card speak relative group"
+                              data-say={`${item.title}. ${item.desc}`}
+                            >
+                              {/* Indicator dot showing if the shader is verified in directory */}
+                              <span 
+                                className={`absolute top-2 right-2 w-1.5 h-1.5 rounded-full ${
+                                  isLoaded ? 'bg-[#39FF14]' : 'bg-[#FF2BD6]'
+                                }`}
+                                title={isLoaded ? "Verified in Repo Archive" : "External repository link (will compile dynamically)"}
+                              />
+                              <div className={`thumb t${(index % 8) + 1}`} />
+                              <h3>{item.title}</h3>
+                              <p>{item.desc}</p>
+                              <div className="flex justify-between items-center mt-2 pt-1 border-t border-zinc-900/40">
+                                <span className="tag">{item.tag}</span>
+                                <span className="text-[9px] text-zinc-600 font-mono tracking-tighter uppercase group-hover:text-zinc-400 transition-colors">
+                                  COIL {item.id}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </section>
 
@@ -1794,16 +2608,16 @@ export default function App() {
                   </div>
 
                   {/* Right Column (MySpace comments / Featured Project scrolly box) */}
-                  <div className="lg:col-span-4 lg:sticky lg:top-[60px] max-h-[85vh] overflow-y-auto bg-black/95 border-2 border-[#FF2BD6] p-4 shadow-[0_0_25px_rgba(255,43,214,0.25)] space-y-5 font-mono">
+                  <div className="lg:col-span-4 lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-80px)] overflow-y-auto bg-black/95 border-2 border-[#FF2BD6] p-6 shadow-[0_0_25px_rgba(255,43,214,0.35)] space-y-7 font-mono custom-scrollbar">
                     
                     {/* Header styled like a table column */}
-                    <div className="bg-[#FF2BD6] text-black text-[12px] font-bold p-1 px-2 tracking-widest flex justify-between items-center">
+                    <div className="bg-[#FF2BD6] text-black text-sm font-bold p-2 px-3 tracking-widest flex justify-between items-center">
                       <span>⚡ FEATURED: SHADERSLOP</span>
-                      <span className="text-[9px] bg-black text-[#FF2BD6] px-1.5 py-0.5">MATRIX_FEED</span>
+                      <span className="text-[10px] bg-black text-[#FF2BD6] px-2 py-1">MATRIX_FEED</span>
                     </div>
 
                     {/* Live Render IFrame */}
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <div className="relative aspect-square w-full bg-black border border-[#FF2BD6]/40 overflow-hidden flex items-center justify-center clean-container">
                         {featuredHtml ? (
                           <iframe 
@@ -1828,47 +2642,83 @@ export default function App() {
                       </div>
                       
                       {/* Controls to cycle shaders */}
-                      <div className="flex justify-between items-center gap-2 pt-1">
+                      <div className="flex justify-between items-center gap-3 pt-2">
                         <button 
                           onClick={() => cycleFeaturedShader('prev')}
-                          className="bg-black border border-[#FF2BD6] text-[#FF2BD6] hover:bg-[#FF2BD6] hover:text-black transition-all px-2 py-1 text-[11px] font-bold cursor-crosshair"
+                          className="bg-black border border-[#FF2BD6] text-[#FF2BD6] hover:bg-[#FF2BD6] hover:text-black transition-all px-3 py-1.5 text-xs font-bold cursor-crosshair tracking-wider"
                         >
                           ◀ ROTATE
                         </button>
-                        <div className="text-center font-bold text-white text-[12px] truncate max-w-[130px] sm:max-w-none">
+                        <div className="text-center font-bold text-white text-sm tracking-wide truncate max-w-[160px] sm:max-w-none">
                           {shadersList[featuredShaderIndex].title}
                         </div>
                         <button 
                           onClick={() => cycleFeaturedShader('next')}
-                          className="bg-black border border-[#FF2BD6] text-[#FF2BD6] hover:bg-[#FF2BD6] hover:text-black transition-all px-2 py-1 text-[11px] font-bold cursor-crosshair"
+                          className="bg-black border border-[#FF2BD6] text-[#FF2BD6] hover:bg-[#FF2BD6] hover:text-black transition-all px-3 py-1.5 text-xs font-bold cursor-crosshair tracking-wider"
                         >
                           ROTATE ▶
                         </button>
                       </div>
                     </div>
 
-                    {/* Explanation */}
-                    <div className="text-[11px] text-gray-300 leading-relaxed border-l-2 border-[#FF2BD6] pl-2 bg-[#020202] p-2 border border-zinc-900">
-                      <p className="text-gray-400 italic mb-1">"{getShaderExplanation(shadersList[featuredShaderIndex])}"</p>
-                      <div className="text-[10px] text-[#39FF14] mt-1">
-                        <span className="text-gray-500">ID:</span> {shadersList[featuredShaderIndex].id.toUpperCase()}
+                    {/* Shader Information Dossier */}
+                    <div className="space-y-6">
+                      {/* Concept Section */}
+                      <div className="space-y-2 border-l-3 border-[#FF2BD6] pl-4">
+                        <div className="text-[11px] text-[#FF2BD6] font-bold uppercase tracking-widest font-mono">
+                          // CONCEPTUAL_SPECIFICATION
+                        </div>
+                        <p className="text-sm text-gray-200 leading-relaxed font-sans">
+                          {getShaderExplanation(shadersList[featuredShaderIndex])}
+                        </p>
+                        <div className="text-[10px] text-[#39FF14]/80 font-mono flex items-center gap-1.5 pt-1">
+                          <span className="text-gray-500 font-bold uppercase tracking-wider text-[9px]">REGISTRY ID:</span> 
+                          <span className="font-bold bg-[#39FF14]/10 px-1 py-0.5 border border-[#39FF14]/20">{shadersList[featuredShaderIndex].id.toUpperCase()}</span>
+                        </div>
                       </div>
+
+                      {/* Technical Details Section */}
+                      {shadersList[featuredShaderIndex].technicalDetails && (
+                        <div className="space-y-2 bg-[#020202] border border-zinc-900/80 p-4">
+                          <div className="text-[10px] text-[#00F0FF] font-bold uppercase tracking-widest flex items-center gap-1.5 border-b border-zinc-900 pb-1.5 font-mono">
+                            <span className="text-xs">⚛</span> COMPUTATIONAL_FORMULA
+                          </div>
+                          <p className="text-[11px] text-gray-400 font-mono leading-relaxed">
+                            {shadersList[featuredShaderIndex].technicalDetails}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Field Notes Section */}
+                      {shadersList[featuredShaderIndex].fieldNotes && (
+                        <div className="space-y-2 bg-[#05000a]/70 border border-zinc-900/80 p-4 relative">
+                          <div className="text-[10px] text-[#EFFF04] font-bold uppercase tracking-widest flex items-center gap-1.5 border-b border-zinc-900 pb-1.5 font-mono">
+                            <span className="text-xs">⟡</span> FIELD_DOSSIER // RESEARCH_ARCHIVE
+                          </div>
+                          <p className="text-xs text-gray-300 italic leading-relaxed font-sans">
+                            "{shadersList[featuredShaderIndex].fieldNotes}"
+                          </p>
+                          <div className="text-[9px] text-zinc-600 text-right pt-1 font-mono">
+                            CLEARANCE: DEEP_ORBITAL_STATION
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Interactive Dock Control Station */}
-                    <div className="bg-zinc-950 p-3 border border-zinc-900 space-y-2.5 text-[11px]">
-                      <div className="text-[#FF2BD6] font-bold text-[10px] uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-900 pb-1.5">
-                        <Sliders className="w-3 h-3" />
+                    <div className="bg-zinc-950 p-5 border border-zinc-900/80 space-y-5 text-xs">
+                      <div className="text-[#FF2BD6] font-bold text-xs uppercase tracking-wider flex items-center gap-2 border-b border-zinc-900 pb-2.5 font-mono">
+                        <Sliders className="w-4 h-4 text-[#FF2BD6]" />
                         <span>Interactive Dock Control Station</span>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-4">
                         <a 
                           href={`https://raw.githack.com/merrypranxter/shaderslop_designs/main/${shadersList[featuredShaderIndex].fileName}`}
                           target="_blank"
                           rel="noreferrer"
                           onClick={() => playChime('sine', 1.2)}
-                          className="text-center border border-zinc-800 hover:border-white px-2 py-2 text-[10px] text-gray-400 hover:text-white transition-all cursor-crosshair font-bold uppercase block"
+                          className="text-center border border-zinc-800 hover:border-white px-4 py-3.5 text-xs text-gray-300 hover:text-white hover:bg-zinc-900/50 transition-all cursor-crosshair font-bold uppercase block tracking-widest font-mono"
                         >
                           LAUNCH FULLSCREEN ↗
                         </a>
@@ -1878,87 +2728,40 @@ export default function App() {
                             setActiveTab('shaderslop');
                             playChime('triangle', 1.0);
                           }}
-                          className="text-center border border-[#FF2BD6]/40 hover:bg-[#FF2BD6]/10 px-2 py-2 text-[10px] text-[#FF2BD6] transition-all cursor-crosshair font-bold uppercase block"
+                          className="text-center border border-[#FF2BD6]/40 hover:bg-[#FF2BD6]/10 px-4 py-3.5 text-xs text-[#FF2BD6] transition-all cursor-crosshair font-bold uppercase block tracking-widest font-mono"
                         >
                           OPEN IN CODE LAB ⚛
                         </button>
                       </div>
 
                       {/* Collect NFT call-to-action button */}
-                      <div className="pt-0.5">
+                      <div className="pt-1.5">
                         <a 
                           href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9"
                           target="_blank"
                           rel="noreferrer"
                           onClick={() => playChime('sine', 1.5)}
-                          className="text-center border border-[#EFFF04]/50 hover:bg-[#EFFF04]/20 bg-[#EFFF04]/5 px-2.5 py-2.5 text-[11px] text-[#EFFF04] hover:shadow-[0_0_12px_rgba(239,255,4,0.4)] transition-all cursor-crosshair font-bold uppercase block flex items-center justify-center gap-1.5"
+                          className="text-center border border-[#EFFF04]/50 hover:bg-[#EFFF04]/20 bg-[#EFFF04]/5 px-4.5 py-4 text-sm text-[#EFFF04] hover:shadow-[0_0_20px_rgba(239,255,4,0.6)] transition-all cursor-crosshair font-black uppercase block flex items-center justify-center gap-2 tracking-widest font-mono"
                         >
                           <span>COLLECT ORIGINAL NFT ON OBJKT ⟡</span>
                         </a>
                       </div>
 
                       {/* Technical Readout */}
-                      <div className="pt-1.5 border-t border-zinc-900/60 font-mono text-[9px] text-zinc-500 space-y-0.5">
-                        <div>LOCATION: <span className="text-zinc-400">astraltrash/shaderslop_designs</span></div>
-                        <div>RESOLVED_PATH: <span className="text-zinc-400">{shadersList[featuredShaderIndex].fileName}</span></div>
-                        <div>CDN_PROXY: <span className="text-[#39FF14]">ACTIVE_GITHACK_STREAM</span></div>
-                      </div>
-                    </div>
-
-                    {/* MYSPACE STYLE COMMENTS FEED */}
-                    <div className="space-y-3 pt-1">
-                      <div className="bg-[#39FF14] text-black text-[12px] font-bold p-1 px-2 tracking-widest flex justify-between items-center">
-                        <span>💬 astraltrash's COMMENTS</span>
-                        <span className="text-[9px] bg-black text-[#39FF14] px-1.5 py-0.5">{myspaceComments.length} POSTS</span>
-                      </div>
-
-                      {/* Comment Scrolly list */}
-                      <div className="max-h-[180px] overflow-y-auto space-y-2.5 pr-1">
-                        {myspaceComments.map((comment) => (
-                          <div key={comment.id} className="border border-zinc-900 bg-black/60 p-2 text-[11px] leading-normal flex gap-2">
-                            <div 
-                              className="w-7 h-7 shrink-0 flex items-center justify-center font-bold text-black text-[9px]"
-                              style={{ background: comment.avatarBg }}
-                            >
-                              {comment.sender.charAt(2) || '✖'}
-                            </div>
-                            <div className="flex-grow space-y-0.5 min-w-0">
-                              <div className="flex justify-between items-center text-[10px] gap-2">
-                                <span className="font-bold text-[#FF2BD6] truncate">{comment.sender}</span>
-                                <span className="text-gray-500 shrink-0">{comment.timestamp}</span>
-                              </div>
-                              <p className="text-gray-300 break-words">{comment.text}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Add comment form */}
-                      <form onSubmit={handleAddComment} className="space-y-2 bg-[#030303] p-2 border border-zinc-900 text-[11px]">
-                        <div className="font-bold text-gray-400 text-[9px] uppercase tracking-wider">LEAVE A REACTION</div>
-                        <div className="grid grid-cols-1 gap-1.5">
-                          <input 
-                            type="text" 
-                            placeholder="Your retro handle..." 
-                            value={newCommentName}
-                            onChange={(e) => setNewCommentName(e.target.value)}
-                            className="w-full bg-black border border-gray-800 focus:border-[#39FF14] text-white p-1.5 text-[11px] outline-none"
-                          />
-                          <textarea 
-                            placeholder="Type a comment..." 
-                            value={newCommentText}
-                            onChange={(e) => setNewCommentText(e.target.value)}
-                            rows={1}
-                            className="w-full bg-black border border-gray-800 focus:border-[#39FF14] text-white p-1.5 text-[11px] outline-none resize-none"
-                          />
+                      <div className="pt-3 border-t border-zinc-900/60 font-mono text-xs text-zinc-500 space-y-1.5">
+                        <div className="flex justify-between items-center">
+                          <span className="text-zinc-600 font-bold">LOCATION:</span> 
+                          <span className="text-zinc-400">astraltrash/shaderslop_designs</span>
                         </div>
-                        <button 
-                          type="submit"
-                          className="w-full bg-[#39FF14] hover:bg-[#39FF14]/80 text-black font-bold py-1 px-2 text-[10px] tracking-widest cursor-crosshair uppercase transition-all"
-                        >
-                          ⚡ TRANSMIT COMMENT ⚡
-                        </button>
-                      </form>
+                        <div className="flex justify-between items-center">
+                          <span className="text-zinc-600 font-bold">RESOLVED_PATH:</span> 
+                          <span className="text-zinc-400">{shadersList[featuredShaderIndex].fileName}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-zinc-600 font-bold">CDN_PROXY:</span> 
+                          <span className="text-[#39FF14] font-bold">ACTIVE_GITHACK_STREAM</span>
+                        </div>
+                      </div>
                     </div>
 
                   </div>
@@ -1972,81 +2775,115 @@ export default function App() {
           {/* SECTION B: SHADERSLOP - INTERACTIVE FULL-RESOLUTION GALLERY               */}
           {/* ========================================================================= */}
           {activeTab === 'shaderslop' && (
-            <div className="frame py-8">
-              <div className="mb-6">
-                <div className="flex justify-between items-end border-b border-[#FF2BD6] pb-3 mb-2">
-                  <h2 className="text-3xl font-bold font-sans text-[#FF2BD6] tracking-wider uppercase">☢ ShaderSlop Gallery ☢</h2>
-                  <span className="text-[11px] text-gray-500 font-mono">RENDER_PLATFORM: WebGL2_GENATIVE</span>
+            <div className="frame py-8 space-y-8">
+              {/* Majestic Jittery White/Greenish Gallery Heading */}
+              <div className="text-center pt-6 md:pt-10 space-y-3">
+                <h2 
+                  className="text-5xl md:text-6xl font-extrabold text-white tracking-wider uppercase mb-2 font-sans"
+                  style={{
+                    fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
+                    textShadow: '0 0 8px var(--phosphor), 0 0 30px rgba(57,255,20,0.5), 3px 0 0 rgba(255,43,214,0.8), -3px 0 0 rgba(0,240,255,0.8)',
+                    animation: 'jitter 6s infinite'
+                  }}
+                >
+                  ☢ ShaderSlop Gallery ☢
+                </h2>
+                <div className="flex justify-center items-center flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-500 font-mono">
+                  <span>RENDER_PLATFORM: WebGL2_GENATIVE</span>
+                  <span>•</span>
+                  <span>DIRECTORY: {allShaders.length} SHARDS IDENTIFIED</span>
+                  {isFetchingRepoList && (
+                    <span className="text-[#39FF14] animate-pulse font-bold">[POLLING REMOTE REPOSITORY...]</span>
+                  )}
                 </div>
-                <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-2xl">
-                  Real raw GLSL fragment code compiled dynamically in your browser at high resolution. Click on any shader shard to activate the rendering lab, configure aspect ratios, or select custom rendering quality.
+                <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-3xl mx-auto">
+                  Real raw GLSL fragment code compiled dynamically in your browser. Select dynamic quality presets, adjust aspect ratios, or scrub temporal coordinates in real-time.
                 </p>
               </div>
 
-              {/* Main Split Layout: Grid on left / Blown up playground on right */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Master Lab Command Station: Active Viewer (Left 7/12) & Active Info/Controls (Right 5/12) */}
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
                 
-                {/* Left Side: Dynamic Grid */}
-                <div className="lg:col-span-5 lg:max-h-[calc(100vh-220px)] lg:overflow-y-auto lg:pr-3 lg:pb-12 custom-scrollbar">
-                  <div className="grid grid-cols-2 gap-4">
-                    {shadersList.map((item) => (
-                      <div 
-                        key={item.id}
-                        onClick={() => {
-                          setSelectedShader(item);
-                          setShaderSpeed(item.defaultParams.speed);
-                          setShaderScale(item.defaultParams.scale);
-                          setShaderIntensity(item.defaultParams.intensity);
-                          setShaderHue(item.defaultParams.hue);
-                          setShowGLSL(false);
-                          playChime('square', 1.0);
-                        }}
-                        className={`group border cursor-crosshair p-3 transition-all ${
-                          selectedShader?.id === item.id 
-                            ? 'bg-[#FF2BD6]/10 border-[#FF2BD6] shadow-[0_0_15px_rgba(255,43,214,0.3)]' 
-                            : 'bg-black/80 border-gray-800 hover:border-[#FF2BD6]/50'
-                        }`}
-                      >
-                        <div className="aspect-square w-full mb-2 relative overflow-hidden border border-gray-950">
-                          <ShaderThumbnail shaderId={item.id} fileName={item.fileName} />
-                          <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors pointer-events-none" />
-                          <div className="absolute top-1 left-1 text-[8px] bg-black/80 text-white px-1.5 py-0.5 font-mono border border-white/10">
-                            {item.tag}
+                {/* Left Side: Centerpiece IFrame Viewer (Defaults to 1:1) */}
+                <div className="xl:col-span-7 bg-black/95 border border-[#FF2BD6]/30 p-4 space-y-4">
+                  <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 border-b border-zinc-900 pb-2">
+                    <span className="text-zinc-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                      <Atom className="w-3.5 h-3.5 text-[#FF2BD6] animate-spin" />
+                      <span>Live Simulation Feed // {selectedShader?.title || 'Inactive'}</span>
+                    </span>
+                    <span>FRAME_SYNC: CRT_EMU</span>
+                  </div>
+
+                  {selectedShader ? (
+                    <div className="flex justify-center w-full bg-black border border-[#FF2BD6]/20 relative overflow-hidden select-none clean-container">
+                      <div className={`relative ${
+                        selectedAspect === '1:1' ? 'aspect-square w-full max-w-[580px]' :
+                        selectedAspect === '16:9' ? 'aspect-video w-full' :
+                        selectedAspect === '4:3' ? 'aspect-[4/3] w-full max-w-[580px]' :
+                        'w-full h-[500px]'
+                      } bg-black overflow-hidden flex items-center justify-center`}>
+                        
+                        {galleryHtml ? (
+                          <iframe 
+                            srcDoc={injectRuntimeLabMods(galleryHtml, selectedResolution, shaderStartTimeOffset, !isShaderPlaying)}
+                            className="w-full h-full border-0 block bg-black shader-iframe-clean"
+                            title={selectedShader.title}
+                            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                            sandbox="allow-scripts allow-same-origin"
+                            id={`gallery-iframe-${selectedShader.id}`}
+                            onContextMenu={(e) => e.preventDefault()}
+                          />
+                        ) : (
+                          <div className="text-[#FF2BD6] font-mono text-[10px] animate-pulse">
+                            RETRIEVING CHROMATIC MATRIX...
                           </div>
+                        )}
+                        
+                        {/* Visual Overlay Indicators */}
+                        <div className="absolute top-2 left-2 bg-black/90 border border-[#FF2BD6] text-[#FF2BD6] font-mono text-[9px] px-2 py-0.5 flex items-center gap-1 backdrop-blur-md select-none pointer-events-none">
+                          <Maximize2 className="w-2.5 h-2.5" />
+                          <span>CODE LAB FEED // {selectedAspect}</span>
                         </div>
-                        <h4 className="text-white text-[13px] font-sans font-bold truncate tracking-wide">{item.title}</h4>
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-[9px] text-[#FF2BD6] uppercase tracking-widest">{item.tag} SHARD</span>
-                          <ChevronRight className="w-3 h-3 text-[#FF2BD6] group-hover:translate-x-1 transition-transform" />
+
+                        <div className="absolute bottom-2 right-2 bg-black/90 border border-gray-800 text-gray-500 font-mono text-[8px] px-2 py-0.5 backdrop-blur-md select-none pointer-events-none">
+                          RES: {selectedResolution.toUpperCase()} // FILE: {selectedShader.fileName}
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="aspect-square w-full max-w-[580px] mx-auto flex flex-col items-center justify-center border border-dashed border-[#FF2BD6]/20 text-center p-6 text-gray-500 font-mono">
+                      <Atom className="w-12 h-12 text-[#FF2BD6]/30 animate-spin mb-4" style={{ animationDuration: '8s' }} />
+                      <h4 className="text-white text-md font-sans font-bold uppercase mb-1">NO SHARD CHOSEN</h4>
+                      <p className="text-[12px] max-w-xs">
+                        Browse the Debris Deck below and choose any shard block to boot rendering.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
-                {/* Right Side: Blown Up Playground (The Exploded Detail View) */}
-                <div className="lg:col-span-7 lg:sticky lg:top-4 lg:max-h-[calc(100vh-160px)] lg:overflow-y-auto custom-scrollbar bg-black/90 border border-zinc-800 p-5">
+                {/* Right Side: Configuration Panel, Metadata, and Controller Stations */}
+                <div className="xl:col-span-5 bg-black/95 border border-zinc-800 p-7 space-y-8">
                   {selectedShader ? (
-                    <div className="space-y-4 border border-[#FF2BD6]/30 p-4 bg-black select-none" onContextMenu={(e) => e.preventDefault()}>
+                    <div className="space-y-8">
                       
-                      {/* Configuration Controls Bar */}
-                      <div className="flex flex-wrap items-center gap-4 bg-zinc-950 p-2.5 border border-zinc-900 justify-between text-xs font-mono text-gray-400">
-                        <div className="flex items-center gap-1.5">
+                      {/* Configuration Controls Console */}
+                      <div className="bg-zinc-950 p-5 border border-zinc-900 space-y-4 font-mono text-xs text-gray-400">
+                        <div className="flex items-center gap-1.5 border-b border-zinc-900 pb-2">
                           <Sliders className="w-3.5 h-3.5 text-[#FF2BD6]" />
-                          <span className="text-[#FF2BD6] font-bold text-[11px] uppercase tracking-wider">LAB VIEWER CONFIG</span>
+                          <span className="text-[#FF2BD6] font-bold text-xs uppercase tracking-wider">LAB VIEWER CONFIG</span>
                         </div>
-                        
-                        <div className="flex flex-wrap gap-4 items-center">
-                          {/* Aspect Ratio */}
-                          <div className="flex items-center gap-1.5">
-                            <span>ASPECT:</span>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Aspect Ratio Selector */}
+                          <div className="space-y-1">
+                            <span className="text-zinc-500 text-[10px]">ASPECT RATIO</span>
                             <select 
                               value={selectedAspect}
                               onChange={(e) => {
                                 setSelectedAspect(e.target.value);
                                 playChime('sine', 1.3);
                               }}
-                              className="bg-black border border-[#FF2BD6]/40 text-[#FF2BD6] hover:border-[#FF2BD6] px-2 py-0.5 focus:outline-none cursor-crosshair text-[10px]"
+                              className="bg-black border border-[#FF2BD6]/40 text-[#FF2BD6] hover:border-[#FF2BD6] px-2 py-1.5 w-full focus:outline-none cursor-crosshair text-[10px]"
                             >
                               <option value="1:1">1:1 (SQUARE)</option>
                               <option value="16:9">16:9 (WIDESCREEN)</option>
@@ -2055,16 +2892,16 @@ export default function App() {
                             </select>
                           </div>
 
-                          {/* Resolution */}
-                          <div className="flex items-center gap-1.5">
-                            <span>QUALITY:</span>
+                          {/* Resolution Quality Selector */}
+                          <div className="space-y-1">
+                            <span className="text-zinc-500 text-[10px]">RENDER QUALITY</span>
                             <select 
                               value={selectedResolution}
                               onChange={(e) => {
                                 setSelectedResolution(e.target.value);
                                 playChime('sine', 1.3);
                               }}
-                              className="bg-black border border-[#39FF14]/40 text-[#39FF14] hover:border-[#39FF14] px-2 py-0.5 focus:outline-none cursor-crosshair text-[10px]"
+                              className="bg-black border border-[#39FF14]/40 text-[#39FF14] hover:border-[#39FF14] px-2 py-1.5 w-full focus:outline-none cursor-crosshair text-[10px]"
                             >
                               <option value="low">LOW (0.35x)</option>
                               <option value="med">MED (0.70x)</option>
@@ -2076,52 +2913,14 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Live Full-Resolution WebGL Canvas Box via IFrame */}
-                      <div className="flex justify-center w-full bg-black border border-[#FF2BD6]/30 relative overflow-hidden select-none clean-container">
-                        <div className={`relative ${
-                          selectedAspect === '1:1' ? 'aspect-square w-full max-w-[500px]' :
-                          selectedAspect === '16:9' ? 'aspect-video w-full' :
-                          selectedAspect === '4:3' ? 'aspect-[4/3] w-full max-w-[550px]' :
-                          'w-full h-[500px]'
-                        } bg-black overflow-hidden flex items-center justify-center`}>
-                          
-                          {galleryHtml ? (
-                            <iframe 
-                              srcDoc={injectRuntimeLabMods(galleryHtml, selectedResolution, shaderStartTimeOffset, !isShaderPlaying)}
-                              className="w-full h-full border-0 block bg-black shader-iframe-clean"
-                              title={selectedShader.title}
-                              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                              sandbox="allow-scripts allow-same-origin"
-                              id={`gallery-iframe-${selectedShader.id}`}
-                              onContextMenu={(e) => e.preventDefault()}
-                            />
-                          ) : (
-                            <div className="text-[#FF2BD6] font-mono text-[10px] animate-pulse">
-                              RETRIEVING CHROMATIC MATRIX...
-                            </div>
-                          )}
-                          
-                          {/* Visual Overlay Indicators */}
-                          <div className="absolute top-2 left-2 bg-black/90 border border-[#FF2BD6] text-[#FF2BD6] font-mono text-[9px] px-2 py-0.5 flex items-center gap-1 backdrop-blur-md select-none pointer-events-none">
-                            <Maximize2 className="w-2.5 h-2.5" />
-                            <span>CODE LAB FEED // {selectedAspect}</span>
-                          </div>
-
-                          <div className="absolute bottom-2 right-2 bg-black/90 border border-gray-800 text-gray-500 font-mono text-[8px] px-2 py-0.5 backdrop-blur-md select-none pointer-events-none">
-                            RES: {selectedResolution.toUpperCase()} // FILE: {selectedShader.fileName}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Interactive Time & Simulation Controller */}
-                      <div className="bg-zinc-950 border border-[#FF2BD6]/30 p-3 font-mono text-xs space-y-3">
+                      {/* Interactive Time & Simulation Clock Station */}
+                      <div className="bg-zinc-950 border border-[#FF2BD6]/30 p-5 font-mono text-xs space-y-4">
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-900 pb-2">
                           <div className="flex items-center gap-1.5 text-gray-400">
                             <Clock className="w-4 h-4 text-[#00F0FF]" />
-                            <span className="uppercase text-[11px] tracking-wider">WebGL Simulation Clock</span>
+                            <span className="uppercase text-xs tracking-wider">WebGL Simulation Clock</span>
                           </div>
                           
-                          {/* Digital Matrix Display */}
                           <div className="flex items-center gap-2">
                             <span className={`text-[9px] px-1.5 py-0.5 rounded-none font-bold ${
                               isShaderPlaying 
@@ -2140,7 +2939,7 @@ export default function App() {
                         <div className="space-y-1">
                           <div className="flex justify-between text-[10px] text-gray-500">
                             <span>00:00.00</span>
-                            <span className="text-[#FF2BD6]">SCRUB TO TEMPORAL COORDINATE (MAX 20m)</span>
+                            <span className="text-[#FF2BD6]">TEMPORAL SCRUB COORDINATE (MAX 20M)</span>
                             <span>20:00.00</span>
                           </div>
                           <input 
@@ -2157,9 +2956,8 @@ export default function App() {
                           />
                         </div>
 
-                        {/* Controls Panel */}
+                        {/* Simulation Actions & Instant Jump */}
                         <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                          {/* Playback Buttons */}
                           <div className="flex items-center gap-1">
                             <button 
                               onClick={() => adjustShaderTime(-30)}
@@ -2218,7 +3016,6 @@ export default function App() {
                             </button>
                           </div>
 
-                          {/* Instant Jump Input Field & Reset */}
                           <div className="flex items-center gap-1">
                             <button 
                               onClick={() => jumpToShaderTime(0)}
@@ -2243,10 +3040,10 @@ export default function App() {
                             >
                               <input 
                                 type="text"
-                                placeholder="JUMP TO SEC..."
+                                placeholder="JUMP SEC..."
                                 value={customJumpInput}
                                 onChange={(e) => setCustomJumpInput(e.target.value)}
-                                className="bg-black border border-zinc-800 text-white font-mono px-1.5 py-0.5 text-[10px] w-20 focus:border-[#FF2BD6] focus:outline-none placeholder:text-gray-600 rounded-none text-right"
+                                className="bg-black border border-zinc-800 text-white font-mono px-1.5 py-0.5 text-[10px] w-16 focus:border-[#FF2BD6] focus:outline-none placeholder:text-gray-650 rounded-none text-right"
                               />
                               <button 
                                 type="submit"
@@ -2259,35 +3056,40 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Header with tags */}
-                      <div className="flex justify-between items-start gap-4">
+                      {/* Header Title with tags */}
+                      <div className="flex flex-col md:flex-row justify-between items-start gap-4 border-b border-zinc-900 pb-4">
                         <div>
-                          <h3 className="text-xl font-bold font-sans text-white tracking-tight">{selectedShader.title}</h3>
-                          <p className="text-[12px] text-[#39FF14] mt-0.5 tracking-wider font-mono">ROOT ARCHETYPE ID: {selectedShader.id.toUpperCase()}</p>
+                          <h3 className="text-2xl md:text-3xl font-extrabold font-sans text-white tracking-tight uppercase">{selectedShader.title}</h3>
+                          <p className="text-[12.5px] text-[#39FF14] mt-1.5 tracking-wider font-mono uppercase">
+                            FILE: {selectedShader.fileName} // ARCHETYPE_ID: {selectedShader.id.toUpperCase()}
+                          </p>
                         </div>
-                        <span className="px-2 py-1 text-[10px] text-black font-bold tracking-widest uppercase shrink-0" style={{ backgroundColor: selectedShader.tagColor }}>
+                        <span 
+                          className="px-2.5 py-1 text-[10px] text-black font-extrabold tracking-widest uppercase shrink-0" 
+                          style={{ backgroundColor: selectedShader.tagColor }}
+                        >
                           {selectedShader.tag} MATRIX
                         </span>
                       </div>
 
-                      {/* Descriptive/Manifesto Wording */}
-                      <div className="border-l-2 border-[#FF2BD6] pl-3 py-1 space-y-3">
-                        <p className="text-[14px] text-gray-200 leading-relaxed font-sans">
+                      {/* Descriptive Wording & Specs */}
+                      <div className="border-l-2 border-[#FF2BD6] pl-4 py-2 my-2 space-y-4">
+                        <p className="text-[15.5px] text-gray-200 leading-relaxed font-sans">
                           {getShaderExplanation(selectedShader)}
                         </p>
-                        <p className="text-[11px] text-[#9fdc96] font-mono italic">
+                        <p className="text-[12px] text-[#9fdc96] font-mono italic">
                           TECHNICAL SPECS: {getShaderTechnicalDetails(selectedShader)}
                         </p>
                       </div>
 
-                      {/* Deep Field Notes Accordion / Expandable section */}
+                      {/* Phenomenological Field Notes Section */}
                       {getShaderFieldNotes(selectedShader) ? (
-                        <div className="border border-[#00F0FF]/30 bg-[#00F0FF]/5 p-3.5 space-y-2">
-                          <div className="flex justify-between items-center text-[11px] font-mono text-[#00F0FF] border-b border-[#00F0FF]/15 pb-1.5 uppercase font-bold tracking-wider">
-                            <span>✦ PHENOMENOLOGICAL FIELD NOTES</span>
-                            <span className="text-[8px] bg-black border border-[#00F0FF]/30 px-1 py-0.5">RESOLVED THEORY</span>
+                        <div className="border border-[#00F0FF]/30 bg-[#00F0FF]/5 p-5 space-y-3.5">
+                          <div className="flex justify-between items-center text-xs md:text-[13px] font-mono text-[#00F0FF] border-b border-[#00F0FF]/25 pb-2 uppercase font-bold tracking-wider">
+                            <span className="flex items-center gap-1.5">✦ PHENOMENOLOGICAL FIELD NOTES</span>
+                            <span className="text-[9px] bg-black border border-[#00F0FF]/30 px-1.5 py-0.5">RESOLVED THEORY</span>
                           </div>
-                          <p className="text-[12px] text-gray-300 leading-relaxed font-sans italic whitespace-pre-line">
+                          <p className="text-[13.5px] text-gray-300 leading-relaxed font-sans italic whitespace-pre-line">
                             {getShaderFieldNotes(selectedShader)}
                           </p>
                         </div>
@@ -2316,8 +3118,18 @@ export default function App() {
                         </p>
                       </div>
 
-                      {/* View Source Code Block Button */}
-                      <div className="flex justify-end pt-2">
+                      {/* View Source Code Block & NFT Link */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <a 
+                          href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => playChime('triangle', 1.4)}
+                          className="text-[10px] border border-[#EFFF04]/50 text-[#EFFF04] hover:bg-[#EFFF04]/10 px-3 py-1.5 uppercase font-mono transition-all cursor-crosshair"
+                        >
+                          COLLECT DEBRIS ON OBJKT ↗
+                        </a>
+
                         <button 
                           onClick={() => {
                             setShowGLSL(!showGLSL);
@@ -2332,25 +3144,6 @@ export default function App() {
                           <Code className="w-3.5 h-3.5" />
                           <span>{showGLSL ? 'HIDE FILE CODE' : 'VIEW RAW FILE CODE'}</span>
                         </button>
-                      </div>
-
-                      {/* Explicit Tezos NFT OBJKT Collection Banner */}
-                      <div className="bg-gradient-to-r from-black via-[#EFFF04]/5 to-black border border-[#EFFF04]/40 p-4 font-mono text-center space-y-2">
-                        <div className="text-[10px] text-[#EFFF04] tracking-widest uppercase font-bold flex items-center justify-center gap-1.5">
-                          <span className="animate-pulse">⟡</span> COLLECTIBLE ORBITAL DEBRIS <span className="animate-pulse">⟡</span>
-                        </div>
-                        <p className="text-[11px] text-gray-300 leading-normal max-w-md mx-auto">
-                          This WebGL art matrix is minted on the Tezos blockchain. No local saves or copies are permitted: visit the official NFT portal to obtain full custodial ownership.
-                        </p>
-                        <a 
-                          href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => playChime('triangle', 1.4)}
-                          className="inline-flex items-center gap-1.5 border border-[#EFFF04] text-[#EFFF04] hover:bg-[#EFFF04] hover:text-black px-4 py-2 text-[11px] font-bold tracking-widest cursor-crosshair uppercase transition-all hover:shadow-[0_0_14px_rgba(239,255,4,0.4)]"
-                        >
-                          COLLECT THIS WORK ON OBJKT ↗
-                        </a>
                       </div>
 
                       {/* Expandable raw File Code View */}
@@ -2370,17 +3163,126 @@ export default function App() {
 
                     </div>
                   ) : (
-                    <div className="h-[400px] flex flex-col items-center justify-center border border-dashed border-[#FF2BD6]/20 text-center p-6 text-gray-500 font-mono">
+                    <div className="h-[400px] flex flex-col items-center justify-center border border-dashed border-[#FF2BD6]/25 text-center p-6 text-gray-500 font-mono">
                       <Atom className="w-12 h-12 text-[#FF2BD6]/30 animate-spin mb-4" style={{ animationDuration: '8s' }} />
-                      <h4 className="text-white text-md font-sans font-bold uppercase mb-1">NO SHARD SELECTED</h4>
+                      <h4 className="text-white text-md font-sans font-bold uppercase mb-1">NO SHARD CONFIGURED</h4>
                       <p className="text-[12px] max-w-sm">
-                        Click on any of the shader shards in the grid on the left to activate the dynamic rendering lab feed.
+                        Browse the Debris Deck below and select an orbital coordinate to boot up compiling.
                       </p>
                     </div>
                   )}
                 </div>
 
               </div>
+
+              {/* SECTION B_SUB: HORIZONTAL SHARD DECK SELECTOR */}
+              <div className="border-t border-[#FF2BD6]/20 pt-12 pb-2 space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div className="space-y-2">
+                    <h3 className="text-xl md:text-2xl font-extrabold font-sans text-white tracking-wide uppercase flex items-center gap-2.5">
+                      <Atom className="w-5 h-5 text-[#FF2BD6] animate-spin" style={{ animationDuration: '6s' }} />
+                      <span>DEBRIS DECK SELECTOR</span>
+                    </h3>
+                    <p className="text-[12px] text-zinc-500 font-mono mt-1">BROWSE ALL REPOSITORY ARTIFACTS · SELECT SHARD TO INJECT TO LAB</p>
+                  </div>
+
+                  {/* Horizontal Scroll Deck Nav Buttons */}
+                  <div className="flex items-center gap-2 self-end">
+                    <button 
+                      onClick={() => scrollDeck('left')}
+                      className="border border-[#FF2BD6]/40 hover:border-[#FF2BD6] text-[#FF2BD6] hover:bg-[#FF2BD6]/10 px-3 py-1.5 text-[10px] font-mono font-bold uppercase transition-all cursor-crosshair"
+                    >
+                      ◀ SCROLL LEFT
+                    </button>
+                    <button 
+                      onClick={() => scrollDeck('right')}
+                      className="border border-[#FF2BD6]/40 hover:border-[#FF2BD6] text-[#FF2BD6] hover:bg-[#FF2BD6]/10 px-3 py-1.5 text-[10px] font-mono font-bold uppercase transition-all cursor-crosshair"
+                    >
+                      SCROLL RIGHT ▶
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tactical category tabs for quick grouping filtering */}
+                <div className="flex flex-wrap gap-1.5 border-b border-zinc-900 pb-3 font-mono text-[10px]">
+                  {[
+                    { id: 'ALL', label: 'ALL DEBRIS', count: allShaders.length },
+                    { id: 'VHS', label: 'VHS / CRT', count: allShaders.filter(s => s.tag === 'VHS' || s.tag === 'CRT').length },
+                    { id: 'MATH', label: 'COMPUTATIONAL MATH', count: allShaders.filter(s => s.tag === 'MATH' || s.tag === 'CYCLE').length },
+                    { id: 'CMY', label: 'CMY / DIFFUSION', count: allShaders.filter(s => s.tag === 'CMY' || s.tag === 'PRISM' || s.tag === 'FBM').length },
+                    { id: 'FLUID', label: 'BIOMORPHIC FLUID', count: allShaders.filter(s => s.tag === 'FLUID' || s.tag === 'BIO' || s.tag === 'SILK').length },
+                    { id: 'GLITCH', label: 'GLITCH / CYBER', count: allShaders.filter(s => s.tag === 'GLITCH' || s.tag === 'Y2K' || s.tag === 'VOID').length },
+                    { id: 'DYNAMIC', label: 'DYNAMIC REPO', count: allShaders.filter(s => s.thumbClass === 'dynamic').length },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setGalleryFilter(tab.id);
+                        playChime('sine', 1.3);
+                      }}
+                      className={`px-3 py-1.5 transition-all border font-bold cursor-crosshair ${
+                        galleryFilter === tab.id 
+                          ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
+                          : 'bg-black text-gray-400 border-zinc-900 hover:border-zinc-700 hover:text-white'
+                      }`}
+                    >
+                      {tab.label} ({tab.count})
+                    </button>
+                  ))}
+                </div>
+
+                {/* Horizontal scroll container with interactive items */}
+                <div 
+                  ref={scrollContainerRef}
+                  className="flex gap-4 overflow-x-auto pb-4 pt-2 px-1 scroll-smooth"
+                  style={{
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#FF2BD633 #000000'
+                  }}
+                >
+                  {filteredShaders.length > 0 ? (
+                    filteredShaders.map((item) => (
+                      <div 
+                        key={item.id}
+                        onClick={() => {
+                          setSelectedShader(item);
+                          setShaderSpeed(item.defaultParams.speed);
+                          setShaderScale(item.defaultParams.scale);
+                          setShaderIntensity(item.defaultParams.intensity);
+                          setShaderHue(item.defaultParams.hue);
+                          setShowGLSL(false);
+                          playChime('square', 1.0);
+                        }}
+                        className={`group border cursor-crosshair p-3 transition-all shrink-0 w-[170px] select-none ${
+                          selectedShader?.id === item.id 
+                            ? 'bg-[#FF2BD6]/10 border-[#FF2BD6] shadow-[0_0_15px_rgba(255,43,214,0.3)]' 
+                            : 'bg-black/80 border-zinc-900 hover:border-[#FF2BD6]/50'
+                        }`}
+                      >
+                        <div className="aspect-square w-full mb-2 relative overflow-hidden border border-zinc-950">
+                          <ShaderThumbnail shaderId={item.id} fileName={item.fileName} />
+                          <div className="absolute inset-0 bg-black/15 group-hover:bg-transparent transition-colors pointer-events-none" />
+                          <div className="absolute top-1 left-1 text-[8px] bg-black/90 text-white px-1.5 py-0.5 font-mono border border-white/10">
+                            {item.tag}
+                          </div>
+                        </div>
+                        <h4 className="text-white text-[12px] font-sans font-bold truncate tracking-wide" title={item.title}>
+                          {item.title}
+                        </h4>
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-[8px] text-[#FF2BD6] uppercase tracking-widest">{item.tag} SHARD</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-[#FF2BD6] group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-12 text-center w-full text-zinc-600 font-mono text-[11px] uppercase tracking-wider border border-dashed border-zinc-900">
+                      [ NO SHARDS RECOVERED IN THIS CATEGORY DIRECTORY ]
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -2390,8 +3292,17 @@ export default function App() {
           {activeTab === 'aislop' && (
             <div className="frame py-8">
               <div className="mb-6">
-                <div className="flex justify-between items-end border-b border-[#00F0FF] pb-3 mb-2">
-                  <h2 className="text-3xl font-bold font-sans text-[#00F0FF] tracking-wider uppercase">☣ AI SLOP MATRIX ☣</h2>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#00F0FF]/30 pb-3 mb-2 gap-2">
+                  <h2 
+                    className="text-3xl font-bold font-sans text-white tracking-wider uppercase"
+                    style={{
+                      fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
+                      textShadow: '0 0 8px var(--phosphor), 0 0 30px rgba(57,255,20,0.5), 3px 0 0 rgba(255,43,214,0.8), -3px 0 0 rgba(0,240,255,0.8)',
+                      animation: 'jitter 6s infinite'
+                    }}
+                  >
+                    ☣ AI SLOP MATRIX ☣
+                  </h2>
                   <span className="text-[11px] text-gray-500 font-mono">ENGINE: TENSORTRANTRUM.v1</span>
                 </div>
                 <p className="text-[#d7ffd0] text-[13px] leading-relaxed max-w-2xl">
@@ -2559,8 +3470,17 @@ export default function App() {
           {activeTab === 'rando' && (
             <div className="frame py-8">
               <div className="mb-6">
-                <div className="flex justify-between items-end border-b border-[#EFFF04] pb-3 mb-2">
-                  <h2 className="text-3xl font-bold font-sans text-[#EFFF04] tracking-wider uppercase">💩 RANDO SYNTH CHAOS 💩</h2>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#EFFF04]/30 pb-3 mb-2 gap-2">
+                  <h2 
+                    className="text-3xl font-bold font-sans text-white tracking-wider uppercase"
+                    style={{
+                      fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
+                      textShadow: '0 0 8px var(--phosphor), 0 0 30px rgba(57,255,20,0.5), 3px 0 0 rgba(255,43,214,0.8), -3px 0 0 rgba(0,240,255,0.8)',
+                      animation: 'jitter 6s infinite'
+                    }}
+                  >
+                    💩 RANDO SYNTH CHAOS 💩
+                  </h2>
                   <span className="text-[11px] text-gray-500 font-mono">SOUNDS_MATRIX: ONLINE</span>
                 </div>
                 <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-2xl">
@@ -2707,8 +3627,17 @@ export default function App() {
           {activeTab === 'about' && (
             <div className="frame py-8 animate-fade-in">
               <div className="mb-6">
-                <div className="flex justify-between items-end border-b border-[#9D4DFF] pb-3 mb-2">
-                  <h2 className="text-3xl font-bold font-sans text-[#9D4DFF] tracking-wider uppercase">░ About Merry // astraltrash ░</h2>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#9D4DFF]/30 pb-3 mb-2 gap-2">
+                  <h2 
+                    className="text-3xl font-bold font-sans text-white tracking-wider uppercase"
+                    style={{
+                      fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
+                      textShadow: '0 0 8px var(--phosphor), 0 0 30px rgba(57,255,20,0.5), 3px 0 0 rgba(255,43,214,0.8), -3px 0 0 rgba(0,240,255,0.8)',
+                      animation: 'jitter 6s infinite'
+                    }}
+                  >
+                    ░ About Merry // astraltrash ░
+                  </h2>
                   <span className="text-[11px] text-gray-500 font-mono">STATUS_FEED: ENCRYPTED_ENTITY</span>
                 </div>
                 <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-2xl">
@@ -2888,6 +3817,550 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* ========================================================================= */}
+          {/* SECTION F: SHITTY KARAOKE - CHUNKY CRT AUDIO-VISUAL EXPLOSION              */}
+          {/* ========================================================================= */}
+          {activeTab === 'karaoke' && (() => {
+            const KARAOKE_TRACKS = [
+              { id: 'procedural_synth', title: 'SYNTHESIZED COSMIC VORTEX', desc: 'Arpeggios synthesised live on your soundcard', color: '#39FF14' },
+              { id: 'custom_url', title: 'CUSTOM STREAM COUPLER', desc: 'Input your own MP4 stream to sing along', color: '#FF2BD6' },
+              { id: 'waiting_video_1', title: '[AWAITING] ASTRAL_ANTHEM.MP4', desc: 'Merry\'s video art showcase track', color: '#00F0FF' },
+              { id: 'waiting_video_2', title: '[AWAITING] REPO_DECIMATOR.MP4', desc: 'Feral AI glitch visuals accompaniment', color: '#EFFF04' },
+            ];
+
+            const KARAOKE_LYRICS: Record<string, string[]> = {
+              procedural_synth: [
+                "ASTRAL TRASH IN THE ATMOSPHERE...",
+                "THE MATRIX HAS FAILED, MY DEAR...",
+                "SHADERS BURNING BRIGHT AND GREEN...",
+                "GLITCHIEST THING YOU'VE EVER SEEN...",
+                "NO COMMISSIONS, NO INQUIRIES, JUST FUN...",
+                "THE SHITTY KARAOKE HAS BEGUN!",
+                "MICROPHONE FEEDBACK PLAYS A SOLO...",
+                "WHY BE MINIMAL WHEN WE CAN GO BOLO?",
+                "100 REPOS OF GLOWING DEBRIS...",
+                "ASTRAL TRASH IS FREE TO BE!"
+              ],
+              custom_url: [
+                "PASTE YOUR FAVORITE KARAOKE TRACK URL BELOW...",
+                "SING WHATEVER YOUR HEART DESIRES...",
+                "THE SCI-FI AMPLIFIER IS CRANKED TO MAX...",
+                "READY FOR LOUD, BRAZEN MAXIMALIST SCREECHES...",
+                "NO FRAMEWORKS, NO SHAME, NO LIMITS!",
+                "♻ GLITCH RECEPTOR AT MAXIMUM SENSITIVITY..."
+              ],
+              waiting_video_1: [
+                "AWAITING VIDEO DEPLOYMENT IN REPOSITORY...",
+                "GIT CHECKOUT: MASTERING THE VOID...",
+                "COMPILING RAW ANALOG CORES...",
+                "STANDBY FOR SPECTRAL VISUAL INJECTION...",
+                "THE MERRY-PRANXTER ORBIT SECTOR IS ACTIVE..."
+              ],
+              waiting_video_2: [
+                "AI SLOP DETECTED IN UPPER LAYERS...",
+                "DEBRIS DECK RECOVERY IN PROGRESS...",
+                "THE REPO CONTAINS 100+ SACRED ARTIFACTS...",
+                "NOTHING HERE IS PRECIOUS, ALL IS SACRED...",
+                "PULLING LATEST COMPILED ARTEFACTS..."
+              ]
+            };
+
+            const trackLyrics = KARAOKE_LYRICS[karTrack] || KARAOKE_LYRICS.procedural_synth;
+            const currentLineIdx = Math.floor(karLyricsOffset / 4);
+            const prevLine = trackLyrics[(currentLineIdx - 1 + trackLyrics.length) % trackLyrics.length] || '---';
+            const currentLine = trackLyrics[currentLineIdx % trackLyrics.length] || '---';
+            const nextLine = trackLyrics[(currentLineIdx + 1) % trackLyrics.length] || '---';
+
+            return (
+              <div className="frame py-8 animate-fade-in space-y-8">
+                {/* Heading Banner */}
+                <div>
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#FF6B00]/40 pb-4 mb-2 gap-3">
+                    <div>
+                      <h2 
+                        className="text-3xl md:text-4xl font-extrabold font-sans text-white tracking-wider uppercase"
+                        style={{
+                          textShadow: '0 0 8px #FF6B00, 0 0 35px rgba(255,107,0,0.4), 2px 0 0 rgba(255,43,214,0.8), -2px 0 0 rgba(0,240,255,0.8)',
+                          fontFamily: "'Chakra Petch', sans-serif"
+                        }}
+                      >
+                        🎤 SHITTY KARAOKE
+                      </h2>
+                      <p className="text-xs text-[#FF6B00] font-mono mt-1.5 uppercase tracking-widest">
+                        ASTRAL_TRASH AUDIO DECAY & VOCAL EXAGGERATION LAB // STANDBY MATRIX ACTIVE
+                      </p>
+                    </div>
+                    <div className="bg-black/60 border border-[#FF6B00]/40 px-3 py-1 font-mono text-[10px] text-[#FF6B00] uppercase tracking-widest">
+                      CRT COUPLING: RESOLVED
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Left Column: Player and Tracks selection */}
+                  <div className="lg:col-span-7 space-y-6">
+                    {/* TV container screen */}
+                    <div className="relative border-4 border-zinc-900 bg-black shadow-[0_0_30px_rgba(255,107,0,0.12)] rounded-3xl overflow-hidden aspect-[4/3] p-1 select-none flex flex-col justify-between">
+                      {/* Curvature glare overlay */}
+                      <div className="absolute inset-0 bg-radial-vignette pointer-events-none z-30 opacity-70 mix-blend-multiply" />
+                      <div className="absolute inset-0 pointer-events-none z-30 scanlines opacity-[0.25]" />
+                      
+                      {/* Screen content */}
+                      <div className="relative flex-grow w-full h-full bg-[#080808] overflow-hidden flex items-center justify-center">
+                        <canvas id="karaoke-screen-static" className="absolute inset-0 w-full h-full pointer-events-none z-10" />
+
+                        {karTrack === 'custom_url' ? (
+                          <video 
+                            ref={karVideoRef}
+                            src={karCustomUrl}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            loop
+                            playsInline
+                            onPlay={() => setKarIsPlaying(true)}
+                            onPause={() => setKarIsPlaying(false)}
+                            onTimeUpdate={() => {
+                              if (karVideoRef.current) {
+                                setKarLyricsOffset(Math.floor(karVideoRef.current.currentTime * 2.8));
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="text-center p-6 space-y-4 z-20 font-mono text-zinc-400 max-w-md">
+                            <div className="text-[#39FF14] text-xl font-bold tracking-widest animate-pulse flex items-center justify-center gap-2">
+                              <Radio className="w-5 h-5 text-[#39FF14] animate-spin" style={{ animationDuration: '4s' }} />
+                              <span>CHANNEL 42 // ASTRAL_STATIC</span>
+                            </div>
+                            <p className="text-[11px] leading-relaxed uppercase text-zinc-500">
+                              {karTrack === 'procedural_synth' 
+                                ? "EMITTING RETRO PROC-SYNTH MATRIX SINE HARMONICS INTO SOUNDCARD COILS"
+                                : "AWAITING SOURCE PUSH TO REPO DIRECTORY // PLACING DEBRIS SHARDS"}
+                            </p>
+                            <div className="text-[10px] bg-black/80 border border-zinc-900 px-3 py-1.5 inline-block text-zinc-500">
+                              RESOLUTION: 320X240 // REFRESH: 60HZ
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Top HUD text indicators */}
+                        <div className="absolute top-4 left-4 z-20 font-mono text-[10px] bg-black/80 px-2 py-1 text-white border border-zinc-800 tracking-wider">
+                          {karIsPlaying ? '▷ PLAYING_TRANSMISSION' : '‖ PAUSED_STANDBY'}
+                        </div>
+
+                        <div className="absolute top-4 right-4 z-20 font-mono text-[10px] bg-black/80 px-2 py-1 text-[#FF6B00] border border-[#FF6B00]/40 tracking-wider">
+                          TRACK: {karTrack.toUpperCase()}
+                        </div>
+
+                        {/* Bottom VHS Overlays */}
+                        <div className="absolute bottom-4 left-4 z-20 font-mono text-[9px] text-[#39FF14] tracking-widest flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#39FF14] animate-ping" />
+                          <span>MIC_LEVEL: {micLevelVal}%</span>
+                        </div>
+
+                        <div className="absolute bottom-4 right-4 z-20 font-mono text-[9px] text-zinc-400">
+                          TIME_INDEX: {Math.floor(karLyricsOffset / 10)}s
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Debris playlist selection */}
+                    <div className="bg-[#050505] border border-zinc-900 p-5 space-y-5">
+                      <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-sans border-b border-zinc-900 pb-2 flex items-center gap-2">
+                        <Music className="w-4 h-4 text-[#FF6B00]" />
+                        <span>DEBRIS DECK PLAYLIST</span>
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {KARAOKE_TRACKS.map(track => (
+                          <button
+                            key={track.id}
+                            onClick={() => {
+                              if (karVideoRef.current) {
+                                karVideoRef.current.pause();
+                              }
+                              setKarTrack(track.id);
+                              setKarLyricsOffset(0);
+                              setKarIsPlaying(false);
+                              setKarTerminal(prev => [
+                                ...prev.slice(-15),
+                                `SYSTEM: LOADED_TRACK -> ${track.id.toUpperCase()}`,
+                                'LYRIC_DECODER: BUFFER_RESET'
+                              ]);
+                              playChime('triangle', 1.0);
+                            }}
+                            className={`p-3 border text-left cursor-crosshair transition-all flex flex-col justify-between h-[85px] ${
+                              karTrack === track.id
+                                ? 'bg-zinc-950 border-white shadow-[0_0_10px_rgba(255,255,255,0.05)]'
+                                : 'bg-black border-zinc-900 hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className="text-[12px] font-sans font-extrabold text-white tracking-wide truncate uppercase">
+                              {track.title}
+                            </div>
+                            <div className="text-[9.5px] text-zinc-500 font-mono line-clamp-2 mt-1 leading-normal uppercase">
+                              {track.desc}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Custom Stream Source URL Input */}
+                      {karTrack === 'custom_url' && (
+                        <div className="space-y-2 border-t border-zinc-900 pt-4 animate-fade-in">
+                          <label className="text-[10px] text-[#FF2BD6] font-mono block uppercase tracking-widest">
+                            CUSTOM VIDEO COUPLER LINK (.MP4 / DIRECT VIDEO SOURCE):
+                          </label>
+                          <div className="flex gap-2">
+                            <input 
+                              type="text"
+                              value={karCustomUrl}
+                              onChange={(e) => setKarCustomUrl(e.target.value)}
+                              placeholder="https://example.com/stream.mp4"
+                              className="flex-grow bg-black border border-zinc-800 text-white font-mono p-2 text-xs outline-none focus:border-[#FF2BD6]"
+                            />
+                            <button
+                              onClick={() => {
+                                setKarLyricsOffset(0);
+                                if (karVideoRef.current) {
+                                  karVideoRef.current.load();
+                                  karVideoRef.current.play().catch(()=>{});
+                                }
+                                setKarTerminal(prev => [
+                                  ...prev.slice(-15),
+                                  'SYSTEM: STREAM_COUPLER_ENGAGED // LOADING VIDEO BUFFER'
+                                ]);
+                                playChime('sine', 1.2);
+                              }}
+                              className="bg-black text-[#FF2BD6] border border-[#FF2BD6]/40 hover:border-[#FF2BD6] px-4 font-mono text-xs hover:bg-[#FF2BD6]/10 transition-colors"
+                            >
+                              BIND
+                            </button>
+                          </div>
+                          <p className="text-[9px] text-zinc-500 font-mono uppercase">
+                            * Supports direct browser playable video URLs (e.g. static server files or raw github links)
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Video Player Action controls */}
+                      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-zinc-900 pt-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              if (karTrack === 'custom_url' && karVideoRef.current) {
+                                if (karIsPlaying) {
+                                  karVideoRef.current.pause();
+                                } else {
+                                  karVideoRef.current.play().catch(()=>{});
+                                }
+                              } else {
+                                setKarIsPlaying(!karIsPlaying);
+                                if (!karIsPlaying) {
+                                  playChime('sine', 1.0);
+                                }
+                              }
+                              playChime('triangle', 1.0);
+                            }}
+                            className={`px-4 py-2 border font-mono text-xs uppercase flex items-center gap-2 cursor-crosshair ${
+                              karIsPlaying 
+                                ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
+                                : 'bg-black text-white border-zinc-800 hover:border-white'
+                            }`}
+                          >
+                            {karIsPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                            <span>{karIsPlaying ? 'PAUSE_DECK' : 'START_DECK'}</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              setKarLyricsOffset(0);
+                              if (karTrack === 'custom_url' && karVideoRef.current) {
+                                karVideoRef.current.currentTime = 0;
+                              }
+                              playChime('sine', 0.8);
+                              setKarTerminal(prev => [...prev.slice(-15), 'SYSTEM: TRANSMISSION_RESET // POINTERS INJECTED TO ZERO']);
+                            }}
+                            className="bg-black text-zinc-400 border border-zinc-800 hover:border-white hover:text-white px-3 py-2 font-mono text-xs uppercase cursor-crosshair flex items-center gap-1.5"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" />
+                            <span>RESET</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] text-zinc-500 font-mono uppercase">TEMPO_SCALER:</span>
+                          <input 
+                            type="range" 
+                            min="1" 
+                            max="8" 
+                            value={karLyricsSpeed} 
+                            onChange={(e) => setKarLyricsSpeed(Number(e.target.value))}
+                            className="w-16 md:w-24 h-1 bg-zinc-900 appearance-none outline-none accent-[#FF6B00] cursor-crosshair"
+                          />
+                          <span className="text-[10px] text-white font-mono">{karLyricsSpeed}x</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Audio Gain Controls & Crowd Sound Board */}
+                  <div className="lg:col-span-5 space-y-6">
+                    {/* Microphone Configuration Board */}
+                    <div className="bg-[#050505] border border-zinc-900 p-5 space-y-5">
+                      <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-sans border-b border-zinc-900 pb-2 flex items-center gap-2">
+                        <Mic className="w-4 h-4 text-[#FF2BD6]" />
+                        <span>ACOUSTIC GAIN & INJECTORS</span>
+                      </h3>
+
+                      {/* Microphone Connection toggle button */}
+                      <div className="p-4 bg-zinc-950/60 border border-zinc-900 rounded-lg flex flex-col justify-between items-center text-center space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-[11px] text-zinc-400 font-mono uppercase">HARDWARE INPUT NODE</div>
+                          <p className="text-[10px] text-zinc-500 font-mono lowercase">
+                            REQUESTS BROWSER MIC PERMISSION · ENABLES REAL-TIME ECHO AND SPECTRAL COMPRESSION
+                          </p>
+                        </div>
+                        
+                        <button
+                          onClick={toggleMicrophone}
+                          className={`w-full py-2.5 font-mono text-xs font-black tracking-widest uppercase transition-all cursor-crosshair ${
+                            karMicEnabled
+                              ? 'bg-[#39FF14] text-black shadow-[0_0_12px_rgba(57,255,20,0.4)] border-[#39FF14]'
+                              : 'bg-black text-[#39FF14] border border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
+                          }`}
+                        >
+                          {karMicEnabled ? '● MICROPHONE_COUPLED' : '○ DECOUPLED_CONNECT_MIC'}
+                        </button>
+                      </div>
+
+                      {/* Live VU Meter amplitude indicator */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400">
+                          <span>VU_METER // AMPLITUDE</span>
+                          <span className={micLevelVal > 80 ? 'text-[#FF2BD6] animate-pulse font-bold' : 'text-[#39FF14]'}>
+                            {micLevelVal > 0 ? `${micLevelVal} DB` : 'SILENT_VOID'}
+                          </span>
+                        </div>
+                        <div className="h-3 bg-zinc-950 border border-zinc-900 relative overflow-hidden flex">
+                          <div 
+                            className="h-full bg-gradient-to-r from-[#39FF14] via-[#EFFF04] to-[#FF2BD6] transition-all duration-75"
+                            style={{ width: `${micLevelVal}%` }}
+                          />
+                          <div className="absolute inset-0 flex justify-between pointer-events-none">
+                            {Array.from({ length: 15 }).map((_, i) => (
+                              <div key={i} className="w-[1px] h-full bg-black/60" />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Slide Controls */}
+                      <div className="space-y-4 pt-2">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] font-mono text-zinc-400">
+                            <span>MIC_VOL_COEFF:</span>
+                            <span className="text-[#39FF14]">{Math.round(karMicVol * 100)}%</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="2" 
+                            step="0.1" 
+                            value={karMicVol}
+                            onChange={(e) => setKarMicVol(Number(e.target.value))}
+                            className="w-full h-1 bg-zinc-900 appearance-none outline-none accent-[#39FF14] cursor-crosshair"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] font-mono text-zinc-400">
+                            <span>ECHO_DELAY_TIME:</span>
+                            <span className="text-[#FF2BD6]">{Math.round(karEcho * 100)}%</span>
+                          </div>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="0.9" 
+                            step="0.05" 
+                            value={karEcho}
+                            onChange={(e) => setKarEcho(Number(e.target.value))}
+                            className="w-full h-1 bg-zinc-900 appearance-none outline-none accent-[#FF2BD6] cursor-crosshair"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Distortion and Corruption toggles */}
+                      <div className="grid grid-cols-2 gap-2 border-t border-zinc-900 pt-4">
+                        <button
+                          onClick={() => {
+                            setKarBitcrush(!karBitcrush);
+                            setKarTerminal(prev => [
+                              ...prev.slice(-15),
+                              `FILTER_TOGGLE: BITCRUSH -> ${!karBitcrush ? 'ACTIVE' : 'OFF'}`
+                            ]);
+                            playChime('square', 1.5);
+                          }}
+                          className={`p-2 font-mono text-[10px] border tracking-wider text-center uppercase cursor-crosshair transition-all ${
+                            karBitcrush 
+                              ? 'bg-[#EFFF04]/10 text-[#EFFF04] border-[#EFFF04]' 
+                              : 'bg-black text-zinc-500 border-zinc-900 hover:border-zinc-800'
+                          }`}
+                        >
+                          ☣ BIT_CRUSH
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            const newVal = karPitchJitter === 0 ? 0.4 : 0;
+                            setKarPitchJitter(newVal);
+                            setKarTerminal(prev => [
+                              ...prev.slice(-15),
+                              `FILTER_TOGGLE: PITCH_JITTER -> ${newVal > 0 ? 'ACTIVE' : 'OFF'}`
+                            ]);
+                            playChime('square', 0.8);
+                          }}
+                          className={`p-2 font-mono text-[10px] border tracking-wider text-center uppercase cursor-crosshair transition-all ${
+                            karPitchJitter > 0 
+                              ? 'bg-[#00F0FF]/10 text-[#00F0FF] border-[#00F0FF]' 
+                              : 'bg-black text-zinc-500 border-zinc-900 hover:border-zinc-800'
+                          }`}
+                        >
+                          ⚡ PITCH_WARP
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* SFX soundboard buttons matrix */}
+                    <div className="bg-[#050505] border border-zinc-900 p-5 space-y-4">
+                      <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-sans border-b border-zinc-900 pb-2 flex items-center gap-2">
+                        <span>🔊 CROWD SOUNDBOARD & EFFECTS</span>
+                      </h3>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => playKaraokeSFX('applause')}
+                          className="p-3 bg-black border border-[#39FF14]/40 hover:border-[#39FF14] text-[#39FF14] font-mono text-[11px] uppercase tracking-wider text-center cursor-crosshair transition-all hover:bg-[#39FF14]/5"
+                        >
+                          👏 CHEER_APPLAUSE
+                        </button>
+                        <button
+                          onClick={() => playKaraokeSFX('boo')}
+                          className="p-3 bg-black border border-[#FF2BD6]/40 hover:border-[#FF2BD6] text-[#FF2BD6] font-mono text-[11px] uppercase tracking-wider text-center cursor-crosshair transition-all hover:bg-[#FF2BD6]/5"
+                        >
+                          👎 BOO_HISS
+                        </button>
+                        <button
+                          onClick={() => playKaraokeSFX('laser')}
+                          className="p-3 bg-black border border-[#00F0FF]/40 hover:border-[#00F0FF] text-[#00F0FF] font-mono text-[11px] uppercase tracking-wider text-center cursor-crosshair transition-all hover:bg-[#00F0FF]/5"
+                        >
+                          ⚡ 8BIT_LASER
+                        </button>
+                        <button
+                          onClick={() => playKaraokeSFX('screech')}
+                          className="p-3 bg-black border border-[#EFFF04]/40 hover:border-[#EFFF04] text-[#EFFF04] font-mono text-[11px] uppercase tracking-wider text-center cursor-crosshair transition-all hover:bg-[#EFFF04]/5"
+                        >
+                          🔊 MIC_SCREECH
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom: Lyrics Teleprompter Monitor Screen */}
+                  <div className="col-span-12">
+                    <div className="bg-[#020202] border-2 border-zinc-900 p-6 relative overflow-hidden select-none animate-pulse-subtle">
+                      <div className="absolute inset-0 bg-radial-vignette opacity-50 pointer-events-none" />
+                      <div className="absolute inset-x-0 top-0 h-[1.5px] bg-[#FF6B00]/25 pointer-events-none" />
+                      
+                      <div className="relative z-10 flex flex-col items-center justify-center min-h-[160px] text-center space-y-4">
+                        <div className="text-[10px] font-mono text-[#FF6B00]/70 uppercase tracking-widest border-b border-zinc-900 pb-1.5 w-full flex justify-between">
+                          <span>▸ ASTRAL_TRASH KARAOKE TELEPROMPTER // RUNNING</span>
+                          <span>SYNC: INTERCEPTOR COILS</span>
+                        </div>
+
+                        {/* Scrolling Text items */}
+                        <div className="py-4 space-y-3">
+                          <div className="text-zinc-700 font-mono text-xs uppercase select-none opacity-40">
+                            {prevLine}
+                          </div>
+
+                          <div 
+                            className="text-white text-lg md:text-2xl font-black tracking-wide uppercase px-4 py-2 border border-zinc-800 bg-black/60 shadow-[0_0_20px_rgba(255,107,0,0.02)] inline-block transition-all"
+                            style={{
+                              textShadow: '0 0 10px rgba(255,255,255,0.8), 0 0 30px rgba(255,107,0,0.2)',
+                              fontFamily: "'Share Tech Mono', monospace"
+                            }}
+                          >
+                            ▸ {currentLine}
+                          </div>
+
+                          <div className="text-[#FF6B00]/40 font-mono text-xs uppercase select-none">
+                            {nextLine}
+                          </div>
+                        </div>
+
+                        {/* Lyrics pointer scroll modifiers */}
+                        <div className="flex gap-2 text-[10px] font-mono text-zinc-500 pt-2 border-t border-zinc-950 w-full justify-between items-center">
+                          <span>LINE_INDEX: {currentLineIdx}</span>
+                          <div className="flex gap-1.5">
+                            <button 
+                              onClick={() => {
+                                setKarLyricsOffset(prev => Math.max(0, prev - 4));
+                                playChime('triangle', 0.8);
+                              }}
+                              className="bg-black border border-zinc-900 hover:border-zinc-700 hover:text-white px-2 py-0.5"
+                            >
+                              ◀ PREV_LINE
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setKarLyricsOffset(prev => prev + 4);
+                                playChime('triangle', 1.1);
+                              }}
+                              className="bg-black border border-zinc-900 hover:border-zinc-700 hover:text-white px-2 py-0.5"
+                            >
+                              NEXT_LINE ▶
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Visualizer screen */}
+                  <div className="col-span-12">
+                    <div className="bg-[#050505] border border-zinc-900 p-4 space-y-3 animate-glow">
+                      <div className="flex justify-between items-center text-[11px] font-mono text-zinc-400">
+                        <span>LIVE AUDIO_COIL OSCILLOSCOPE TRANSMISSION</span>
+                        <span className="text-[#39FF14] animate-pulse">● FEEDBACK LOOP</span>
+                      </div>
+                      <div className="aspect-[24/5] w-full bg-black border border-zinc-900 relative overflow-hidden rounded">
+                        <canvas 
+                          id="karaoke-visualizer-canvas" 
+                          width="800" 
+                          height="160" 
+                          className="w-full h-full block" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dedicated Karaoke OS terminal outputs */}
+                  <div className="col-span-12">
+                    <div className="bg-[#020202] border border-zinc-950 p-4 font-mono text-[10px] text-[#FF6B00] space-y-1 max-h-[140px] overflow-y-auto">
+                      <div className="text-zinc-500 text-[9px] uppercase border-b border-zinc-900 pb-1 mb-2 tracking-widest flex justify-between">
+                        <span>KARAOKE_OS_TELEMETRY_TERMINAL</span>
+                        <span className="animate-ping">●</span>
+                      </div>
+                      {karTerminal.map((line, index) => (
+                        <div key={index} className="truncate">{line}</div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            );
+          })()}
 
         </div>
 
