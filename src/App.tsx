@@ -218,9 +218,8 @@ export default function App() {
   // 'hub' = Original Portfolio
   // 'shaderslop' = WebGL Art Gallery
   // 'aislop' = AI Hallucination Lab
-  // 'rando' = Synth & Chaos Playground
   // 'about' = About the Artist
-  const [activeTab, setActiveTab] = useState<'hub' | 'shaderslop' | 'aislop' | 'rando' | 'about' | 'karaoke' | 'projects'>('hub');
+  const [activeTab, setActiveTab] = useState<'hub' | 'shaderslop' | 'aislop' | 'about' | 'karaoke' | 'projects'>('hub');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => localStorage.getItem('astraltrash_sound_enabled') !== 'false');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => localStorage.getItem('astraltrash_theme') !== 'light');
 
@@ -2199,85 +2198,68 @@ export default function App() {
       <main className="min-h-screen flex flex-col justify-between">
         
         {/* UPPER NOTIFICATION/NAVIGATION RAIL (Glitchcore / Cyber style) */}
-        <div className="w-full bg-black border-b border-[#39FF14] z-50 text-[12px] flex flex-wrap items-center justify-between px-4 py-2 font-mono gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-[#39FF14] animate-pulse">●</span>
-            <span className="text-white font-bold tracking-widest text-[13px]">ASTRAL_TRASH // LAB</span>
-            <span className="text-gray-600">|</span>
-            <span className="text-gray-400">SESSION: {visitorCount}</span>
-          </div>
-
+        <div className="sticky top-0 w-full bg-black border-b border-[#39FF14] z-50 px-4 py-2 font-mono">
           {/* Quick-Access Aesthetic Tabs */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
             <button 
               onClick={() => { setActiveTab('hub'); playChime('triangle', 0.8); }}
-              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
+              className={`w-full text-center flex items-center justify-center px-4 py-3 sm:py-4 text-xl sm:text-2xl md:text-3xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
                 activeTab === 'hub' 
                   ? 'bg-[#39FF14] text-black border-[#39FF14] shadow-[0_0_12px_rgba(57,255,20,0.5)]' 
                   : 'bg-black text-[#39FF14] border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
               }`}
             >
-              ⟡ HOME
+              HOME
             </button>
             <button 
               onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }}
-              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
+              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
                 activeTab === 'shaderslop' 
                   ? 'bg-[#FF2BD6] text-black border-[#FF2BD6] shadow-[0_0_12px_rgba(255,43,214,0.5)]' 
                   : 'bg-black text-[#FF2BD6] border-[#FF2BD6]/40 hover:border-[#FF2BD6] hover:bg-[#FF2BD6]/10'
               }`}
             >
-              ☢ SHADERSLOP
+              SHADERSLOP
             </button>
             <button 
               onClick={() => { setActiveTab('aislop'); playChime('triangle', 1.2); }}
-              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
+              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
                 activeTab === 'aislop' 
                   ? 'bg-[#00F0FF] text-black border-[#00F0FF] shadow-[0_0_12px_rgba(0,240,255,0.5)]' 
                   : 'bg-black text-[#00F0FF] border-[#00F0FF]/40 hover:border-[#00F0FF] hover:bg-[#00F0FF]/10'
               }`}
             >
-              ☣ AI_SLOP
+              AI_SLOP
             </button>
             <button 
-              onClick={() => { setActiveTab('about'); playChime('triangle', 1.6); }}
-              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
-                activeTab === 'about' 
+              onClick={() => { setActiveTab('karaoke'); playChime('square', 1.8); }}
+              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
+                activeTab === 'karaoke' 
                   ? 'bg-[#9D4DFF] text-black border-[#9D4DFF] shadow-[0_0_12px_rgba(157,77,255,0.5)]' 
                   : 'bg-black text-[#9D4DFF] border-[#9D4DFF]/40 hover:border-[#9D4DFF] hover:bg-[#9D4DFF]/10'
               }`}
             >
-              ░ ABOUT_ME
+              SHITTY_KARAOKE
             </button>
             <button 
-              onClick={() => { setActiveTab('karaoke'); playChime('square', 1.8); }}
-              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
-                activeTab === 'karaoke' 
+              onClick={() => { setActiveTab('projects'); playChime('triangle', 1.9); }}
+              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
+                activeTab === 'projects' 
                   ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-[0_0_12px_rgba(255,107,0,0.5)]' 
                   : 'bg-black text-[#FF6B00] border-[#FF6B00]/40 hover:border-[#FF6B00] hover:bg-[#FF6B00]/10'
               }`}
             >
-              🎤 SHITTY_KARAOKE
+              PROJECTS
             </button>
             <button 
-              onClick={() => { setActiveTab('projects'); playChime('triangle', 1.9); }}
-              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
-                activeTab === 'projects' 
+              onClick={() => { setActiveTab('about'); playChime('triangle', 1.6); }}
+              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
+                activeTab === 'about' 
                   ? 'bg-[#EFFF04] text-black border-[#EFFF04] shadow-[0_0_12px_rgba(239,255,4,0.5)]' 
                   : 'bg-black text-[#EFFF04] border-[#EFFF04]/40 hover:border-[#EFFF04] hover:bg-[#EFFF04]/10'
               }`}
             >
-              🚀 PROJECTS
-            </button>
-            <button 
-              onClick={() => { setActiveTab('rando'); playChime('triangle', 1.4); }}
-              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
-                activeTab === 'rando' 
-                  ? 'bg-white text-black border-white shadow-[0_0_12px_rgba(255,255,255,0.5)]' 
-                  : 'bg-black text-white border-white/40 hover:border-white hover:bg-white/10'
-              }`}
-            >
-              ⚙️ SETTINGS
+              ABOUT_ME
             </button>
           </div>
         </div>
@@ -3585,146 +3567,6 @@ export default function App() {
               slopMetric={slopMetric}
               aiLogs={aiLogs}
             />
-          )}
-
-          {/* ========================================================================= */}
-          {/* SECTION D: SETTINGS⚙️ - ENVIRONMENT CONFIGURATION                         */}
-          {/* ========================================================================= */}
-          {activeTab === 'rando' && (
-            <div className="frame py-8 animate-fade-in">
-              <div className="mb-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-white/20 pb-3 mb-2 gap-2">
-                  <h2 
-                    className="text-3xl font-bold font-sans text-white tracking-wider uppercase"
-                    style={{
-                      fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
-                      textShadow: '0 0 10px rgba(255,255,255,0.4)',
-                    }}
-                  >
-                    ⚙️ SYSTEM SETTINGS
-                  </h2>
-                  <span className="text-[11px] text-zinc-500 font-mono">STATION_CONTROL: LOCAL</span>
-                </div>
-                <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-2xl font-mono">
-                  Configure your visual interface parameters, audio feedback options, and aesthetic environment variables.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                
-                {/* Left Side: Interface Options */}
-                <div className="bg-black/95 border border-zinc-800 p-6 space-y-6 shadow-[0_0_20px_rgba(255,255,255,0.02)]">
-                  <div className="flex items-center gap-2 text-white font-bold font-sans uppercase text-[15px] border-b border-zinc-900 pb-2">
-                    <Sliders className="w-5 h-5 text-white" />
-                    <span>User Interface Preferences</span>
-                  </div>
-
-                  {/* Sound Effects Toggle */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center gap-4">
-                      <span className="text-white text-[13px] font-bold uppercase tracking-wider font-sans">
-                        Audio Chimes & Feedback
-                      </span>
-                      <button
-                        onClick={() => {
-                          const nextVal = !soundEnabled;
-                          setSoundEnabled(nextVal);
-                          if (nextVal) {
-                            try {
-                              const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-                              const osc = ctx.createOscillator();
-                              const gain = ctx.createGain();
-                              osc.type = 'triangle';
-                              osc.frequency.setValueAtTime(440, ctx.currentTime);
-                              gain.gain.setValueAtTime(0.08, ctx.currentTime);
-                              gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
-                              osc.connect(gain);
-                              gain.connect(ctx.destination);
-                              osc.start();
-                              osc.stop(ctx.currentTime + 0.15);
-                            } catch (e) {}
-                          }
-                        }}
-                        className={`text-xs px-4 py-2 font-mono uppercase tracking-wider border font-extrabold cursor-crosshair transition-all ${
-                          soundEnabled
-                            ? 'bg-white text-black border-white shadow-[0_0_10px_rgba(255,255,255,0.3)]'
-                            : 'bg-black text-zinc-500 border-zinc-800 hover:border-zinc-700'
-                        }`}
-                      >
-                        {soundEnabled ? '[✓] SOUNDS ON' : '[ ] SOUNDS MUTED'}
-                      </button>
-                    </div>
-                    <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">
-                      Toggle active feedback chimes, menu select sweeps, and custom UI synthesis waves.
-                    </p>
-                  </div>
-
-                  {/* Dark / Light Theme Toggle */}
-                  <div className="space-y-2 pt-4 border-t border-zinc-900">
-                    <div className="flex justify-between items-center gap-4">
-                      <span className="text-white text-[13px] font-bold uppercase tracking-wider font-sans">
-                        Aesthetic Theme Mode
-                      </span>
-                      <button
-                        onClick={() => {
-                          setIsDarkMode(!isDarkMode);
-                          playChime('triangle', 1.0);
-                        }}
-                        className={`text-xs px-4 py-2 font-mono uppercase tracking-wider border font-extrabold cursor-crosshair transition-all ${
-                          isDarkMode
-                            ? 'bg-zinc-900 text-white border-zinc-700 hover:border-zinc-600'
-                            : 'bg-white text-black border-white shadow-[0_0_10px_rgba(255,255,255,0.3)]'
-                        }`}
-                      >
-                        {isDarkMode ? '🌙 DARK_VOID' : '☀️ LIGHT_PHOSPHOR'}
-                      </button>
-                    </div>
-                    <p className="text-zinc-500 text-[11px] font-mono leading-relaxed">
-                      Switch between default retro cyber void layout and a high-contrast inverted paper/phosphor layout.
-                    </p>
-                  </div>
-
-                </div>
-
-                {/* Right Side: Shader Randomizer & Logs */}
-                <div className="bg-black/95 border border-zinc-800 p-6 space-y-6 shadow-[0_0_20px_rgba(255,255,255,0.02)]">
-                  
-                  <div className="flex items-center gap-2 text-white font-bold font-sans uppercase text-[15px] border-b border-zinc-900 pb-2">
-                    <RefreshCw className="w-5 h-5 text-white" />
-                    <span>Aesthetic Background Shifter</span>
-                  </div>
-
-                  <p className="text-zinc-400 text-[12px] font-mono leading-relaxed">
-                    Don't like the main background shader's vibe? Smash the chaotic matrix scrambler below to randomize uniforms!
-                  </p>
-
-                  <button
-                    onClick={() => {
-                      triggerRandomizer();
-                      playChime('square', 1.2);
-                    }}
-                    className="w-full bg-white hover:bg-white/95 text-black font-extrabold py-4 px-4 font-sans uppercase text-[13px] tracking-widest cursor-crosshair transition-all shadow-[0_0_12px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.25)]"
-                  >
-                    ⚡ SHIFT BACKGROUND MATRIX ⚡
-                  </button>
-
-                  {/* Global settings values readout */}
-                  <div className="bg-zinc-950 p-4 border border-zinc-900 font-mono text-[11px] space-y-2">
-                    <div className="text-zinc-500 text-[10px] border-b border-zinc-900 pb-1 uppercase font-bold">
-                      ACTIVE_GLOBAL_SHADERS_UNIFORMS
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-zinc-300">
-                      <div>u_speed: <span className="text-white font-bold">{bgSpeed.toFixed(4)}</span></div>
-                      <div>u_warp: <span className="text-white font-bold">{bgWarp.toFixed(2)}</span></div>
-                      <div>u_colorShift: <span className="text-white font-bold">{bgColorShift.toFixed(3)}</span></div>
-                      <div>u_vignette: <span className="text-white font-bold">{bgVignette.toFixed(2)}</span></div>
-                    </div>
-                  </div>
-
-                </div>
-
-              </div>
-            </div>
           )}
 
           {/* ========================================================================= */}

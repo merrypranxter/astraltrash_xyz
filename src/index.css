@@ -93,7 +93,7 @@ main{position:relative}
 
 /* ticker */
 .ticker-wrap{
-  position:sticky;top:0;z-index:60;background:var(--void);
+  position:relative;z-index:40;background:var(--void);
   border-top:1px solid var(--phosphor);border-bottom:1px solid var(--phosphor);
   overflow:hidden;white-space:nowrap;padding:6px 0;
 }
@@ -299,5 +299,11 @@ body.light-theme .bg-zinc-950,
 body.light-theme .bg-zinc-950\/50,
 body.light-theme .bg-zinc-950\/40 {
   background-color: rgba(240, 240, 235, 0.95) !important;
+}
+
+.jersey-10-regular {
+  font-family: "Jersey 10", sans-serif;
+  font-weight: 400;
+  font-style: normal;
 }
 
