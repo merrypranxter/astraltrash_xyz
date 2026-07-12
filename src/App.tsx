@@ -25,9 +25,14 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Mic,
-  Music
+  Music,
+  Plus,
+  Settings,
+  FolderOpen
 } from 'lucide-react';
 import { ShaderThumbnail } from './components/ShaderThumbnail';
+import { ShittyKaraoke } from './components/ShittyKaraoke';
+import { SubProjects } from './components/SubProjects';
 import localExplanations from './explanations.json';
 
 // Define structure for our shader items
@@ -57,6 +62,82 @@ export interface Top8Item {
   desc: string;
   tag: string;
 }
+
+export interface BucketVideo {
+  id: string;
+  title: string;
+  desc: string;
+  fileName: string;
+  duration?: string;
+  tag?: string;
+}
+
+const defaultBucketVideos: BucketVideo[] = [
+  {
+    id: '1',
+    title: 'KARAOKE_COIL_ALPHA',
+    desc: 'raw mic test under maximum audio decay feedback filters',
+    fileName: '043cc61ba55647cf9255de096ddca3b0',
+    duration: '2:15',
+    tag: 'VOX'
+  },
+  {
+    id: '2',
+    title: 'REPO_DECIMATOR_CHROME',
+    desc: 'chroma soup visual accompaniment with heavy static buzz',
+    fileName: '0ccfabac170d4647ad236b4c365c6978',
+    duration: '3:45',
+    tag: 'SLOP'
+  },
+  {
+    id: '3',
+    title: 'RAINBLOWN_RESONANCE',
+    desc: 'psychedelic pitch warp vocal scales over computational sine waves',
+    fileName: '0eb5bbb4779143a6a87e9958421d0df9',
+    duration: '4:12',
+    tag: 'MATH'
+  },
+  {
+    id: '4',
+    title: 'CHIMERIC_CATHEDRAL_SING',
+    desc: 'sacred chamber delay resonance at 120hz',
+    fileName: '1f3ae0ba040248be93daaa2c71c1bb82',
+    duration: '2:50',
+    tag: 'AMBIENT'
+  },
+  {
+    id: '5',
+    title: 'SPECTRAL_CANDY_BLUES',
+    desc: 'recursive audio loop recorded on dithered microphone input',
+    fileName: '2facc9c9d8eb417bb41164627263b08c',
+    duration: '1:58',
+    tag: 'FEEDBACK'
+  },
+  {
+    id: '6',
+    title: 'ORACLE_TAPE_DECAY',
+    desc: 'prediction of database collapse delivered in screaming pitch',
+    fileName: '2fbf47b319aa400bb5d81729b82ae12a',
+    duration: '3:20',
+    tag: 'GLITCH'
+  },
+  {
+    id: '7',
+    title: 'DITHERSCAPE_VORTEX',
+    desc: 'infinite scrolling audio terrain with microtonal feedback',
+    fileName: '3ea8120b040248be93daaa2c71c1bb82',
+    duration: '2:40',
+    tag: 'CRT'
+  },
+  {
+    id: '8',
+    title: 'ASTRAL_ANTHEM_FINAL',
+    desc: 'ultimate sci-fi vocal explosion featuring 8-bit laser effects',
+    fileName: '4fb147db97a9400bb5d81729b82ae12a',
+    duration: '5:04',
+    tag: 'CANON'
+  }
+];
 
 const defaultTop8: Top8Item[] = [
   {
@@ -138,13 +219,30 @@ export default function App() {
   // 'aislop' = AI Hallucination Lab
   // 'rando' = Synth & Chaos Playground
   // 'about' = About the Artist
-  const [activeTab, setActiveTab] = useState<'hub' | 'shaderslop' | 'aislop' | 'rando' | 'about' | 'karaoke'>('hub');
+  const [activeTab, setActiveTab] = useState<'hub' | 'shaderslop' | 'aislop' | 'rando' | 'about' | 'karaoke' | 'projects'>('hub');
 
   // Core App states
   const [booting, setBooting] = useState(true);
   const [bootDone, setBootDone] = useState(false);
   const [visitorCount, setVisitorCount] = useState('0000000');
   const [showGuestbook, setShowGuestbook] = useState(false);
+
+  // Sub-Projects States
+  const [ghostInput, setGhostInput] = useState<string>('');
+  const [ghostHistory, setGhostHistory] = useState<{sender: 'user' | 'ghost', text: string}[]>([
+    { sender: 'ghost', text: 'DEEP_CORE_ONLINE... i am the residue left in the repository. ask me of the void.' }
+  ]);
+  const [collabActiveColor, setCollabActiveColor] = useState<string>('#39FF14'); // toxic green
+  const [collabCanvas, setCollabCanvas] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('astraltrash_collaborate_canvas');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === 256) return parsed;
+      }
+    } catch (_) {}
+    return Array(256).fill('#050505'); // dark void background
+  });
 
   // Background Shader customizer states (RANDO modifier)
   const [bgSpeed, setBgSpeed] = useState<number>(0.06);
@@ -416,8 +514,8 @@ export default function App() {
   const [newCommentText, setNewCommentText] = useState('');
 
   // Shitty Karaoke States
-  const [karTrack, setKarTrack] = useState<string>('procedural_synth');
-  const [karCustomUrl, setKarCustomUrl] = useState<string>('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4');
+  const [karTrack, setKarTrack] = useState<string>('custom_url');
+  const [karCustomUrl, setKarCustomUrl] = useState<string>('https://storage.googleapis.com/astraltrash_karaoke/043cc61ba55647cf9255de096ddca3b0');
   const [karMicEnabled, setKarMicEnabled] = useState<boolean>(false);
   const [karMicVol, setKarMicVol] = useState<number>(0.8);
   const [karEcho, setKarEcho] = useState<number>(0.3);
@@ -432,6 +530,30 @@ export default function App() {
   ]);
   const [karLyricsOffset, setKarLyricsOffset] = useState<number>(0);
   const [micLevelVal, setMicLevelVal] = useState<number>(0);
+
+  // Google Storage Bucket Karaoke Visualizer & Customizer States
+  const [karBucketName, setKarBucketName] = useState<string>(() => {
+    const saved = localStorage.getItem('astraltrash_karaoke_bucket_name');
+    if (saved && saved !== 'shitty_karaoke') return saved;
+    return 'astraltrash_karaoke';
+  });
+  
+  const [karBucketVideos, setKarBucketVideos] = useState<BucketVideo[]>(() => {
+    try {
+      const saved = localStorage.getItem('astraltrash_karaoke_bucket_videos');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return defaultBucketVideos;
+  });
+
+  const [selectedBucketVideoId, setSelectedBucketVideoId] = useState<string>('1');
+  const [isEditingBucketVideos, setIsEditingBucketVideos] = useState<boolean>(false);
+  const [editingBucketVideoSlotId, setEditingBucketVideoSlotId] = useState<string | null>(null);
+  const [editBTitle, setEditBTitle] = useState<string>('');
+  const [editBFileName, setEditBFileName] = useState<string>('');
+  const [editBDesc, setEditBDesc] = useState<string>('');
+  const [editBDuration, setEditBDuration] = useState<string>('');
+  const [editBTag, setEditBTag] = useState<string>('');
 
   const karVideoRef = useRef<HTMLVideoElement | null>(null);
   const karMicStreamRef = useRef<MediaStream | null>(null);
@@ -2104,6 +2226,16 @@ export default function App() {
             >
               🎤 SHITTY_KARAOKE
             </button>
+            <button 
+              onClick={() => { setActiveTab('projects'); playChime('triangle', 1.9); }}
+              className={`px-5 py-2.5 text-sm font-black tracking-widest border transition-all cursor-crosshair uppercase ${
+                activeTab === 'projects' 
+                  ? 'bg-[#EFFF04] text-black border-[#EFFF04] shadow-[0_0_12px_rgba(239,255,4,0.5)]' 
+                  : 'bg-black text-[#EFFF04] border-[#EFFF04]/40 hover:border-[#EFFF04] hover:bg-[#EFFF04]/10'
+              }`}
+            >
+              🚀 PROJECTS
+            </button>
           </div>
         </div>
 
@@ -2366,7 +2498,7 @@ export default function App() {
                       </div>
                       
                       <div className="sect-sub">
-                        yes, like that. my top friends are all repos and they are all garbage i refuse to throw away.
+                        These are my favorite things I've made lately.
                       </div>
 
                       {/* CONFIGURE PANEL */}
@@ -3823,546 +3955,26 @@ export default function App() {
           {/* ========================================================================= */}
           {/* SECTION F: SHITTY KARAOKE - CHUNKY CRT AUDIO-VISUAL EXPLOSION              */}
           {/* ========================================================================= */}
-          {activeTab === 'karaoke' && (() => {
-            const KARAOKE_TRACKS = [
-              { id: 'procedural_synth', title: 'SYNTHESIZED COSMIC VORTEX', desc: 'Arpeggios synthesised live on your soundcard', color: '#39FF14' },
-              { id: 'custom_url', title: 'CUSTOM STREAM COUPLER', desc: 'Input your own MP4 stream to sing along', color: '#FF2BD6' },
-              { id: 'waiting_video_1', title: '[AWAITING] ASTRAL_ANTHEM.MP4', desc: 'Merry\'s video art showcase track', color: '#00F0FF' },
-              { id: 'waiting_video_2', title: '[AWAITING] REPO_DECIMATOR.MP4', desc: 'Feral AI glitch visuals accompaniment', color: '#EFFF04' },
-            ];
+          {activeTab === 'karaoke' && (
+            <ShittyKaraoke playChime={playChime} />
+          )}
 
-            const KARAOKE_LYRICS: Record<string, string[]> = {
-              procedural_synth: [
-                "ASTRAL TRASH IN THE ATMOSPHERE...",
-                "THE MATRIX HAS FAILED, MY DEAR...",
-                "SHADERS BURNING BRIGHT AND GREEN...",
-                "GLITCHIEST THING YOU'VE EVER SEEN...",
-                "NO COMMISSIONS, NO INQUIRIES, JUST FUN...",
-                "THE SHITTY KARAOKE HAS BEGUN!",
-                "MICROPHONE FEEDBACK PLAYS A SOLO...",
-                "WHY BE MINIMAL WHEN WE CAN GO BOLO?",
-                "100 REPOS OF GLOWING DEBRIS...",
-                "ASTRAL TRASH IS FREE TO BE!"
-              ],
-              custom_url: [
-                "PASTE YOUR FAVORITE KARAOKE TRACK URL BELOW...",
-                "SING WHATEVER YOUR HEART DESIRES...",
-                "THE SCI-FI AMPLIFIER IS CRANKED TO MAX...",
-                "READY FOR LOUD, BRAZEN MAXIMALIST SCREECHES...",
-                "NO FRAMEWORKS, NO SHAME, NO LIMITS!",
-                "♻ GLITCH RECEPTOR AT MAXIMUM SENSITIVITY..."
-              ],
-              waiting_video_1: [
-                "AWAITING VIDEO DEPLOYMENT IN REPOSITORY...",
-                "GIT CHECKOUT: MASTERING THE VOID...",
-                "COMPILING RAW ANALOG CORES...",
-                "STANDBY FOR SPECTRAL VISUAL INJECTION...",
-                "THE MERRY-PRANXTER ORBIT SECTOR IS ACTIVE..."
-              ],
-              waiting_video_2: [
-                "AI SLOP DETECTED IN UPPER LAYERS...",
-                "DEBRIS DECK RECOVERY IN PROGRESS...",
-                "THE REPO CONTAINS 100+ SACRED ARTIFACTS...",
-                "NOTHING HERE IS PRECIOUS, ALL IS SACRED...",
-                "PULLING LATEST COMPILED ARTEFACTS..."
-              ]
-            };
-
-            const trackLyrics = KARAOKE_LYRICS[karTrack] || KARAOKE_LYRICS.procedural_synth;
-            const currentLineIdx = Math.floor(karLyricsOffset / 4);
-            const prevLine = trackLyrics[(currentLineIdx - 1 + trackLyrics.length) % trackLyrics.length] || '---';
-            const currentLine = trackLyrics[currentLineIdx % trackLyrics.length] || '---';
-            const nextLine = trackLyrics[(currentLineIdx + 1) % trackLyrics.length] || '---';
-
-            return (
-              <div className="frame py-8 animate-fade-in space-y-8">
-                {/* Heading Banner */}
-                <div>
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#FF6B00]/40 pb-4 mb-2 gap-3">
-                    <div>
-                      <h2 
-                        className="text-3xl md:text-4xl font-extrabold font-sans text-white tracking-wider uppercase"
-                        style={{
-                          textShadow: '0 0 8px #FF6B00, 0 0 35px rgba(255,107,0,0.4), 2px 0 0 rgba(255,43,214,0.8), -2px 0 0 rgba(0,240,255,0.8)',
-                          fontFamily: "'Chakra Petch', sans-serif"
-                        }}
-                      >
-                        🎤 SHITTY KARAOKE
-                      </h2>
-                      <p className="text-xs text-[#FF6B00] font-mono mt-1.5 uppercase tracking-widest">
-                        ASTRAL_TRASH AUDIO DECAY & VOCAL EXAGGERATION LAB // STANDBY MATRIX ACTIVE
-                      </p>
-                    </div>
-                    <div className="bg-black/60 border border-[#FF6B00]/40 px-3 py-1 font-mono text-[10px] text-[#FF6B00] uppercase tracking-widest">
-                      CRT COUPLING: RESOLVED
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                  {/* Left Column: Player and Tracks selection */}
-                  <div className="lg:col-span-7 space-y-6">
-                    {/* TV container screen */}
-                    <div className="relative border-4 border-zinc-900 bg-black shadow-[0_0_30px_rgba(255,107,0,0.12)] rounded-3xl overflow-hidden aspect-[4/3] p-1 select-none flex flex-col justify-between">
-                      {/* Curvature glare overlay */}
-                      <div className="absolute inset-0 bg-radial-vignette pointer-events-none z-30 opacity-70 mix-blend-multiply" />
-                      <div className="absolute inset-0 pointer-events-none z-30 scanlines opacity-[0.25]" />
-                      
-                      {/* Screen content */}
-                      <div className="relative flex-grow w-full h-full bg-[#080808] overflow-hidden flex items-center justify-center">
-                        <canvas id="karaoke-screen-static" className="absolute inset-0 w-full h-full pointer-events-none z-10" />
-
-                        {karTrack === 'custom_url' ? (
-                          <video 
-                            ref={karVideoRef}
-                            src={karCustomUrl}
-                            className="absolute inset-0 w-full h-full object-cover"
-                            loop
-                            playsInline
-                            onPlay={() => setKarIsPlaying(true)}
-                            onPause={() => setKarIsPlaying(false)}
-                            onTimeUpdate={() => {
-                              if (karVideoRef.current) {
-                                setKarLyricsOffset(Math.floor(karVideoRef.current.currentTime * 2.8));
-                              }
-                            }}
-                          />
-                        ) : (
-                          <div className="text-center p-6 space-y-4 z-20 font-mono text-zinc-400 max-w-md">
-                            <div className="text-[#39FF14] text-xl font-bold tracking-widest animate-pulse flex items-center justify-center gap-2">
-                              <Radio className="w-5 h-5 text-[#39FF14] animate-spin" style={{ animationDuration: '4s' }} />
-                              <span>CHANNEL 42 // ASTRAL_STATIC</span>
-                            </div>
-                            <p className="text-[11px] leading-relaxed uppercase text-zinc-500">
-                              {karTrack === 'procedural_synth' 
-                                ? "EMITTING RETRO PROC-SYNTH MATRIX SINE HARMONICS INTO SOUNDCARD COILS"
-                                : "AWAITING SOURCE PUSH TO REPO DIRECTORY // PLACING DEBRIS SHARDS"}
-                            </p>
-                            <div className="text-[10px] bg-black/80 border border-zinc-900 px-3 py-1.5 inline-block text-zinc-500">
-                              RESOLUTION: 320X240 // REFRESH: 60HZ
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Top HUD text indicators */}
-                        <div className="absolute top-4 left-4 z-20 font-mono text-[10px] bg-black/80 px-2 py-1 text-white border border-zinc-800 tracking-wider">
-                          {karIsPlaying ? '▷ PLAYING_TRANSMISSION' : '‖ PAUSED_STANDBY'}
-                        </div>
-
-                        <div className="absolute top-4 right-4 z-20 font-mono text-[10px] bg-black/80 px-2 py-1 text-[#FF6B00] border border-[#FF6B00]/40 tracking-wider">
-                          TRACK: {karTrack.toUpperCase()}
-                        </div>
-
-                        {/* Bottom VHS Overlays */}
-                        <div className="absolute bottom-4 left-4 z-20 font-mono text-[9px] text-[#39FF14] tracking-widest flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-[#39FF14] animate-ping" />
-                          <span>MIC_LEVEL: {micLevelVal}%</span>
-                        </div>
-
-                        <div className="absolute bottom-4 right-4 z-20 font-mono text-[9px] text-zinc-400">
-                          TIME_INDEX: {Math.floor(karLyricsOffset / 10)}s
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Debris playlist selection */}
-                    <div className="bg-[#050505] border border-zinc-900 p-5 space-y-5">
-                      <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-sans border-b border-zinc-900 pb-2 flex items-center gap-2">
-                        <Music className="w-4 h-4 text-[#FF6B00]" />
-                        <span>DEBRIS DECK PLAYLIST</span>
-                      </h3>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {KARAOKE_TRACKS.map(track => (
-                          <button
-                            key={track.id}
-                            onClick={() => {
-                              if (karVideoRef.current) {
-                                karVideoRef.current.pause();
-                              }
-                              setKarTrack(track.id);
-                              setKarLyricsOffset(0);
-                              setKarIsPlaying(false);
-                              setKarTerminal(prev => [
-                                ...prev.slice(-15),
-                                `SYSTEM: LOADED_TRACK -> ${track.id.toUpperCase()}`,
-                                'LYRIC_DECODER: BUFFER_RESET'
-                              ]);
-                              playChime('triangle', 1.0);
-                            }}
-                            className={`p-3 border text-left cursor-crosshair transition-all flex flex-col justify-between h-[85px] ${
-                              karTrack === track.id
-                                ? 'bg-zinc-950 border-white shadow-[0_0_10px_rgba(255,255,255,0.05)]'
-                                : 'bg-black border-zinc-900 hover:border-zinc-700'
-                            }`}
-                          >
-                            <div className="text-[12px] font-sans font-extrabold text-white tracking-wide truncate uppercase">
-                              {track.title}
-                            </div>
-                            <div className="text-[9.5px] text-zinc-500 font-mono line-clamp-2 mt-1 leading-normal uppercase">
-                              {track.desc}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Custom Stream Source URL Input */}
-                      {karTrack === 'custom_url' && (
-                        <div className="space-y-2 border-t border-zinc-900 pt-4 animate-fade-in">
-                          <label className="text-[10px] text-[#FF2BD6] font-mono block uppercase tracking-widest">
-                            CUSTOM VIDEO COUPLER LINK (.MP4 / DIRECT VIDEO SOURCE):
-                          </label>
-                          <div className="flex gap-2">
-                            <input 
-                              type="text"
-                              value={karCustomUrl}
-                              onChange={(e) => setKarCustomUrl(e.target.value)}
-                              placeholder="https://example.com/stream.mp4"
-                              className="flex-grow bg-black border border-zinc-800 text-white font-mono p-2 text-xs outline-none focus:border-[#FF2BD6]"
-                            />
-                            <button
-                              onClick={() => {
-                                setKarLyricsOffset(0);
-                                if (karVideoRef.current) {
-                                  karVideoRef.current.load();
-                                  karVideoRef.current.play().catch(()=>{});
-                                }
-                                setKarTerminal(prev => [
-                                  ...prev.slice(-15),
-                                  'SYSTEM: STREAM_COUPLER_ENGAGED // LOADING VIDEO BUFFER'
-                                ]);
-                                playChime('sine', 1.2);
-                              }}
-                              className="bg-black text-[#FF2BD6] border border-[#FF2BD6]/40 hover:border-[#FF2BD6] px-4 font-mono text-xs hover:bg-[#FF2BD6]/10 transition-colors"
-                            >
-                              BIND
-                            </button>
-                          </div>
-                          <p className="text-[9px] text-zinc-500 font-mono uppercase">
-                            * Supports direct browser playable video URLs (e.g. static server files or raw github links)
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Video Player Action controls */}
-                      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-zinc-900 pt-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              if (karTrack === 'custom_url' && karVideoRef.current) {
-                                if (karIsPlaying) {
-                                  karVideoRef.current.pause();
-                                } else {
-                                  karVideoRef.current.play().catch(()=>{});
-                                }
-                              } else {
-                                setKarIsPlaying(!karIsPlaying);
-                                if (!karIsPlaying) {
-                                  playChime('sine', 1.0);
-                                }
-                              }
-                              playChime('triangle', 1.0);
-                            }}
-                            className={`px-4 py-2 border font-mono text-xs uppercase flex items-center gap-2 cursor-crosshair ${
-                              karIsPlaying 
-                                ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
-                                : 'bg-black text-white border-zinc-800 hover:border-white'
-                            }`}
-                          >
-                            {karIsPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                            <span>{karIsPlaying ? 'PAUSE_DECK' : 'START_DECK'}</span>
-                          </button>
-                          
-                          <button
-                            onClick={() => {
-                              setKarLyricsOffset(0);
-                              if (karTrack === 'custom_url' && karVideoRef.current) {
-                                karVideoRef.current.currentTime = 0;
-                              }
-                              playChime('sine', 0.8);
-                              setKarTerminal(prev => [...prev.slice(-15), 'SYSTEM: TRANSMISSION_RESET // POINTERS INJECTED TO ZERO']);
-                            }}
-                            className="bg-black text-zinc-400 border border-zinc-800 hover:border-white hover:text-white px-3 py-2 font-mono text-xs uppercase cursor-crosshair flex items-center gap-1.5"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            <span>RESET</span>
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] text-zinc-500 font-mono uppercase">TEMPO_SCALER:</span>
-                          <input 
-                            type="range" 
-                            min="1" 
-                            max="8" 
-                            value={karLyricsSpeed} 
-                            onChange={(e) => setKarLyricsSpeed(Number(e.target.value))}
-                            className="w-16 md:w-24 h-1 bg-zinc-900 appearance-none outline-none accent-[#FF6B00] cursor-crosshair"
-                          />
-                          <span className="text-[10px] text-white font-mono">{karLyricsSpeed}x</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Audio Gain Controls & Crowd Sound Board */}
-                  <div className="lg:col-span-5 space-y-6">
-                    {/* Microphone Configuration Board */}
-                    <div className="bg-[#050505] border border-zinc-900 p-5 space-y-5">
-                      <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-sans border-b border-zinc-900 pb-2 flex items-center gap-2">
-                        <Mic className="w-4 h-4 text-[#FF2BD6]" />
-                        <span>ACOUSTIC GAIN & INJECTORS</span>
-                      </h3>
-
-                      {/* Microphone Connection toggle button */}
-                      <div className="p-4 bg-zinc-950/60 border border-zinc-900 rounded-lg flex flex-col justify-between items-center text-center space-y-3">
-                        <div className="space-y-1">
-                          <div className="text-[11px] text-zinc-400 font-mono uppercase">HARDWARE INPUT NODE</div>
-                          <p className="text-[10px] text-zinc-500 font-mono lowercase">
-                            REQUESTS BROWSER MIC PERMISSION · ENABLES REAL-TIME ECHO AND SPECTRAL COMPRESSION
-                          </p>
-                        </div>
-                        
-                        <button
-                          onClick={toggleMicrophone}
-                          className={`w-full py-2.5 font-mono text-xs font-black tracking-widest uppercase transition-all cursor-crosshair ${
-                            karMicEnabled
-                              ? 'bg-[#39FF14] text-black shadow-[0_0_12px_rgba(57,255,20,0.4)] border-[#39FF14]'
-                              : 'bg-black text-[#39FF14] border border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
-                          }`}
-                        >
-                          {karMicEnabled ? '● MICROPHONE_COUPLED' : '○ DECOUPLED_CONNECT_MIC'}
-                        </button>
-                      </div>
-
-                      {/* Live VU Meter amplitude indicator */}
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400">
-                          <span>VU_METER // AMPLITUDE</span>
-                          <span className={micLevelVal > 80 ? 'text-[#FF2BD6] animate-pulse font-bold' : 'text-[#39FF14]'}>
-                            {micLevelVal > 0 ? `${micLevelVal} DB` : 'SILENT_VOID'}
-                          </span>
-                        </div>
-                        <div className="h-3 bg-zinc-950 border border-zinc-900 relative overflow-hidden flex">
-                          <div 
-                            className="h-full bg-gradient-to-r from-[#39FF14] via-[#EFFF04] to-[#FF2BD6] transition-all duration-75"
-                            style={{ width: `${micLevelVal}%` }}
-                          />
-                          <div className="absolute inset-0 flex justify-between pointer-events-none">
-                            {Array.from({ length: 15 }).map((_, i) => (
-                              <div key={i} className="w-[1px] h-full bg-black/60" />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Slide Controls */}
-                      <div className="space-y-4 pt-2">
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] font-mono text-zinc-400">
-                            <span>MIC_VOL_COEFF:</span>
-                            <span className="text-[#39FF14]">{Math.round(karMicVol * 100)}%</span>
-                          </div>
-                          <input 
-                            type="range" 
-                            min="0" 
-                            max="2" 
-                            step="0.1" 
-                            value={karMicVol}
-                            onChange={(e) => setKarMicVol(Number(e.target.value))}
-                            className="w-full h-1 bg-zinc-900 appearance-none outline-none accent-[#39FF14] cursor-crosshair"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] font-mono text-zinc-400">
-                            <span>ECHO_DELAY_TIME:</span>
-                            <span className="text-[#FF2BD6]">{Math.round(karEcho * 100)}%</span>
-                          </div>
-                          <input 
-                            type="range" 
-                            min="0" 
-                            max="0.9" 
-                            step="0.05" 
-                            value={karEcho}
-                            onChange={(e) => setKarEcho(Number(e.target.value))}
-                            className="w-full h-1 bg-zinc-900 appearance-none outline-none accent-[#FF2BD6] cursor-crosshair"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Distortion and Corruption toggles */}
-                      <div className="grid grid-cols-2 gap-2 border-t border-zinc-900 pt-4">
-                        <button
-                          onClick={() => {
-                            setKarBitcrush(!karBitcrush);
-                            setKarTerminal(prev => [
-                              ...prev.slice(-15),
-                              `FILTER_TOGGLE: BITCRUSH -> ${!karBitcrush ? 'ACTIVE' : 'OFF'}`
-                            ]);
-                            playChime('square', 1.5);
-                          }}
-                          className={`p-2 font-mono text-[10px] border tracking-wider text-center uppercase cursor-crosshair transition-all ${
-                            karBitcrush 
-                              ? 'bg-[#EFFF04]/10 text-[#EFFF04] border-[#EFFF04]' 
-                              : 'bg-black text-zinc-500 border-zinc-900 hover:border-zinc-800'
-                          }`}
-                        >
-                          ☣ BIT_CRUSH
-                        </button>
-                        
-                        <button
-                          onClick={() => {
-                            const newVal = karPitchJitter === 0 ? 0.4 : 0;
-                            setKarPitchJitter(newVal);
-                            setKarTerminal(prev => [
-                              ...prev.slice(-15),
-                              `FILTER_TOGGLE: PITCH_JITTER -> ${newVal > 0 ? 'ACTIVE' : 'OFF'}`
-                            ]);
-                            playChime('square', 0.8);
-                          }}
-                          className={`p-2 font-mono text-[10px] border tracking-wider text-center uppercase cursor-crosshair transition-all ${
-                            karPitchJitter > 0 
-                              ? 'bg-[#00F0FF]/10 text-[#00F0FF] border-[#00F0FF]' 
-                              : 'bg-black text-zinc-500 border-zinc-900 hover:border-zinc-800'
-                          }`}
-                        >
-                          ⚡ PITCH_WARP
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* SFX soundboard buttons matrix */}
-                    <div className="bg-[#050505] border border-zinc-900 p-5 space-y-4">
-                      <h3 className="text-sm font-extrabold text-white uppercase tracking-wider font-sans border-b border-zinc-900 pb-2 flex items-center gap-2">
-                        <span>🔊 CROWD SOUNDBOARD & EFFECTS</span>
-                      </h3>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => playKaraokeSFX('applause')}
-                          className="p-3 bg-black border border-[#39FF14]/40 hover:border-[#39FF14] text-[#39FF14] font-mono text-[11px] uppercase tracking-wider text-center cursor-crosshair transition-all hover:bg-[#39FF14]/5"
-                        >
-                          👏 CHEER_APPLAUSE
-                        </button>
-                        <button
-                          onClick={() => playKaraokeSFX('boo')}
-                          className="p-3 bg-black border border-[#FF2BD6]/40 hover:border-[#FF2BD6] text-[#FF2BD6] font-mono text-[11px] uppercase tracking-wider text-center cursor-crosshair transition-all hover:bg-[#FF2BD6]/5"
-                        >
-                          👎 BOO_HISS
-                        </button>
-                        <button
-                          onClick={() => playKaraokeSFX('laser')}
-                          className="p-3 bg-black border border-[#00F0FF]/40 hover:border-[#00F0FF] text-[#00F0FF] font-mono text-[11px] uppercase tracking-wider text-center cursor-crosshair transition-all hover:bg-[#00F0FF]/5"
-                        >
-                          ⚡ 8BIT_LASER
-                        </button>
-                        <button
-                          onClick={() => playKaraokeSFX('screech')}
-                          className="p-3 bg-black border border-[#EFFF04]/40 hover:border-[#EFFF04] text-[#EFFF04] font-mono text-[11px] uppercase tracking-wider text-center cursor-crosshair transition-all hover:bg-[#EFFF04]/5"
-                        >
-                          🔊 MIC_SCREECH
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bottom: Lyrics Teleprompter Monitor Screen */}
-                  <div className="col-span-12">
-                    <div className="bg-[#020202] border-2 border-zinc-900 p-6 relative overflow-hidden select-none animate-pulse-subtle">
-                      <div className="absolute inset-0 bg-radial-vignette opacity-50 pointer-events-none" />
-                      <div className="absolute inset-x-0 top-0 h-[1.5px] bg-[#FF6B00]/25 pointer-events-none" />
-                      
-                      <div className="relative z-10 flex flex-col items-center justify-center min-h-[160px] text-center space-y-4">
-                        <div className="text-[10px] font-mono text-[#FF6B00]/70 uppercase tracking-widest border-b border-zinc-900 pb-1.5 w-full flex justify-between">
-                          <span>▸ ASTRAL_TRASH KARAOKE TELEPROMPTER // RUNNING</span>
-                          <span>SYNC: INTERCEPTOR COILS</span>
-                        </div>
-
-                        {/* Scrolling Text items */}
-                        <div className="py-4 space-y-3">
-                          <div className="text-zinc-700 font-mono text-xs uppercase select-none opacity-40">
-                            {prevLine}
-                          </div>
-
-                          <div 
-                            className="text-white text-lg md:text-2xl font-black tracking-wide uppercase px-4 py-2 border border-zinc-800 bg-black/60 shadow-[0_0_20px_rgba(255,107,0,0.02)] inline-block transition-all"
-                            style={{
-                              textShadow: '0 0 10px rgba(255,255,255,0.8), 0 0 30px rgba(255,107,0,0.2)',
-                              fontFamily: "'Share Tech Mono', monospace"
-                            }}
-                          >
-                            ▸ {currentLine}
-                          </div>
-
-                          <div className="text-[#FF6B00]/40 font-mono text-xs uppercase select-none">
-                            {nextLine}
-                          </div>
-                        </div>
-
-                        {/* Lyrics pointer scroll modifiers */}
-                        <div className="flex gap-2 text-[10px] font-mono text-zinc-500 pt-2 border-t border-zinc-950 w-full justify-between items-center">
-                          <span>LINE_INDEX: {currentLineIdx}</span>
-                          <div className="flex gap-1.5">
-                            <button 
-                              onClick={() => {
-                                setKarLyricsOffset(prev => Math.max(0, prev - 4));
-                                playChime('triangle', 0.8);
-                              }}
-                              className="bg-black border border-zinc-900 hover:border-zinc-700 hover:text-white px-2 py-0.5"
-                            >
-                              ◀ PREV_LINE
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setKarLyricsOffset(prev => prev + 4);
-                                playChime('triangle', 1.1);
-                              }}
-                              className="bg-black border border-zinc-900 hover:border-zinc-700 hover:text-white px-2 py-0.5"
-                            >
-                              NEXT_LINE ▶
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Visualizer screen */}
-                  <div className="col-span-12">
-                    <div className="bg-[#050505] border border-zinc-900 p-4 space-y-3 animate-glow">
-                      <div className="flex justify-between items-center text-[11px] font-mono text-zinc-400">
-                        <span>LIVE AUDIO_COIL OSCILLOSCOPE TRANSMISSION</span>
-                        <span className="text-[#39FF14] animate-pulse">● FEEDBACK LOOP</span>
-                      </div>
-                      <div className="aspect-[24/5] w-full bg-black border border-zinc-900 relative overflow-hidden rounded">
-                        <canvas 
-                          id="karaoke-visualizer-canvas" 
-                          width="800" 
-                          height="160" 
-                          className="w-full h-full block" 
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dedicated Karaoke OS terminal outputs */}
-                  <div className="col-span-12">
-                    <div className="bg-[#020202] border border-zinc-950 p-4 font-mono text-[10px] text-[#FF6B00] space-y-1 max-h-[140px] overflow-y-auto">
-                      <div className="text-zinc-500 text-[9px] uppercase border-b border-zinc-900 pb-1 mb-2 tracking-widest flex justify-between">
-                        <span>KARAOKE_OS_TELEMETRY_TERMINAL</span>
-                        <span className="animate-ping">●</span>
-                      </div>
-                      {karTerminal.map((line, index) => (
-                        <div key={index} className="truncate">{line}</div>
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            );
-          })()}
+          {/* ========================================================================= */}
+          {/* SECTION G: PROJECTS TAB - DYNAMIC BENTO-GRID MULTI-LANDING HUBS            */}
+          {/* ========================================================================= */}
+          {activeTab === 'projects' && (
+            <SubProjects
+              playChime={playChime}
+              ghostInput={ghostInput}
+              setGhostInput={setGhostInput}
+              ghostHistory={ghostHistory}
+              setGhostHistory={setGhostHistory}
+              collabActiveColor={collabActiveColor}
+              setCollabActiveColor={setCollabActiveColor}
+              collabCanvas={collabCanvas}
+              setCollabCanvas={setCollabCanvas}
+            />
+          )}
 
         </div>
 
