@@ -1069,25 +1069,17 @@ export default function App() {
     };
   }, [bgSpeed, bgWarp, bgColorShift, bgVignette]);
 
-  // 7. Initialize default selected shader on mount
+  // 7. Initialize default selected shader on mount (randomized each time)
   useEffect(() => {
-    if (!selectedShader && allShaders.length > 6) {
-      setSelectedShader(allShaders[6]); // default to neon-void-material.html
+    if (!selectedShader && allShaders.length > 0) {
+      const randomIndex = Math.floor(Math.random() * allShaders.length);
+      setSelectedShader(allShaders[randomIndex]);
     }
   }, [selectedShader, allShaders]);
 
-  // Autodetect CPU capabilities for resolution defaults
+  // Always default to High resolution so shaders look beautiful on all screens by default
   useEffect(() => {
-    if (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) {
-      const cores = navigator.hardwareConcurrency;
-      if (cores >= 8) {
-        setSelectedResolution('high');
-      } else if (cores <= 4) {
-        setSelectedResolution('low');
-      } else {
-        setSelectedResolution('med');
-      }
-    }
+    setSelectedResolution('high');
   }, []);
 
   // Shader virtual time message listener
@@ -3063,7 +3055,7 @@ export default function App() {
                   )}
                 </div>
                 <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-3xl mx-auto">
-                  Real raw GLSL fragment code compiled dynamically in your browser. Select dynamic quality presets, adjust aspect ratios, or scrub temporal coordinates in real-time.
+                  Some of my code is interactive! Some of it is not. Feel free to poke around at it with your mouse and find out what (if anything) happens!
                 </p>
               </div>
 

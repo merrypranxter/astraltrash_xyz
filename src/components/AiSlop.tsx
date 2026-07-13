@@ -9,6 +9,7 @@ import {
   Pause, 
   ExternalLink, 
   ChevronRight, 
+  ChevronLeft,
   Maximize2, 
   Monitor, 
   Cpu, 
@@ -68,6 +69,17 @@ export default function AiSlop({
   ]);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    if (carouselRef.current) {
+      const scrollAmount = 400;
+      carouselRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const addLog = (msg: string) => {
     setTerminalLogs(prev => [...prev.slice(-12), `[${new Date().toLocaleTimeString()}] ${msg}`]);
@@ -353,11 +365,11 @@ export default function AiSlop({
       </div>
 
       {/* Grid: Player Area (Left) & Current Case Details (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         
         {/* Left Area: TV CRT Screen Box with customization controls */}
-        <div className="lg:col-span-6 md:col-span-6 space-y-4">
-          <div className={`relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(0,240,255,0.15)] p-2 rounded-2xl overflow-hidden mx-auto flex flex-col justify-between transition-all duration-300 ${getAspectClass()}`}>
+        <div className="lg:col-span-6 flex flex-col justify-center">
+          <div className={`relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(0,240,255,0.15)] p-2 rounded-2xl overflow-hidden mx-auto flex flex-col justify-between transition-all duration-300 w-full ${getAspectClass()}`}>
             
             {/* Ambient Scanline Filter */}
             <div className="absolute inset-0 pointer-events-none z-10 bg-scanlines opacity-10" />
@@ -373,7 +385,7 @@ export default function AiSlop({
             </div>
 
             {/* Main Content Element (Plays Video or shows Image) */}
-            <div className="flex-grow bg-[#020202] relative flex items-center justify-center overflow-hidden min-h-[300px]">
+            <div className="flex-grow bg-[#020202] relative flex items-center justify-center overflow-hidden min-h-[300px] max-h-[380px] md:max-h-[440px]">
               {selectedItem ? (
                 selectedItem.type === 'video' ? (
                   <video
@@ -414,231 +426,320 @@ export default function AiSlop({
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Aspect Ratio and Resolution Selection Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            {/* Aspect Ratio dial */}
-            <div className="bg-zinc-950 border border-zinc-900 rounded-lg p-3 w-full space-y-2">
-              <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
-                <span>📏 Aspect Ratio</span>
-                <span className="text-[#00F0FF] font-bold">{aspectRatio}</span>
+        {/* Right Area: Active Asset Specs + Controls + Prompt Purifier */}
+        <div className="lg:col-span-6 flex flex-col justify-between py-2 space-y-6">
+          
+          {/* Active Asset Specs */}
+          {selectedItem ? (
+            <div className="space-y-6 md:pt-4">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono font-bold text-[#00F0FF] bg-[#00F0FF]/10 px-2.5 py-1 rounded border border-[#00F0FF]/30 tracking-widest uppercase">
+                  {selectedItem.tag || 'DEBRIS'}
+                </span>
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+                  // CRITICAL ORBITAL SIGNAL
+                </span>
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
-                {(['9:16', '16:9', '1:1', '4:3'] as const).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => {
-                      playChime('square', 1.0);
-                      setAspectRatio(r);
-                    }}
-                    className={`font-mono text-[9px] font-bold py-1 px-1 text-center border uppercase transition-all ${
-                      aspectRatio === r 
-                        ? 'bg-[#00F0FF] text-black border-[#00F0FF] shadow-[0_0_8px_rgba(0,240,255,0.3)]' 
-                        : 'bg-black text-[#00F0FF] border-[#00F0FF]/30 hover:border-[#00F0FF]'
-                    }`}
-                  >
-                    {r}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            {/* Resolution Selector dial */}
-            <div className="bg-zinc-950 border border-zinc-900 rounded-lg p-3 w-full space-y-2">
-              <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
-                <span>🖥 CRT Resolution Mode</span>
-                <span className="text-[#39FF14] font-bold uppercase">{resolution}</span>
-              </div>
-              <div className="grid grid-cols-4 gap-1.5">
-                {(['480p', '720p', '1080p', 'raw'] as const).map((res) => (
-                  <button
-                    key={res}
-                    onClick={() => {
-                      playChime('square', 1.1);
-                      setResolution(res);
-                    }}
-                    className={`font-mono text-[9px] font-bold py-1 px-1 text-center border uppercase transition-all ${
-                      resolution === res 
-                        ? 'bg-[#39FF14] text-black border-[#39FF14] shadow-[0_0_8px_rgba(57,255,20,0.3)]' 
-                        : 'bg-black text-[#39FF14] border-[#39FF14]/30 hover:border-[#39FF14]'
-                    }`}
-                  >
-                    {res === 'raw' ? 'RAW' : res}
-                  </button>
-                ))}
+              <div className="space-y-4">
+                {/* Large Title in Header Font (Jersey 10) */}
+                <h2 
+                  className="jersey-10-regular text-5xl sm:text-6xl md:text-7xl text-white font-normal uppercase tracking-wider leading-none select-all animate-pulse-subtle"
+                  style={{
+                    textShadow: '0 0 15px rgba(0,240,255,0.5), 0 0 30px rgba(0,240,255,0.25)',
+                  }}
+                >
+                  {selectedItem.title}
+                </h2>
+
+                {/* Styled Meta Label under Title */}
+                <div className="font-mono text-xs text-[#FF2BD6]/90 tracking-[0.25em] uppercase font-bold">
+                  ░ Neural Hallucination ░
+                </div>
+
+                {/* Sleeve Description (Spaced out, stylized) */}
+                {selectedItem.desc && (
+                  <div className="pt-4 border-t border-zinc-900/40">
+                    <p className="text-zinc-400 text-sm leading-relaxed font-mono italic border-l-2 border-[#00F0FF] pl-4 max-w-xl">
+                      "{selectedItem.desc}"
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
+          ) : (
+            <div className="py-12 text-center text-zinc-600 font-mono text-[11px] uppercase tracking-wider border border-dashed border-zinc-900">
+              [ STANDBY: SELECT AN ASSET IN THE REEL BELOW ]
+            </div>
+          )}
 
-          </div>
+          {/* Aspect Ratio and Resolution Selector Panel */}
+          <div className="space-y-4 bg-zinc-950/40 border border-zinc-900/50 p-4 rounded-xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              {/* Aspect Ratio dial */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
+                  <span>📏 Aspect Ratio</span>
+                  <span className="text-[#00F0FF] font-bold">{aspectRatio}</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(['9:16', '16:9', '1:1', '4:3'] as const).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => {
+                        playChime('square', 1.0);
+                        setAspectRatio(r);
+                      }}
+                      className={`font-mono text-[9px] font-bold py-1 px-1 text-center border uppercase transition-all ${
+                        aspectRatio === r 
+                          ? 'bg-[#00F0FF] text-black border-[#00F0FF] shadow-[0_0_8px_rgba(0,240,255,0.3)]' 
+                          : 'bg-black text-[#00F0FF] border-[#00F0FF]/30 hover:border-[#00F0FF]'
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Action row buttons */}
-          <div className="flex gap-2 justify-center w-full">
+              {/* Resolution Selector dial */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
+                  <span>🖥 CRT Resolution Mode</span>
+                  <span className="text-[#39FF14] font-bold uppercase">{resolution}</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(['480p', '720p', '1080p', 'raw'] as const).map((res) => (
+                    <button
+                      key={res}
+                      onClick={() => {
+                        playChime('square', 1.1);
+                        setResolution(res);
+                      }}
+                      className={`font-mono text-[9px] font-bold py-1 px-1 text-center border uppercase transition-all ${
+                        resolution === res 
+                          ? 'bg-[#39FF14] text-black border-[#39FF14] shadow-[0_0_8px_rgba(57,255,20,0.3)]' 
+                          : 'bg-black text-[#39FF14] border-[#39FF14]/30 hover:border-[#39FF14]'
+                      }`}
+                    >
+                      {res === 'raw' ? 'RAW' : res}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Open Raw GCS Link */}
             {selectedItem && (
               <a
                 href={getResolvedUrl(selectedItem.fileName)}
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => playChime('sine', 1.2)}
-                className="w-full text-center border border-zinc-800 hover:border-[#00F0FF] hover:bg-[#00F0FF]/5 text-zinc-400 hover:text-white font-mono text-[11px] py-2 px-3 flex items-center justify-center gap-1.5 transition-all cursor-crosshair uppercase"
+                className="w-full text-center border border-zinc-850 hover:border-[#00F0FF] hover:bg-[#00F0FF]/5 text-zinc-500 hover:text-white font-mono text-[10px] py-1.5 px-3 flex items-center justify-center gap-1.5 transition-all cursor-crosshair uppercase rounded"
               >
-                <ExternalLink className="w-3.5 h-3.5" />
+                <ExternalLink className="w-3 h-3" />
                 <span>Open Raw GCS Asset</span>
               </a>
             )}
           </div>
-        </div>
 
-        {/* Right Area: Curated Slop Deck - Seperated Videos Vs Images */}
-        <div className="lg:col-span-6 md:col-span-6 flex flex-col justify-between space-y-6">
-          <div className="border border-zinc-900 bg-[#050505] p-5 rounded-xl space-y-4">
-            
-            {/* Headers and categorization buttons */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-900 pb-2 gap-3">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1.5">
-                <ListFilter className="w-3.5 h-3.5 text-[#00F0FF]" />
-                <span>CURATED_CLOUD_MATRIX</span>
-              </span>
-              
-              {/* Filter Tabs: Videos Vs Images */}
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => {
-                    playChime('sine', 1.0);
-                    setActiveGroup('video');
-                  }}
-                  className={`px-3 py-1 font-mono text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-crosshair uppercase ${
-                    activeGroup === 'video'
-                      ? 'bg-[#00F0FF] text-black border-[#00F0FF]'
-                      : 'bg-black text-gray-400 border-zinc-900 hover:text-white'
-                  }`}
-                >
-                  <Film className="w-3.5 h-3.5" />
-                  <span>Videos</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    playChime('sine', 1.2);
-                    setActiveGroup('image');
-                  }}
-                  className={`px-3 py-1 font-mono text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-crosshair uppercase ${
-                    activeGroup === 'image'
-                      ? 'bg-[#00F0FF] text-black border-[#00F0FF]'
-                      : 'bg-black text-gray-400 border-zinc-900 hover:text-white'
-                  }`}
-                >
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  <span>Images</span>
-                </button>
-              </div>
-            </div>
-
-            {/* List View with cassettes style */}
-            <div className="max-h-[380px] overflow-y-auto space-y-2 pr-1" style={{ scrollbarWidth: 'thin' }}>
-              {filteredItems.length > 0 ? (
-                filteredItems.map((item, index) => {
-                  const isSelected = selectedItem?.id === item.id;
-                  return (
-                    <div
-                      key={item.id}
-                      onClick={() => handleItemSelect(item)}
-                      className={`group border cursor-crosshair p-3 flex justify-between items-center transition-all ${
-                        isSelected 
-                          ? 'bg-[#00F0FF]/10 border-[#00F0FF] shadow-[0_0_12px_rgba(0,240,255,0.2)]'
-                          : 'bg-black/40 border-zinc-900 hover:border-zinc-700'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 truncate">
-                        {/* Compact Number Indicator */}
-                        <span className="text-[10px] font-mono text-zinc-600">
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                        
-                        {/* Media type visual badge */}
-                        <div className={`p-1.5 rounded bg-zinc-950 border ${isSelected ? 'border-[#00F0FF]/60 text-[#00F0FF]' : 'border-zinc-900 text-zinc-500'}`}>
-                          {item.type === 'video' ? <Film className="w-3.5 h-3.5" /> : <ImageIcon className="w-3.5 h-3.5" />}
-                        </div>
-
-                        {/* Title and filename */}
-                        <div className="truncate">
-                          <h4 className="text-[12px] font-sans font-extrabold text-white truncate uppercase tracking-wider group-hover:text-[#00F0FF] transition-colors">
-                            {item.title}
-                          </h4>
-                          <p className="text-[9px] font-mono text-zinc-500 truncate lowercase mt-0.5">
-                            file: {item.fileName}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Right metadata badge */}
-                      <div className="flex items-center gap-2.5 shrink-0 pl-3">
-                        <span className="text-[9px] bg-zinc-950 border border-zinc-900 text-zinc-400 px-1.5 py-0.5 font-mono">
-                          {item.size}
-                        </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-[#00F0FF] group-hover:translate-x-0.5 transition-all" />
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="py-12 text-center text-zinc-600 font-mono text-[11px] uppercase tracking-wider border border-dashed border-zinc-900">
-                  [ NO TAPE FILES DETECTED IN THIS PORT ]
-                </div>
-              )}
-            </div>
-
-            {/* Simulated Active Asset Details card */}
-            {selectedItem && (
-              <div className="bg-[#030303] border border-zinc-950 p-4 rounded-lg space-y-2">
-                <div className="text-[10px] text-zinc-500 font-mono border-b border-zinc-950 pb-1 flex justify-between uppercase">
-                  <span>Active Tape Specs</span>
-                  <span className="text-[#00F0FF]">DITHER_LOADED</span>
-                </div>
-                <h5 className="text-[13px] font-bold text-white uppercase font-sans tracking-wide">
-                  {selectedItem.title}
-                </h5>
-                <p className="text-[10px] text-gray-400 font-mono leading-relaxed">
-                  {selectedItem.desc} Loaded directly from storage bucket using standard HTTP streams at high bitrates. Playback defaults to 9:16 aspect ratios.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Interactive Prompt Purifier integrated nicely at the bottom of the sidebar */}
-          <div className="border border-zinc-900 bg-[#050505] p-5 rounded-xl space-y-4">
-            <div className="flex items-center gap-2 text-white font-bold font-sans uppercase text-[14px] border-b border-zinc-900 pb-2">
-              <Bot className="w-4 h-4 text-[#00F0FF]" />
+          {/* Prompt Purifier Engine */}
+          <div className="border border-zinc-900 bg-black/40 p-4 rounded-xl space-y-3">
+            <div className="flex items-center gap-2 text-zinc-400 font-bold font-sans uppercase text-[11px] border-b border-zinc-900/60 pb-1.5 tracking-wider">
+              <Bot className="w-3.5 h-3.5 text-[#00F0FF]" />
               <span>Prompt Purifier Engine</span>
             </div>
 
-            <div className="space-y-1">
-              <input 
-                type="text"
-                value={rawPrompt}
-                onChange={(e) => setRawPrompt(e.target.value)}
-                placeholder="glowing digital junk..."
-                className="w-full bg-black border border-zinc-800 focus:border-[#00F0FF] text-white p-2.5 font-mono text-[11px] outline-none"
-              />
-            </div>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  value={rawPrompt}
+                  onChange={(e) => setRawPrompt(e.target.value)}
+                  placeholder="glowing digital junk..."
+                  className="flex-grow bg-black border border-zinc-800 focus:border-[#00F0FF] text-white px-3 py-1.5 font-mono text-[11px] outline-none rounded"
+                />
+                <button
+                  onClick={handleCorruptPrompt}
+                  disabled={isCorrupting}
+                  className="bg-[#00F0FF] hover:bg-[#00F0FF]/80 text-black font-bold py-1.5 px-4 font-sans uppercase text-[11px] tracking-widest cursor-crosshair transition-all disabled:opacity-50 shrink-0 rounded"
+                >
+                  {isCorrupting ? 'CORRUPTING...' : 'SYNTHESIZE ▸'}
+                </button>
+              </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={handleCorruptPrompt}
-                disabled={isCorrupting}
-                className="w-full bg-[#00F0FF] hover:bg-[#00F0FF]/80 text-black font-bold py-2 px-3 font-sans uppercase text-[11px] tracking-widest cursor-crosshair transition-all disabled:opacity-50"
-              >
-                {isCorrupting ? 'CORRUPTING COGNITIVE MAPS...' : 'SYNTHESIZE GLITCH SLOP ▸'}
-              </button>
+              {corruptedPrompt && (
+                <div className="bg-black/80 p-2.5 border border-[#00F0FF]/20 font-mono text-[11px] text-[#39FF14] text-center tracking-wide break-all leading-relaxed rounded">
+                  {corruptedPrompt}
+                </div>
+              )}
             </div>
+          </div>
+          
+        </div>
+      </div>
 
-            {corruptedPrompt && (
-              <div className="bg-black/90 p-3 border border-[#00F0FF]/25 font-mono text-[11px] text-[#39FF14] text-center tracking-wide break-all leading-relaxed">
-                {corruptedPrompt}
+      {/* Group Selector and Horizontal Carousel Section */}
+      <div className="border border-zinc-900 bg-[#050505] p-5 rounded-xl space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-900 pb-2 gap-3">
+          <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1.5 tracking-wider">
+            <ListFilter className="w-3.5 h-3.5 text-[#00F0FF]" />
+            <span>ARCHIVE FEED MEDIA CAROUSEL</span>
+          </span>
+          
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                playChime('sine', 1.0);
+                setActiveGroup('video');
+              }}
+              className={`px-3 py-1 font-mono text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-crosshair uppercase ${
+                activeGroup === 'video'
+                  ? 'bg-[#00F0FF] text-black border-[#00F0FF]'
+                  : 'bg-black text-gray-400 border-zinc-900 hover:text-white'
+              }`}
+            >
+              <Film className="w-3.5 h-3.5" />
+              <span>Videos ({items.filter(i => i.type === 'video').length})</span>
+            </button>
+
+            <button
+              onClick={() => {
+                playChime('sine', 1.2);
+                setActiveGroup('image');
+              }}
+              className={`px-3 py-1 font-mono text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-crosshair uppercase ${
+                activeGroup === 'image'
+                  ? 'bg-[#00F0FF] text-black border-[#00F0FF]'
+                  : 'bg-black text-gray-400 border-zinc-900 hover:text-white'
+              }`}
+            >
+              <ImageIcon className="w-3.5 h-3.5" />
+              <span>Images ({items.filter(i => i.type === 'image').length})</span>
+            </button>
+          </div>
+        </div>
+
+        {/* The Horizontal Carousel Track */}
+        <div className="relative flex items-center group/carousel">
+          {/* Scroll Left Button */}
+          <button
+            onClick={() => { playChime('sine', 0.9); scrollCarousel('left'); }}
+            className="absolute left-1 z-30 p-1.5 rounded-full border border-zinc-850 bg-black/80 hover:bg-[#00F0FF]/15 hover:border-[#00F0FF] text-zinc-400 hover:text-[#00F0FF] transition-all cursor-crosshair shadow-lg opacity-0 group-hover/carousel:opacity-100"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {/* Carousel Viewport */}
+          <div
+            ref={carouselRef}
+            className="flex gap-4 overflow-x-auto py-2 px-2 w-full scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-800"
+            style={{ scrollbarWidth: 'thin' }}
+          >
+            {filteredItems.length > 0 ? (
+              filteredItems.map((item, index) => {
+                const isSelected = selectedItem?.id === item.id;
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => handleItemSelect(item)}
+                    className={`shrink-0 cursor-crosshair relative w-[160px] sm:w-[180px] transition-all duration-300 rounded-lg overflow-hidden border ${
+                      isSelected
+                        ? 'bg-[#00F0FF]/10 border-[#00F0FF] scale-[1.03] shadow-[0_0_15px_rgba(0,240,255,0.25)]'
+                        : 'bg-black/40 border-zinc-900 hover:border-zinc-700 hover:bg-black/60'
+                    }`}
+                  >
+                    {/* Thumbnail Frame Container */}
+                    <div className="aspect-[16/10] bg-[#020202] relative overflow-hidden flex items-center justify-center border-b border-zinc-950">
+                      {item.type === 'video' ? (
+                        <div className="w-full h-full relative group/video-thumb">
+                          {/* We render the video tag directly with preload="metadata" to let browser fetch posters naturally */}
+                          <video
+                            src={getResolvedUrl(item.fileName)}
+                            className="w-full h-full object-cover pointer-events-none"
+                            preload="metadata"
+                            muted
+                            playsInline
+                            onMouseEnter={(e) => {
+                              const v = e.currentTarget;
+                              v.play().catch(() => {});
+                            }}
+                            onMouseLeave={(e) => {
+                              const v = e.currentTarget;
+                              v.pause();
+                              v.currentTime = 0;
+                            }}
+                          />
+                          {/* Film Roll Sprockets decoration */}
+                          <div className="absolute inset-x-0 top-0 h-1.5 bg-black/80 flex justify-between px-1 pointer-events-none">
+                            {[...Array(6)].map((_, i) => (
+                              <span key={i} className="w-0.5 h-0.5 bg-zinc-800 rounded-sm" />
+                            ))}
+                          </div>
+                          <div className="absolute inset-x-0 bottom-0 h-1.5 bg-black/80 flex justify-between px-1 pointer-events-none">
+                            {[...Array(6)].map((_, i) => (
+                              <span key={i} className="w-0.5 h-0.5 bg-zinc-800 rounded-sm" />
+                            ))}
+                          </div>
+                          {/* Play Badge Icon overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover/video-thumb:bg-black/10 transition-colors pointer-events-none">
+                            <div className="p-1 rounded-full bg-black/60 border border-zinc-850 text-zinc-300">
+                              <Play className="w-3 h-3 text-[#00F0FF]" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full relative">
+                          <img
+                            src={getResolvedUrl(item.fileName)}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                          {/* Polaroid frame border decoration */}
+                          <div className="absolute inset-x-0 top-0 h-1 bg-black/20 pointer-events-none" />
+                        </div>
+                      )}
+                      {/* Size Badge in top corner */}
+                      <span className="absolute top-1 right-1 text-[7px] font-mono font-black bg-black/75 text-zinc-400 px-1 py-0.5 rounded border border-zinc-800/40 tracking-widest z-10">
+                        {item.size}
+                      </span>
+                    </div>
+
+                    {/* Meta info bottom area */}
+                    <div className="p-1.5 space-y-0.5">
+                      <div className="flex justify-between items-center text-[7px] font-mono text-zinc-500">
+                        <span>SLIDE #{index + 1}</span>
+                        <span className={isSelected ? 'text-[#00F0FF]' : 'text-zinc-500'}>
+                          {item.type.toUpperCase()}
+                        </span>
+                      </div>
+                      <h4 className="text-[10px] font-sans font-black text-white truncate uppercase tracking-wide group-hover:text-[#00F0FF] transition-colors" title={item.title}>
+                        {item.title}
+                      </h4>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-12 text-center text-zinc-600 font-mono text-[11px] uppercase tracking-wider border border-dashed border-zinc-900 w-full">
+                [ NO MEDIA DETECTED IN THIS CHANNEL ]
               </div>
             )}
           </div>
-          
+
+          {/* Scroll Right Button */}
+          <button
+            onClick={() => { playChime('sine', 1.1); scrollCarousel('right'); }}
+            className="absolute right-1 z-30 p-1.5 rounded-full border border-zinc-850 bg-black/80 hover:bg-[#00F0FF]/15 hover:border-[#00F0FF] text-zinc-400 hover:text-[#00F0FF] transition-all cursor-crosshair shadow-lg opacity-0 group-hover/carousel:opacity-100"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
