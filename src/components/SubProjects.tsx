@@ -261,12 +261,12 @@ export function SubProjects({
                 </div>
               </div>
 
-              {/* Live Interactive Node Container (Spacious, non-enclosed, full vertical room) */}
+              {/* Live Interactive Node Container (Downsized to fit desktop screens comfortably) */}
               {proj.liveUrl ? (
                 loadedProjects[proj.id] ? (
-                  <div className="relative bg-[#010101] overflow-hidden aspect-[16/10] min-h-[550px] md:min-h-[850px] w-full border-t border-b border-zinc-900/60 shadow-[0_0_50px_rgba(0,0,0,0.6)]">
+                  <div className="relative bg-[#010101] overflow-hidden aspect-[16/9] min-h-[280px] md:min-h-[420px] w-full max-w-4xl mx-auto border border-zinc-900 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.6)]">
                     {crtFilter && (
-                      <div className="absolute inset-0 pointer-events-none z-30 bg-scanlines opacity-[0.14]" />
+                       <div className="absolute inset-0 pointer-events-none z-30 bg-scanlines opacity-[0.14]" />
                     )}
                     <iframe
                       key={`${proj.id}-${iframeKey}`}
@@ -278,7 +278,7 @@ export function SubProjects({
                     />
                   </div>
                 ) : (
-                  <div className="relative bg-black/95 overflow-hidden aspect-[16/10] min-h-[550px] md:min-h-[850px] w-full border border-zinc-900 flex flex-col items-center justify-center p-8 space-y-6 select-none group">
+                  <div className="relative bg-black/95 overflow-hidden aspect-[16/9] min-h-[280px] md:min-h-[420px] w-full max-w-4xl mx-auto border border-zinc-900 rounded-xl flex flex-col items-center justify-center p-8 space-y-6 select-none group">
                     <div className="absolute inset-0 bg-repeat bg-[radial-gradient(circle,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
                     <div className="crt-scanlines opacity-10" />
                     

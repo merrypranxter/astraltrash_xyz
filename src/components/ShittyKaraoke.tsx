@@ -660,7 +660,7 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
         
         {/* TV CRT Screen Box (Vertical 9:16 aspect ratio) */}
         <div className="lg:col-span-6 md:col-span-6 space-y-4">
-          <div className="relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(255,107,0,0.15)] p-2 rounded-2xl overflow-hidden aspect-[9/16] w-full max-w-[450px] mx-auto flex flex-col justify-between">
+          <div className="relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(255,107,0,0.15)] p-2 rounded-2xl overflow-hidden aspect-[9/16] w-full max-w-[340px] mx-auto flex flex-col justify-between">
             {/* Ambient Scanline Filter */}
             <div className="absolute inset-0 pointer-events-none z-10 bg-scanlines opacity-10" />
             
@@ -715,7 +715,7 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
           </div>
 
           {/* VCR Stream Quality Resolution Dial (Optimizes GPU decoding overhead) */}
-          <div className="bg-zinc-950 border border-zinc-900 rounded-lg p-3 max-w-[450px] mx-auto w-full space-y-2">
+          <div className="bg-zinc-950 border border-zinc-900 rounded-lg p-3 max-w-[340px] mx-auto w-full space-y-2">
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
               <span>📺 CRT Resolution Engine</span>
               <span className="text-[#39FF14] font-bold">MODE: {resolution}</span>
@@ -745,7 +745,7 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
           </div>
 
           {/* External Action Row (Direct Fallbacks - perfectly centered below player) */}
-          <div className="flex gap-2 justify-center max-w-[450px] mx-auto w-full">
+          <div className="flex gap-2 justify-center max-w-[340px] mx-auto w-full">
             <button
               onClick={() => {
                 playChime('triangle', 1.0);
@@ -766,61 +766,64 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
         </div>
 
         {/* Right Sidebar: Active Cassette Sleeve, Metadata & Options */}
-        <div className="lg:col-span-6 md:col-span-6 flex flex-col justify-between space-y-6">
-          <div className="border border-zinc-900 bg-[#050505] p-5 rounded-xl space-y-4">
-            <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase">ACTIVE_CASSETTE_SLEEVE</span>
-              <span className="text-xs font-mono font-bold text-[#FF6B00] bg-[#FF6B00]/10 px-2 py-0.5 rounded border border-[#FF6B00]/20">
+        <div className="lg:col-span-6 md:col-span-6 flex flex-col justify-center items-center text-center py-2 space-y-12 h-full md:pt-24 md:pb-12">
+          <div className="space-y-8 w-full max-w-2xl">
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-xs font-mono font-bold text-[#FF6B00] bg-[#FF6B00]/10 px-2.5 py-1 rounded border border-[#FF6B00]/30 tracking-widest">
                 {selectedVideo.tag || 'VOX'}
+              </span>
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+                // CRITICAL PLAYBACK MEDIA
               </span>
             </div>
 
-            <div className="space-y-3">
-              <div className="font-mono text-[10px] text-zinc-500 uppercase">TITLE sticker label:</div>
-              <h3 className="text-lg font-black text-white uppercase tracking-wider font-sans leading-tight border-b border-dashed border-zinc-900 pb-2 flex flex-col sm:flex-row sm:items-baseline gap-1">
-                <span>{selectedVideo.title}</span>
+            <div className="space-y-6">
+              {/* Song Title in Header Font (Jersey 10) */}
+              <h2 
+                className="jersey-10-regular text-6xl sm:text-7xl md:text-8xl lg:text-9xl text-white font-normal uppercase tracking-wider leading-none select-all animate-pulse-subtle text-center mx-auto"
+                style={{
+                  textShadow: '0 0 15px rgba(255,107,0,0.5), 0 0 30px rgba(255,107,0,0.25)',
+                }}
+              >
+                {selectedVideo.title}
+              </h2>
+
+              {/* Artist Name in complementary pixelated/mono font */}
+              <div className="space-y-3">
                 {selectedVideo.artist && (
-                  <span className="text-xs font-mono font-normal text-zinc-400">
+                  <h3 className="font-mono text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-[#39FF14] font-bold tracking-widest uppercase text-center">
                     by {selectedVideo.artist}
-                  </span>
+                  </h3>
                 )}
-              </h3>
-
-              <div className="font-mono text-[10px] text-zinc-500 uppercase">FILE name:</div>
-              <div className="bg-black border border-zinc-950 p-2 font-mono text-[11px] text-zinc-400 break-all select-all">
-                {selectedVideo.fileName}
+                {/* Karaoke Cover indicator */}
+                <div className="font-mono text-sm sm:text-base md:text-lg lg:text-xl text-[#FF2BD6]/90 tracking-[0.3em] uppercase font-bold text-center">
+                  ░ Karaoke Cover ░
+                </div>
               </div>
 
-              <div className="font-mono text-[10px] text-zinc-500 uppercase">SLEEVE credits:</div>
-              <p className="text-xs text-zinc-400 leading-relaxed font-mono">
-                {selectedVideo.desc}
-              </p>
-
-              <div className="flex justify-between items-center pt-2 border-t border-zinc-950 font-mono text-xs">
-                <span className="text-zinc-600">EST_DURATION:</span>
-                <span className="text-zinc-300 font-bold">{selectedVideo.duration || '3:30'}</span>
-              </div>
+              {/* Sleeve Description (Spaced out, stylized) */}
+              {selectedVideo.desc && (
+                <div className="pt-6 border-t border-zinc-900/40 w-full max-w-xl mx-auto">
+                  <p className="text-zinc-400 text-sm sm:text-base leading-relaxed font-mono italic text-center px-4">
+                    "{selectedVideo.desc}"
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Guidelines & Compatibility Side-by-Side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Quick instructions block */}
-            <div className="border border-zinc-900 bg-black/40 p-4 rounded-xl">
-              <h4 className="text-[11px] font-mono text-zinc-400 uppercase tracking-widest mb-1.5 font-bold">📼 How to spin video cassettes</h4>
-              <ol className="text-[10px] text-zinc-500 font-mono space-y-1 list-decimal list-inside">
-                <li>Select any magnetic VHS cassette from the shelf below.</li>
-                <li>Click <span className="text-[#39FF14]">LOAD CASSETTE</span> to slot it in.</li>
-                <li>The tape will load and play inside the monitor.</li>
-                <li>Click configure below to rename or re-label your videos.</li>
-              </ol>
+          {/* Bottom metadata details & compatibility warning */}
+          <div className="space-y-6 w-full max-w-2xl">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center text-[10px] sm:text-xs font-mono text-zinc-500 pt-6 border-t border-zinc-900/60 w-full">
+              <div>[ FILE: <span className="text-zinc-400 break-all">{selectedVideo.fileName}</span> ]</div>
+              <div>[ TIME: <span className="text-zinc-400">{selectedVideo.duration || '3:30'}</span> ]</div>
+              <div>[ DECODER: <span className="text-zinc-400 font-semibold">{resolution}</span> ]</div>
             </div>
 
             {/* Browser Compatibility Notice */}
-            <div className="bg-zinc-950 border border-zinc-900 p-4 rounded-xl space-y-1">
-              <h4 className="text-xs font-mono text-zinc-400 uppercase tracking-widest font-semibold">💡 Browser Compatibility Notice</h4>
+            <div className="bg-zinc-950/40 border border-zinc-900/50 p-3.5 rounded-xl max-w-xl mx-auto text-center">
               <p className="text-[10px] text-zinc-500 leading-normal font-mono">
-                Some karaoke videos use advanced codecs. If the player displays a blank screen or audio-only, click the <span className="text-[#FF6B00]">"Open in New Tab"</span> button to view the clip instantly, or download it to play locally.
+                💡 <span className="text-zinc-400 font-bold">CODEC ADVISORY</span>: If the player displays a blank screen or audio-only, click the <span className="text-[#FF6B00]">"Open in New Tab"</span> button to view the clip instantly, or download it to play locally.
               </p>
             </div>
           </div>
@@ -999,7 +1002,7 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
         )}
 
         {/* RACK VHS GRID LAYOUT */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
           {videos.map((item, index) => {
             const isCurrent = selectedVideo.id === item.id;
             const isHovered = hoveredId === item.id;
@@ -1009,17 +1012,18 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
                 key={item.id}
                 onMouseEnter={() => setHoveredId(item.id)}
                 onMouseLeave={() => setHoveredId(null)}
-                className={`group border relative transition-all rounded-lg overflow-hidden flex flex-col justify-between ${
+                onClick={() => loadTape(item)}
+                className={`group border relative transition-all rounded-lg overflow-hidden flex flex-col justify-between cursor-pointer ${
                   isCurrent
                     ? 'border-[#39FF14] bg-[#39FF14]/5 shadow-[0_0_15px_rgba(57,255,20,0.12)]'
                     : 'border-zinc-900 bg-black/60 hover:border-zinc-700 hover:bg-black/80'
                 }`}
               >
                 {/* Visual cassette top labels */}
-                <div className="p-3 space-y-2">
-                  <div className="flex justify-between items-center text-[9px] font-mono">
-                    <span className="text-zinc-500 font-semibold tracking-wider">VHS_C_30</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                <div className="p-2 space-y-1.5">
+                  <div className="flex justify-between items-center text-[8px] font-mono">
+                    <span className="text-zinc-500 font-semibold tracking-wider">CASSETTE</span>
+                    <span className={`px-1 py-0.5 rounded text-[7px] font-bold ${
                       isCurrent ? 'bg-[#39FF14]/20 text-[#39FF14]' : 'bg-zinc-900 text-zinc-400'
                     }`}>
                       {item.tag || 'VOX'}
@@ -1065,16 +1069,16 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
                   </div>
 
                   {/* Handwritten label sticker */}
-                  <div className="bg-zinc-100 border border-zinc-200 text-zinc-950 p-2 font-mono text-[11px] leading-tight select-none rotate-[-0.5deg] shadow-[1px_2px_4px_rgba(0,0,0,0.15)] h-[58px] flex flex-col justify-between">
+                  <div className="bg-zinc-100 border border-zinc-200 text-zinc-950 p-1.5 font-mono text-[10px] leading-tight select-none rotate-[-0.5deg] shadow-[1px_2px_4px_rgba(0,0,0,0.15)] h-[52px] flex flex-col justify-between">
                     <div className="font-bold uppercase tracking-wider truncate" title={item.title}>
                       {item.title}
                     </div>
                     {item.artist && (
-                      <div className="text-[9px] text-zinc-600 truncate italic">
+                      <div className="text-[8px] text-zinc-600 truncate italic">
                         by {item.artist}
                       </div>
                     )}
-                    <div className="text-[8px] text-zinc-500 flex justify-between border-t border-zinc-200/50 pt-0.5 mt-0.5">
+                    <div className="text-[7px] text-zinc-500 flex justify-between border-t border-zinc-200/50 pt-0.5 mt-0.5">
                       <span>TIME: {item.duration || '3:30'}</span>
                       <span className="opacity-60"># {index + 1}</span>
                     </div>
@@ -1082,29 +1086,29 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
                 </div>
 
                 {/* Cassette Action Controls */}
-                <div className="p-2 border-t border-zinc-950 bg-black/40 space-y-1.5">
+                <div className="p-1.5 border-t border-zinc-950 bg-black/40 space-y-1">
                   <div className="flex gap-1">
                     <button
-                      onClick={() => loadTape(item)}
-                      className={`flex-grow py-1 px-2 border text-[10px] uppercase font-mono font-bold transition-all flex items-center justify-center gap-1 ${
+                      onClick={(e) => { e.stopPropagation(); loadTape(item); }}
+                      className={`flex-grow py-1 px-1 border text-[9px] uppercase font-mono font-bold transition-all flex items-center justify-center gap-1 ${
                         isCurrent
                           ? 'bg-[#39FF14] text-black border-[#39FF14]'
                           : 'bg-black text-[#39FF14] border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
                       }`}
                     >
-                      <span>{isCurrent ? 'SLOTTED' : 'LOAD TAPE'}</span>
+                      <span>{isCurrent ? 'ACTIVE' : 'PLAY NOW'}</span>
                     </button>
 
                     <button
-                      onClick={() => startEditing(item)}
+                      onClick={(e) => { e.stopPropagation(); startEditing(item); }}
                       className="p-1 border border-zinc-900 hover:border-zinc-700 hover:text-white bg-black/80 transition-all rounded text-zinc-400"
                       title="Edit labels"
                     >
-                      <Settings className="w-3.5 h-3.5" />
+                      <Settings className="w-3 h-3" />
                     </button>
 
                     <button
-                      onClick={() => deleteVideo(item.id)}
+                      onClick={(e) => { e.stopPropagation(); deleteVideo(item.id); }}
                       className="p-1 border border-zinc-900 hover:border-red-500 hover:text-red-400 bg-black/80 transition-all rounded text-zinc-500"
                       title="Discard cassette"
                     >
@@ -1116,7 +1120,7 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
                   <div className="flex justify-between gap-1 text-[9px] font-mono">
                     <button
                       disabled={index === 0}
-                      onClick={() => moveTape(index, 'left')}
+                      onClick={(e) => { e.stopPropagation(); moveTape(index, 'left'); }}
                       className={`px-1 py-0.5 border flex-grow text-center transition-all ${
                         index === 0
                           ? 'border-zinc-950 text-zinc-800 cursor-not-allowed'
@@ -1127,7 +1131,7 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
                     </button>
                     <button
                       disabled={index === videos.length - 1}
-                      onClick={() => moveTape(index, 'right')}
+                      onClick={(e) => { e.stopPropagation(); moveTape(index, 'right'); }}
                       className={`px-1 py-0.5 border flex-grow text-center transition-all ${
                         index === videos.length - 1
                           ? 'border-zinc-950 text-zinc-800 cursor-not-allowed'
