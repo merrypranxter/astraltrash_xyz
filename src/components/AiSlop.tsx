@@ -54,6 +54,7 @@ export default function AiSlop({
   const [items, setItems] = useState<BucketItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<BucketItem | null>(null);
   const [activeGroup, setActiveGroup] = useState<'video' | 'image'>('video');
+  const [categoryFilter, setCategoryFilter] = useState<'ai' | 'non-ai'>('ai');
   const [isScanning, setIsScanning] = useState<boolean>(false);
   
   // Customization States
@@ -70,6 +71,27 @@ export default function AiSlop({
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const carouselRef = useRef<HTMLDivElement | null>(null);
+
+  const isItemAi = (item: BucketItem): boolean => {
+    const lowerName = item.fileName.toLowerCase();
+    const lowerDesc = item.desc ? item.desc.toLowerCase() : '';
+    const lowerTitle = item.title ? item.title.toLowerCase() : '';
+    
+    if (
+      lowerName.includes('non-ai') || lowerName.includes('non_ai') || lowerName.includes('nonai') ||
+      lowerName.includes('analog') || lowerName.includes('human') || lowerName.includes('physical') ||
+      lowerName.includes('camera') || lowerName.includes('paint') || lowerName.includes('hand') ||
+      lowerName.includes('manual') || lowerName.includes('procedural') || lowerName.includes('glsl') ||
+      lowerDesc.includes('non-ai') || lowerDesc.includes('non_ai') || lowerDesc.includes('human') ||
+      lowerDesc.includes('analog') || lowerDesc.includes('physical') || lowerDesc.includes('camera') ||
+      lowerDesc.includes('paint') || lowerDesc.includes('hand') || lowerDesc.includes('manual') ||
+      lowerDesc.includes('procedural') || lowerTitle.includes('analog') || lowerTitle.includes('human') ||
+      lowerTitle.includes('paint') || lowerTitle.includes('hand') || lowerTitle.includes('non-ai')
+    ) {
+      return false;
+    }
+    return true;
+  };
 
   const scrollCarousel = (direction: 'left' | 'right') => {
     if (carouselRef.current) {
@@ -215,18 +237,36 @@ export default function AiSlop({
               id: 'mock-1',
               title: 'cybernetic_over_fitted_debris',
               fileName: 'cybernetic_debris_916.mp4',
-              desc: '9:16 portrait of floating motherboard ruins dithered live.',
+              desc: '9:16 portrait of floating motherboard ruins dithered live. AI neural feedback stream.',
               size: '1.4 MB',
-              tag: '9:16 VIDEO',
+              tag: 'AI_SLOP',
               type: 'video'
             },
             {
               id: 'mock-2',
               title: 'analog_circuit_leak_hallucination',
               fileName: 'analog_circuit_916.png',
-              desc: '9:16 high contrast sacred grid portrait leaked from stable matrices.',
+              desc: '9:16 high contrast sacred grid portrait leaked from stable matrices. AI generated canvas.',
               size: '420 KB',
-              tag: '9:16 IMAGE',
+              tag: 'AI_SLOP',
+              type: 'image'
+            },
+            {
+              id: 'mock-3',
+              title: 'analog_feedback_loop_vhs',
+              fileName: 'analog_feedback_916.mp4',
+              desc: '9:16 manual camera video feedback captured through physical VHS deck.',
+              size: '2.8 MB',
+              tag: 'NON_AI',
+              type: 'video'
+            },
+            {
+              id: 'mock-4',
+              title: 'acrylic_texture_dither_scan',
+              fileName: 'acrylic_scan_916.png',
+              desc: '9:16 high resolution scan of physical acrylic painting with digital dither overlay.',
+              size: '650 KB',
+              tag: 'NON_AI',
               type: 'image'
             }
           ];
@@ -257,20 +297,38 @@ export default function AiSlop({
             id: 'mock-1',
             title: 'cybernetic_over_fitted_debris',
             fileName: 'cybernetic_debris_916.mp4',
-            desc: '9:16 portrait of floating motherboard ruins dithered live.',
+            desc: '9:16 portrait of floating motherboard ruins dithered live. AI neural feedback stream.',
             size: '1.4 MB',
-            tag: '9:16 VIDEO',
+            tag: 'AI_SLOP',
             type: 'video'
           },
           {
             id: 'mock-2',
             title: 'analog_circuit_leak_hallucination',
             fileName: 'analog_circuit_916.png',
-            desc: '9:16 high contrast sacred grid portrait leaked from stable matrices.',
+            desc: '9:16 high contrast sacred grid portrait leaked from stable matrices. AI generated canvas.',
             size: '420 KB',
-            tag: '9:16 IMAGE',
+            tag: 'AI_SLOP',
             type: 'image'
-          }
+            },
+            {
+              id: 'mock-3',
+              title: 'analog_feedback_loop_vhs',
+              fileName: 'analog_feedback_916.mp4',
+              desc: '9:16 manual camera video feedback captured through physical VHS deck.',
+              size: '2.8 MB',
+              tag: 'NON_AI',
+              type: 'video'
+            },
+            {
+              id: 'mock-4',
+              title: 'acrylic_texture_dither_scan',
+              fileName: 'acrylic_scan_916.png',
+              desc: '9:16 high resolution scan of physical acrylic painting with digital dither overlay.',
+              size: '650 KB',
+              tag: 'NON_AI',
+              type: 'image'
+            }
         ];
         if (active) {
           setItems(mockFallbacks);
@@ -288,6 +346,31 @@ export default function AiSlop({
       active = false;
     };
   }, [bucketName]);
+
+  // Category Sync: Update active selections based on AI vs non-AI category change
+  useEffect(() => {
+    if (items.length === 0) return;
+    const isCurrentAi = selectedItem ? isItemAi(selectedItem) : true;
+    const expectedAi = categoryFilter === 'ai';
+    
+    // If current item does not match selected category, select a new matching item
+    if (isCurrentAi !== expectedAi) {
+      const candidates = items.filter(item => {
+        const isAi = isItemAi(item);
+        return expectedAi ? isAi : !isAi;
+      });
+      
+      if (candidates.length > 0) {
+        // Find matching activeGroup first (video vs image)
+        const matchGroup = candidates.find(c => c.type === activeGroup);
+        const nextItem = matchGroup || candidates[0];
+        setSelectedItem(nextItem);
+        setIsPlaying(nextItem.type === 'video'); // autoplay matches if appropriate
+      } else {
+        setSelectedItem(null);
+      }
+    }
+  }, [categoryFilter, items]);
 
   // Video play state sync
   useEffect(() => {
@@ -324,7 +407,11 @@ export default function AiSlop({
     return undefined;
   };
 
-  const filteredItems = items.filter(i => i.type === activeGroup);
+  const filteredItems = items.filter(item => {
+    const isAi = isItemAi(item);
+    const matchesCategory = categoryFilter === 'ai' ? isAi : !isAi;
+    return item.type === activeGroup && matchesCategory;
+  });
 
   return (
     <div className="frame py-8 animate-fade-in space-y-8" id="aislop-mainframe">
@@ -356,11 +443,45 @@ export default function AiSlop({
               textShadow: '0 0 8px #00F0FF, 0 0 30px rgba(0,240,255,0.4), 3px 0 0 rgba(255,43,214,0.8), -3px 0 0 rgba(57,255,20,0.8)'
             }}
           >
-            ☣ AI SLOP DECK ☣
+            ☣ ART SLOP DECK ☣
           </h1>
           <p className="text-[11px] sm:text-xs md:text-sm text-[#00F0FF] font-mono mx-auto max-w-4xl tracking-tight leading-relaxed font-bold uppercase select-all">
-            In art, the hallucination is the point. Curating magnificent neural accidents directly from our cloud archives.
+            In art, the hallucination is the point. Choose between raw AI hallucinations and dynamic procedural or physical artifacts.
           </p>
+
+          {/* Tab Selector: Choose between AI_SLOP & Non-AI_Slop */}
+          <div className="flex justify-center items-center pt-3">
+            <div className="inline-flex rounded-md border border-[#00F0FF]/30 p-1 bg-black/60 shadow-[0_0_12px_rgba(0,240,255,0.15)]">
+              <button
+                onClick={() => {
+                  playChime('triangle', 1.0);
+                  setCategoryFilter('ai');
+                }}
+                className={`px-6 py-2 font-mono text-xs sm:text-sm font-bold uppercase transition-all tracking-wider flex items-center gap-2 rounded ${
+                  categoryFilter === 'ai'
+                    ? 'bg-[#00F0FF] text-black shadow-[0_0_10px_rgba(0,240,255,0.5)]'
+                    : 'text-zinc-500 hover:text-[#00F0FF]/80'
+                }`}
+              >
+                <Bot className="w-4.5 h-4.5" />
+                <span>AI_SLOP</span>
+              </button>
+              <button
+                onClick={() => {
+                  playChime('triangle', 1.3);
+                  setCategoryFilter('non-ai');
+                }}
+                className={`px-6 py-2 font-mono text-xs sm:text-sm font-bold uppercase transition-all tracking-wider flex items-center gap-2 rounded ${
+                  categoryFilter === 'non-ai'
+                    ? 'bg-[#FF2BD6] text-black shadow-[0_0_10px_rgba(255,43,214,0.5)]'
+                    : 'text-zinc-500 hover:text-[#FF2BD6]/80'
+                }`}
+              >
+                <Sparkles className="w-4.5 h-4.5" />
+                <span>Non-AI_Slop</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -600,12 +721,12 @@ export default function AiSlop({
               }}
               className={`px-3 py-1 font-mono text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-crosshair uppercase ${
                 activeGroup === 'video'
-                  ? 'bg-[#00F0FF] text-black border-[#00F0FF]'
+                  ? categoryFilter === 'ai' ? 'bg-[#00F0FF] text-black border-[#00F0FF]' : 'bg-[#FF2BD6] text-black border-[#FF2BD6]'
                   : 'bg-black text-gray-400 border-zinc-900 hover:text-white'
               }`}
             >
               <Film className="w-3.5 h-3.5" />
-              <span>Videos ({items.filter(i => i.type === 'video').length})</span>
+              <span>Videos ({items.filter(i => i.type === 'video' && (categoryFilter === 'ai' ? isItemAi(i) : !isItemAi(i))).length})</span>
             </button>
 
             <button
@@ -615,12 +736,12 @@ export default function AiSlop({
               }}
               className={`px-3 py-1 font-mono text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-crosshair uppercase ${
                 activeGroup === 'image'
-                  ? 'bg-[#00F0FF] text-black border-[#00F0FF]'
+                  ? categoryFilter === 'ai' ? 'bg-[#00F0FF] text-black border-[#00F0FF]' : 'bg-[#FF2BD6] text-black border-[#FF2BD6]'
                   : 'bg-black text-gray-400 border-zinc-900 hover:text-white'
               }`}
             >
               <ImageIcon className="w-3.5 h-3.5" />
-              <span>Images ({items.filter(i => i.type === 'image').length})</span>
+              <span>Images ({items.filter(i => i.type === 'image' && (categoryFilter === 'ai' ? isItemAi(i) : !isItemAi(i))).length})</span>
             </button>
           </div>
         </div>

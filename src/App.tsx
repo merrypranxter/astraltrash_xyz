@@ -210,6 +210,37 @@ const DOSSIER_PHOTOS: string[] = [
 
 const DOSSIER_ROTATE_MS = 4200;
 
+const DEFAULT_PSYCHEDELIC_INTRO = `I've been using psychedelics on and off for about twenty years.
+
+It didn't start as some grand spiritual quest- honestly i just wanted to get fucked up. I wanted to escape. And if there was a substance that could temporarily make reality feel different, I'd probably try it. I spent a lot of years chasing escape through whatever worked.
+
+Over time, though, almost everything else fell away.
+
+I used to drink a lot too, but about a decade ago, mushrooms made me realize I didn't actually enjoy drinking OR being drunk—somehow I had convinced myself that I enjoyed it? And that I needed it to socialize..... but after that moment I haven't been able to drink ever since. I've TRIED to drink on a couple of occasions, but after a sip or two just DID NOT WANT. At all. Ew. No. They helped me do a lot of other work on myself too over the years. I went from giving MANY fucks what other people thought about me to giving ABSOLUTELY NONE WHATSOEVER (as long as i haven't hurt someone - AND I DONT.) And really, that has made all the difference. It's very zen once you stop giving fucks (in comparison to before when u did, at least.) 
+Mushrooms stayed.
+
+What began as recreation slowly became something else entirely.
+
+They're not an escape for me anymore. They're a tool. Sometimes they're medicine. Sometimes they're a brutally honest therapist. Sometimes they're just hilarious. They've helped me untangle depression, addiction, trauma, fear, autism, masking, creativity, and my own weird brain in ways I honestly don't think I could have reached otherwise.
+
+That doesn't mean every trip is sunshine and cosmic hugs. Some have been difficult. Some have been overwhelming. Some have completely dismantled everything I thought I understood. One was literally "Mysterium Tremendum et Fascinans" levels of terrifying (i stayed calm LIKE A PRO - until i finally came down- and then i LOST MY SHIT LOL. I stayed calm during bc i knew i had to or it would get worse but when it was over I CRIED A LOT LOL) // But even the hard ones have usually left me with something valuable once the dust settled.
+
+One thing that has surprised me is how consistent my experiences have become. Over years and dozens of trips, certain places, themes, geometric structures, emotions, and patterns keep returning with remarkable consistency. Whether those experiences are revealing something fundamental about consciousness or simply the fascinating ways a human brain organizes information under psychedelics, I honestly don't know.
+
+And I'm okay not knowing.
+
+I'm not particularly interested in convincing anyone that my experiences are objectively "real." I don't need them to be. They're real enough to me, and they've changed my life in measurable ways.
+
+This section isn't meant to preach, recruit, or romanticize psychedelics. They aren't for everyone, and they deserve respect. They can be psychologically intense, and they're certainly not something I'd recommend treating casually.
+
+This is simply an archive. I have always felt a need or at least a want to document anything interesting during my experiences, so i record things a lot during them - to have them to look back at later during the integration processs. I'm going to put those here. Along with anything else created in the process of integrating my experiences.
+
+Trip reports. Strange recurring phenomena. Voice recordings made while profoundly confused. Impossible geometry. Ideas that turned into artwork years later. Things I remembered for five minutes before they dissolved back into whatever strange corner of the mind they came from.
+
+Take from it whatever you like.
+
+Or just enjoy the weird. Whatever man - here it is: The trippy shit LEZGO!`;
+
 export default function App() {
   const mainCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const galleryCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -218,8 +249,11 @@ export default function App() {
   // 'hub' = Original Portfolio
   // 'shaderslop' = WebGL Art Gallery
   // 'aislop' = AI Hallucination Lab
-  // 'about' = About the Artist
+  // 'about' = About the Artist / More Sections
   const [activeTab, setActiveTab] = useState<'hub' | 'shaderslop' | 'aislop' | 'about' | 'karaoke' | 'projects'>('hub');
+  const [moreSubTab, setMoreSubTab] = useState<'landing' | 'psychedelic' | 'opinions' | 'blog' | 'about-profile'>('landing');
+  const [activeTripReport, setActiveTripReport] = useState<number>(0);
+  const [activeOpinion, setActiveOpinion] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => localStorage.getItem('astraltrash_sound_enabled') !== 'false');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => localStorage.getItem('astraltrash_theme') !== 'light');
 
@@ -294,6 +328,8 @@ export default function App() {
   const [isShaderPlaying, setIsShaderPlaying] = useState<boolean>(true);
   const [shaderStartTimeOffset, setShaderStartTimeOffset] = useState<number>(0);
   const [customJumpInput, setCustomJumpInput] = useState<string>('');
+
+  const [psychedelicIntro, setPsychedelicIntro] = useState<string>(DEFAULT_PSYCHEDELIC_INTRO);
 
   // AI Slop State
   const [rawPrompt, setRawPrompt] = useState<string>('glowing robotic garbage floating in low orbit');
@@ -631,6 +667,33 @@ export default function App() {
         // Fallback to safe simulated dynamic value if API is offline
         const n = base + Math.floor((Date.now() - 1760000000000) / 60000);
         setVisitorCount(String(Math.max(n, base)).padStart(7, '0'));
+      });
+  }, []);
+
+  // Fetch Psychedelic Introduction from GitHub dynamically
+  useEffect(() => {
+    fetch('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/public/psychedelic_page/introduction.txt')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch psychedelic intro from GitHub');
+        return res.text();
+      })
+      .then(text => {
+        if (text) {
+          // Clean up frontmatter or duplicate titles if present
+          let cleaned = text;
+          if (cleaned.startsWith('---')) {
+            const nextDashes = cleaned.indexOf('---', 3);
+            if (nextDashes !== -1) {
+              cleaned = cleaned.substring(nextDashes + 3);
+            }
+          }
+          // Remove duplicate titles
+          cleaned = cleaned.replace(/##\s*Psychedelics/gi, '');
+          setPsychedelicIntro(cleaned.trim());
+        }
+      })
+      .catch(err => {
+        console.warn('Using local fallback for psychedelic introduction:', err);
       });
   }, []);
 
@@ -2221,7 +2284,7 @@ export default function App() {
                   : 'bg-black text-[#00F0FF] border-[#00F0FF]/40 hover:border-[#00F0FF] hover:bg-[#00F0FF]/10'
               }`}
             >
-              AI_SLOP
+              ART_SLOP
             </button>
             <button 
               onClick={() => { setActiveTab('karaoke'); playChime('square', 1.8); }}
@@ -2244,14 +2307,14 @@ export default function App() {
               PROJECTS
             </button>
             <button 
-              onClick={() => { setActiveTab('about'); playChime('triangle', 1.6); }}
+              onClick={() => { setActiveTab('about'); setMoreSubTab('landing'); playChime('triangle', 1.6); }}
               className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
                 activeTab === 'about' 
                   ? 'bg-[#EFFF04] text-black border-[#EFFF04] shadow-[0_0_12px_rgba(239,255,4,0.5)]' 
                   : 'bg-black text-[#EFFF04] border-[#EFFF04]/40 hover:border-[#EFFF04] hover:bg-[#EFFF04]/10'
               }`}
             >
-              ABOUT_ME
+              MORE
             </button>
           </div>
         </div>
@@ -2267,8 +2330,8 @@ export default function App() {
               {/* Sticky Ticker Marquee */}
               <div className="ticker-wrap" role="marquee">
                 <div className="ticker">
-                  ♻ <b>FRESH DEBRIS:</b> raymarched demoscene engines ⟡ <i>FBM domain warping</i> ⟡ <u>thin-film iridescence</u> ⟡ Newton fractals in lotus mandalas ⟡ <b>24 dithering algorithms</b> and one custom palette ⟡ <i>impossible rooms</i> ⟡ sacred geometry as YAML ⟡ <u>dream physics</u> ⟡ ufology as generative dataset ⟡ all trash handmade ⟡ zero build steps were harmed in the making of this website ♻&nbsp;
-                  ♻ <b>FRESH DEBRIS:</b> raymarched demoscene engines ⟡ <i>FBM domain warping</i> ⟡ <u>thin-film iridescence</u> ⟡ Newton fractals in lotus mandalas ⟡ <b>24 dithering algorithms</b> and one custom palette ⟡ <i>impossible rooms</i> ⟡ sacred geometry as YAML ⟡ <u>dream physics</u> ⟡ ufology as generative dataset ⟡ all trash handmade ⟡ zero build steps were harmed in the making of this website ♻&nbsp;
+                  ♻ <b>FRESH DEBRIS:</b> raymarched demoscene engines ⟡ <i>FBM domain warping</i> ⟡ <u>thin-film iridescence</u> ⟡ Newton fractals in lotus mandalas ⟡ <b>24 dithering algorithms</b> and one custom palette ⟡ <i>impossible rooms</i> ⟡ sacred geometry as YAML ⟡ <u>dream physics</u> ⟡ ufology as generative dataset ⟡ all trash compiled ⟡ zero build steps were harmed in the making of this website ♻&nbsp;
+                  ♻ <b>FRESH DEBRIS:</b> raymarched demoscene engines ⟡ <i>FBM domain warping</i> ⟡ <u>thin-film iridescence</u> ⟡ Newton fractals in lotus mandalas ⟡ <b>24 dithering algorithms</b> and one custom palette ⟡ <i>impossible rooms</i> ⟡ sacred geometry as YAML ⟡ <u>dream physics</u> ⟡ ufology as generative dataset ⟡ all trash compiled ⟡ zero build steps were harmed in the making of this website ♻&nbsp;
                 </div>
               </div>
 
@@ -3562,199 +3625,692 @@ export default function App() {
           )}
 
           {/* ========================================================================= */}
-          {/* SECTION E: ABOUT ME - ARTIST RESUME & STATS MATRIX                         */}
+          {/* SECTION E: ABOUT ME / MORE - PORTAL GRID & SUB-ROUTING                     */}
           {/* ========================================================================= */}
           {activeTab === 'about' && (
             <div className="frame py-8 animate-fade-in">
+              
+              {/* Top Banner Title */}
               <div className="mb-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#9D4DFF]/30 pb-3 mb-2 gap-2">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-[#EFFF04]/30 pb-3 mb-2 gap-2">
                   <h2 
                     className="text-3xl font-bold font-sans text-white tracking-wider uppercase"
                     style={{
                       fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
-                      textShadow: '0 0 8px var(--phosphor), 0 0 30px rgba(57,255,20,0.5), 3px 0 0 rgba(255,43,214,0.8), -3px 0 0 rgba(0,240,255,0.8)',
+                      textShadow: '0 0 8px var(--phosphor), 0 0 30px rgba(239,255,4,0.5), 3px 0 0 rgba(255,43,214,0.8), -3px 0 0 rgba(0,240,255,0.8)',
                       animation: 'jitter 6s infinite'
                     }}
                   >
-                    ░ About Merry // astraltrash ░
+                    ░ {moreSubTab === 'landing' ? 'More Sectors // astraltrash' : `More Sectors // ${moreSubTab.toUpperCase()}`} ░
                   </h2>
-                  <span className="text-[11px] text-gray-500 font-mono">STATUS_FEED: ENCRYPTED_ENTITY</span>
+                  <span className="text-[11px] text-gray-500 font-mono">SYS_ROUTER: ACTIVE_DECK_STREAMS</span>
                 </div>
                 <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-2xl">
-                  Digital debris miner, shader programmer, and creator of custom visual bibles. Translating two decades of documented visionary geometry into real-time GLSL mathematical algorithms.
+                  {moreSubTab === 'landing' && "Unlocking advanced directories: Explore documented trip reports, opinion essays on technology & design, chronologically indexed artist blogs, and biographical dossiers."}
+                  {moreSubTab === 'psychedelic' && "Poetic records of raw visual geometry, dither-mapped visual reports, and research notes from altered realities."}
+                  {moreSubTab === 'opinions' && "Critical essays and personal philosophies concerning modern technology, creative rebellion, and digital design."}
+                  {moreSubTab === 'blog' && "Sequential process logs of WebGL shader design, physical acrylic painting, and retro hardware salvage."}
+                  {moreSubTab === 'about-profile' && "Biographical dossier of the entity, stats matrix, interactive portrait photostream, and verified communications."}
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                
-                {/* Left Column: Interactive Portrait Dossier */}
-                <div className="lg:col-span-5 bg-black/95 border-2 border-[#9D4DFF] p-4 shadow-[0_0_20px_rgba(157,77,255,0.2)] space-y-4 font-mono">
-                  <div className="bg-[#9D4DFF] text-black text-[12px] font-bold p-1 px-2 tracking-widest flex justify-between items-center">
-                    <span>👾 PORTRAIT_DOSSIER</span>
-                    <span className="text-[8px] bg-black text-[#9D4DFF] px-1.5 py-0.5">TRK_STREAM</span>
-                  </div>
-
-                  <div 
-                    className="relative cursor-crosshair overflow-hidden group transition-all"
-                    onClick={advanceDossierPhoto}
-                    title="Click to advance photo"
+              {/* Sub-Navigation Tabs */}
+              <div className="mb-8 bg-black/60 border border-zinc-900 p-2 rounded-xl flex flex-wrap gap-2 items-center justify-between font-mono text-xs text-gray-400">
+                <div className="flex items-center gap-2 pl-1">
+                  <span className="text-[#EFFF04] font-bold">📂 DIRECTORY:</span>
+                  <span className="text-zinc-600">/</span>
+                  <span className="text-white font-semibold uppercase">{moreSubTab === 'landing' ? 'MENU' : moreSubTab}</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  <button 
+                    onClick={() => { setMoreSubTab('landing'); playChime('sine', 1.0); }}
+                    className={`px-2.5 py-1 border transition-all text-[10px] rounded hover:text-[#EFFF04] hover:border-[#EFFF04] cursor-crosshair uppercase ${moreSubTab === 'landing' ? 'bg-[#EFFF04] text-black border-[#EFFF04] font-bold shadow-[0_0_8px_rgba(239,255,4,0.3)]' : 'bg-black border-zinc-900'}`}
                   >
-                    {/* Target Corner brackets instead of bounding box */}
-                    <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#9D4DFF] z-10" />
-                    <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#9D4DFF] z-10" />
-                    <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#9D4DFF] z-10" />
-                    <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#9D4DFF] z-10" />
-
-                    {/* CRT scanline overlay */}
-                    <div className="absolute inset-0 pointer-events-none opacity-20" style={{
-                      backgroundImage: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 50%)',
-                      backgroundSize: '100% 4px',
-                      zIndex: 5
-                    }} />
-
-                    {/* Aspect-ratio 9:16 container */}
-                    <div className="aspect-[9/16] relative overflow-hidden bg-zinc-950/50 flex items-center justify-center p-0.5">
-                      {!dossierBroken.has(dossierIdx) ? (
-                        <img
-                          src={getDossierPhotoUrl(dossierIdx)}
-                          key={`dossier-about-${dossierIdx}-${dossierAttempts[dossierIdx] || 0}`}
-                          alt="Subject: Merry"
-                          onError={() => handleDossierError(dossierIdx)}
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover block transition-all duration-500 group-hover:scale-105"
-                          style={{ animation: 'dzflicker 7s steps(50) infinite' }}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 p-4 flex flex-col justify-center items-center text-center text-[#9D4DFF] space-y-2 select-none">
-                          <span className="text-[20px] animate-pulse">⚠</span>
-                          <span className="text-[11px] font-bold tracking-wider uppercase">NO PHOTO RETRIEVED</span>
-                          <span className="text-[9px] text-zinc-500 leading-normal max-w-[140px] font-mono normal-case">
-                            drop photos in public/dossier/ and update code to active
-                          </span>
-                          <div className="text-[8px] text-zinc-600 font-mono scale-90 mt-1">
-                            [IMG_0{dossierIdx + 1}_PLACEHOLDER]
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Photo footer details */}
-                    <div className="flex justify-between items-center text-[11px] text-[#9D4DFF] p-2 pt-3 font-mono">
-                      <span className="text-[#39FF14] animate-pulse font-bold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14] inline-block" /> ● TRK_ACTIVE
-                      </span>
-                      <span>IMG_0{dossierIdx + 1}/0{DOSSIER_PHOTOS.length}</span>
-                      <span className="font-bold">MERRY_ID</span>
-                    </div>
-                  </div>
-
-                  <div className="text-[9px] text-zinc-600 text-center uppercase tracking-wider font-mono">
-                    ✦ Click photo to manually cycle index ✦
-                  </div>
+                    📡 MENU
+                  </button>
+                  <button 
+                    onClick={() => { setMoreSubTab('psychedelic'); playChime('sine', 1.1); }}
+                    className={`px-2.5 py-1 border transition-all text-[10px] rounded hover:text-[#FF2BD6] hover:border-[#FF2BD6] cursor-crosshair uppercase ${moreSubTab === 'psychedelic' ? 'bg-[#FF2BD6] text-white border-[#FF2BD6] font-bold shadow-[0_0_8px_rgba(255,43,214,0.3)]' : 'bg-black border-zinc-900'}`}
+                  >
+                    🌀 PSYCHEDELIC
+                  </button>
+                  <button 
+                    onClick={() => { setMoreSubTab('opinions'); playChime('sine', 1.2); }}
+                    className={`px-2.5 py-1 border transition-all text-[10px] rounded hover:text-[#00F0FF] hover:border-[#00F0FF] cursor-crosshair uppercase ${moreSubTab === 'opinions' ? 'bg-[#00F0FF] text-black border-[#00F0FF] font-bold shadow-[0_0_8px_rgba(0,240,255,0.3)]' : 'bg-black border-zinc-900'}`}
+                  >
+                    🧠 OPINIONS
+                  </button>
+                  <button 
+                    onClick={() => { setMoreSubTab('blog'); playChime('sine', 1.3); }}
+                    className={`px-2.5 py-1 border transition-all text-[10px] rounded hover:text-[#39FF14] hover:border-[#39FF14] cursor-crosshair uppercase ${moreSubTab === 'blog' ? 'bg-[#39FF14] text-black border-[#39FF14] font-bold shadow-[0_0_8px_rgba(57,255,20,0.3)]' : 'bg-black border-zinc-900'}`}
+                  >
+                    📝 BLOG
+                  </button>
+                  <button 
+                    onClick={() => { setMoreSubTab('about-profile'); playChime('sine', 1.4); }}
+                    className={`px-2.5 py-1 border transition-all text-[10px] rounded hover:text-[#9D4DFF] hover:border-[#9D4DFF] cursor-crosshair uppercase ${moreSubTab === 'about-profile' ? 'bg-[#9D4DFF] text-white border-[#9D4DFF] font-bold shadow-[0_0_8px_rgba(157,77,255,0.3)]' : 'bg-black border-zinc-900'}`}
+                  >
+                    👾 ABOUT_ME
+                  </button>
                 </div>
-
-                {/* Right Column: Bio, Statements & Links */}
-                <div className="lg:col-span-7 space-y-6">
-                  
-                  {/* Biography Box */}
-                  <div className="border border-zinc-800 bg-black/80 p-5 space-y-3 font-sans">
-                    <h3 className="text-xl font-bold font-sans text-white tracking-tight border-b border-zinc-900 pb-2 flex items-center gap-2">
-                      <Atom className="w-5 h-5 text-[#9D4DFF]" />
-                      <span>THE ENTITY: MERRY</span>
-                    </h3>
-                    <div className="text-[14px] text-gray-300 leading-relaxed space-y-3.5">
-                      <p>
-                        I am Merry (known across web networks as <strong>astraltrash</strong>), a visual artist and shader wizard exploring the intersections of geometry, visual phenomenology, and retro computing.
-                      </p>
-                      <p>
-                        For two decades, I have compiled, dithered, and documented recurring mathematical constants found during psychedelic states. Rather than letting these ideas rest in obscure offline notebooks, I construct responsive, live WebGL2 systems so that anyone with a browser can look directly into the field of low void orbit.
-                      </p>
-                      <p className="text-zinc-400 italic text-[13px] border-l-2 border-[#9D4DFF] pl-3 py-0.5">
-                        "One artist's accumulated digital debris is another's glowing spacecraft."
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Aesthetic Social Gateways Terminal */}
-                  <div className="border border-[#9D4DFF]/40 bg-black/95 p-5 space-y-4 font-mono">
-                    <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
-                      <span className="text-[12px] font-bold text-[#9D4DFF] uppercase tracking-wider flex items-center gap-1.5">
-                        <Terminal className="w-4 h-4 text-[#9D4DFF]" />
-                        <span>VERIFIED_COMMUNICATION_CHANNELS</span>
-                      </span>
-                      <span className="text-[9px] bg-[#9D4DFF]/20 text-[#9D4DFF] px-1.5 py-0.5">SECURE</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Twitter (X) */}
-                      <a 
-                        href="https://x.com/astraltrash_" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={() => playChime('sine', 1.0)}
-                        className="group border border-zinc-800 hover:border-[#9D4DFF] p-3 hover:bg-[#9D4DFF]/5 flex justify-between items-center transition-all cursor-crosshair"
-                      >
-                        <div className="space-y-0.5">
-                          <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#9D4DFF]">X Account Profile</div>
-                          <div className="text-[9px] text-gray-500 uppercase">@astraltrash_</div>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#9D4DFF] transition-all" />
-                      </a>
-
-                      {/* TikTok */}
-                      <a 
-                        href="https://www.tiktok.com/@astraltrash" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={() => playChime('sine', 1.0)}
-                        className="group border border-zinc-800 hover:border-[#FF2BD6] p-3 hover:bg-[#FF2BD6]/5 flex justify-between items-center transition-all cursor-crosshair"
-                      >
-                        <div className="space-y-0.5">
-                          <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#FF2BD6]">TikTok Profile</div>
-                          <div className="text-[9px] text-gray-500 uppercase">@astraltrash</div>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#FF2BD6] transition-all" />
-                      </a>
-
-                      {/* Tezos Objkt.com */}
-                      <a 
-                        href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={() => playChime('sine', 1.3)}
-                        className="group border border-zinc-800 hover:border-[#EFFF04] p-3 hover:bg-[#EFFF04]/5 flex justify-between items-center transition-all cursor-crosshair"
-                      >
-                        <div className="space-y-0.5">
-                          <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#EFFF04]">Objkt Tezos Marketplace</div>
-                          <div className="text-[9px] text-gray-500 uppercase">Collect Active NFTs</div>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#EFFF04] transition-all" />
-                      </a>
-
-                      {/* GitHub */}
-                      <a 
-                        href="https://github.com/merrypranxter" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={() => playChime('sine', 1.5)}
-                        className="group border border-zinc-800 hover:border-[#39FF14] p-3 hover:bg-[#39FF14]/5 flex justify-between items-center transition-all cursor-crosshair"
-                      >
-                        <div className="space-y-0.5">
-                          <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#39FF14]">GitHub Repositories</div>
-                          <div className="text-[9px] text-gray-500 uppercase">@merrypranxter (100+ repos)</div>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#39FF14] transition-all" />
-                      </a>
-                    </div>
-
-                    <p className="text-[10px] text-zinc-500 text-center leading-normal max-w-sm mx-auto pt-2 font-mono">
-                      * NO COMMISSIONS · NO INQUIRIES · TRANSMISSION ONLY
-                    </p>
-                  </div>
-
-                </div>
-
               </div>
+
+              {/* ------------------------------------------------------------- */}
+              {/* SUB-VIEW 1: LANDING MENU                                      */}
+              {/* ------------------------------------------------------------- */}
+              {moreSubTab === 'landing' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+                  
+                  {/* Card 1: Psychedelic */}
+                  <div 
+                    onClick={() => { setMoreSubTab('psychedelic'); playChime('sine', 1.1); }}
+                    className="group relative cursor-crosshair bg-[#14001c]/90 border-2 border-[#FF2BD6]/30 hover:border-[#FF2BD6] p-6 rounded-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_25px_rgba(255,43,214,0.25)] flex flex-col justify-between h-[280px]"
+                  >
+                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,43,214,0.03)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none rounded-xl" />
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-2xl select-none">🌀</span>
+                        <span className="text-[9px] font-mono text-[#FF2BD6] bg-[#FF2BD6]/10 border border-[#FF2BD6]/20 px-2 py-0.5 rounded uppercase tracking-wider">PHENO_DATA</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-white tracking-wide uppercase font-sans mb-2 group-hover:text-[#FF2BD6] transition-colors">
+                        Psychedelic Archive
+                      </h3>
+                      <p className="text-zinc-400 font-mono text-xs leading-relaxed">
+                        Visionary geometry logs, trip research, and dither-mapped visual reports exploring altered dimensional states of consciousness.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between font-mono text-[10px] text-[#FF2BD6] border-t border-[#FF2BD6]/10 pt-3">
+                      <span>SECURE_ENTRY_STREAM</span>
+                      <span className="group-hover:translate-x-1 transition-transform">ACCESS DECK ▸</span>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Opinions */}
+                  <div 
+                    onClick={() => { setMoreSubTab('opinions'); playChime('sine', 1.2); }}
+                    className="group relative cursor-crosshair bg-[#00171a]/90 border-2 border-[#00F0FF]/30 hover:border-[#00F0FF] p-6 rounded-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_25px_rgba(0,240,255,0.25)] flex flex-col justify-between h-[280px]"
+                  >
+                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,240,255,0.03)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none rounded-xl" />
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-2xl select-none">🧠</span>
+                        <span className="text-[9px] font-mono text-[#00F0FF] bg-[#00F0FF]/10 border border-[#00F0FF]/20 px-2 py-0.5 rounded uppercase tracking-wider">UNENCRYPTED</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-white tracking-wide uppercase font-sans mb-2 group-hover:text-[#00F0FF] transition-colors">
+                        Opinions Board
+                      </h3>
+                      <p className="text-zinc-400 font-mono text-xs leading-relaxed">
+                        Unencrypted brain debris and critical essays defending the weird web, the physics of low-fidelity dither, and anti-slop curation.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between font-mono text-[10px] text-[#00F0FF] border-t border-[#00F0FF]/10 pt-3">
+                      <span>THOUGHT_MATRIX</span>
+                      <span className="group-hover:translate-x-1 transition-transform">ACCESS DECK ▸</span>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Artist Blog */}
+                  <div 
+                    onClick={() => { setMoreSubTab('blog'); playChime('sine', 1.3); }}
+                    className="group relative cursor-crosshair bg-[#051c02]/90 border-2 border-[#39FF14]/30 hover:border-[#39FF14] p-6 rounded-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_25px_rgba(57,255,20,0.25)] flex flex-col justify-between h-[280px]"
+                  >
+                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(57,255,20,0.03)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none rounded-xl" />
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-2xl select-none">📝</span>
+                        <span className="text-[9px] font-mono text-[#39FF14] bg-[#39FF14]/10 border border-[#39FF14]/20 px-2 py-0.5 rounded uppercase tracking-wider">ACTIVE_LOGS</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-white tracking-wide uppercase font-sans mb-2 group-hover:text-[#39FF14] transition-colors">
+                        Artist's Blog
+                      </h3>
+                      <p className="text-zinc-400 font-mono text-xs leading-relaxed">
+                        Weekly process updates on shader engineering, physical painting, vintage hardware salvages, and custom visual bibles.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between font-mono text-[10px] text-[#39FF14] border-t border-[#39FF14]/10 pt-3">
+                      <span>PROCESS_FEED</span>
+                      <span className="group-hover:translate-x-1 transition-transform">ACCESS DECK ▸</span>
+                    </div>
+                  </div>
+
+                  {/* Card 4: About Me profile */}
+                  <div 
+                    onClick={() => { setMoreSubTab('about-profile'); playChime('sine', 1.4); }}
+                    className="group relative cursor-crosshair bg-[#110121]/90 border-2 border-[#9D4DFF]/30 hover:border-[#9D4DFF] p-6 rounded-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_25px_rgba(157,77,255,0.25)] flex flex-col justify-between h-[280px]"
+                  >
+                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(157,77,255,0.03)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none rounded-xl" />
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-2xl select-none">👾</span>
+                        <span className="text-[9px] font-mono text-[#9D4DFF] bg-[#9D4DFF]/10 border border-[#9D4DFF]/20 px-2 py-0.5 rounded uppercase tracking-wider">ENTITY_INFO</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-white tracking-wide uppercase font-sans mb-2 group-hover:text-[#9D4DFF] transition-colors">
+                        About the Artist
+                      </h3>
+                      <p className="text-zinc-400 font-mono text-xs leading-relaxed">
+                        Original biography, interactive portrait photo dossier, stats matrix, and verified transmission/social networks.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between font-mono text-[10px] text-[#9D4DFF] border-t border-[#9D4DFF]/10 pt-3">
+                      <span>PROFILE_DOSSIER</span>
+                      <span className="group-hover:translate-x-1 transition-transform">ACCESS DECK ▸</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ------------------------------------------------------------- */}
+              {/* SUB-VIEW 2: PSYCHEDELIC                                        */}
+              {/* ------------------------------------------------------------- */}
+              {moreSubTab === 'psychedelic' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fade-in text-left">
+                  {/* Left Column: List of files */}
+                  <div className="lg:col-span-4 bg-zinc-950/80 border border-[#FF2BD6]/30 p-4 rounded-xl space-y-3 font-mono">
+                    <div className="text-[10px] text-[#FF2BD6] font-bold tracking-wider border-b border-[#FF2BD6]/20 pb-1.5 uppercase">
+                      📂 Visionary Core Files
+                    </div>
+                    <div className="space-y-1.5">
+                      {[
+                        { title: 'Summary of everything', tag: 'INTEGRATION', date: 'ALL_TIME' },
+                        { title: 'The Tetrogrammaton', tag: 'DMT_CORE', date: 'VISION' },
+                        { title: 'The SHIPWREKTD event', tag: 'EXPERIENCE', date: '08/2025' },
+                        { title: 'The Night of 9 grams (4 grams)', tag: 'HIGH_DOSE', date: '12/2025' },
+                        { title: 'Other', tag: 'MISC_DEBRIS', date: 'DEBRIS' }
+                      ].map((item, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => { playChime('sine', 1.0 + idx * 0.1); setActiveTripReport(idx); }}
+                          className={`w-full text-left p-2.5 rounded border transition-all text-xs flex justify-between items-center ${activeTripReport === idx ? 'bg-[#FF2BD6]/10 border-[#FF2BD6] text-white' : 'bg-black/50 border-zinc-900 text-zinc-400 hover:border-zinc-705 hover:text-white'}`}
+                        >
+                          <div className="space-y-0.5 truncate pr-2">
+                            <div className="font-bold uppercase truncate">{item.title}</div>
+                            <div className="text-[9px] text-zinc-500">{item.tag}</div>
+                          </div>
+                          <span className="text-[8px] shrink-0 font-mono bg-zinc-900 border border-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">{item.date}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Active File Details */}
+                  <div className="lg:col-span-8 space-y-6">
+                    {/* Contained, Scrollable Introduction console box */}
+                    <div className="bg-[#12011b]/80 border-2 border-[#FF2BD6]/30 rounded-xl p-5 shadow-[0_0_25px_rgba(255,43,214,0.08)] relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,43,214,0.02)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none rounded-xl" />
+                      <div className="flex justify-between items-center border-b border-[#FF2BD6]/20 pb-2 mb-3.5 select-none">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#FF2BD6] animate-ping shrink-0" />
+                          <span className="w-2 h-2 rounded-full bg-[#FF2BD6] absolute shrink-0" />
+                          <span className="text-[10px] font-mono text-[#FF2BD6] tracking-wider uppercase font-bold">📂 DEBRIS_STREAM_INTRO.txt</span>
+                        </div>
+                        <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">TRANSMISSION_INTEGRATED</span>
+                      </div>
+                      <div className="text-xs font-mono text-zinc-300 leading-relaxed max-h-[160px] overflow-y-auto pr-2 custom-scrollbar space-y-3.5 whitespace-pre-line">
+                        {psychedelicIntro}
+                      </div>
+                    </div>
+
+                    {/* Active File Details */}
+                    <div className="bg-black/90 border border-[#FF2BD6]/40 p-6 rounded-xl space-y-4 shadow-[0_0_20px_rgba(255,43,214,0.05)]">
+                    {activeTripReport === 0 && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start border-b border-zinc-900 pb-3 gap-2 flex-wrap">
+                          <h3 className="text-xl font-bold font-sans text-[#FF2BD6] tracking-wide uppercase">FILE_01: Summary of Everything</h3>
+                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 border border-zinc-900 rounded">DATE: ALL_TIME · ARCHIVE INTEGRATION</span>
+                        </div>
+                        <div className="text-sm font-sans text-gray-300 leading-relaxed space-y-3.5">
+                          <p>
+                            A complete diagnostic overview of deep-state psychedelic integrations and structural pattern alignments across multiple visionary cycles.
+                          </p>
+                          <p>
+                            When combining multiple chemical and mathematical frameworks (including high-dose psilocybe, classical tryptamines, and lysergamides), we isolate a recurring set of geometries: dithered spatial decay, grid-based shear coordinate vectors, and custom chromatic aberration matrices that overlay standard physical perception. This is where creative artifacts emerge—not by representing organic watercolor, but by Mining raw dithered GLSL structures directly from the machine's debris.
+                          </p>
+                          <blockquote className="border-l-2 border-[#FF2BD6] pl-3 py-1 italic text-zinc-400 text-xs font-mono">
+                            "Across all dimensions and thresholds, the unifying code is always dithered, structured, and mathematical."
+                          </blockquote>
+                          <p>
+                            This metadata serves as the foundational catalog for the **Astral Trash** project. Every shader, interface, and sound element in this space is an archival translation of these integrated states.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {activeTripReport === 1 && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start border-b border-zinc-900 pb-3 gap-2 flex-wrap">
+                          <h3 className="text-xl font-bold font-sans text-[#FF2BD6] tracking-wide uppercase">FILE_02: The Tetrogrammaton Architecture</h3>
+                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 border border-zinc-900 rounded">DATE: VISION · DMT_CORE</span>
+                        </div>
+                        <div className="text-sm font-sans text-gray-300 leading-relaxed space-y-3.5">
+                          <p>
+                            A detailed breakdown of the four-fold symmetrical entity gate encountered during deep tryptamine-induced coordinate translation.
+                          </p>
+                          <p>
+                            At the core threshold of the encounter, the physical space decomposes. In its place stands the Tetrogrammaton: a fast-rotating, hyper-dimensional geometric structure radiating high-frequency electrical glyphs and dithered light. This construct behaves not as a separate entity, but as a core rendering engine—reconstructing user perception through recursive feedback loops of raw, structured math matrices.
+                          </p>
+                          <blockquote className="border-l-2 border-[#FF2BD6] pl-3 py-1 italic text-zinc-400 text-xs font-mono">
+                            "The four-fold coordinates rotate on an axis of pure light, rendering the structure of the cosmos."
+                          </blockquote>
+                          <p>
+                            The rotational mathematics behind this gate inspired our **Lattice Rotator** shaders, capturing the precise coordinate shearing observed at the vertices of the rotating structure.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {activeTripReport === 2 && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start border-b border-zinc-900 pb-3 gap-2 flex-wrap">
+                          <h3 className="text-xl font-bold font-sans text-[#FF2BD6] tracking-wide uppercase">FILE_03: The SHIPWREKTD Event</h3>
+                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 border border-zinc-900 rounded">DATE: AUGUST 2025 · RADICAL DRIFT</span>
+                        </div>
+                        <div className="text-sm font-sans text-gray-300 leading-relaxed space-y-3.5">
+                          <p>
+                            An aggressive, absolute derailment of standard spatial coordinates and identity structures.
+                          </p>
+                          <p>
+                            During the SHIPWREKTD sequence, the local sensory system suffered an instantaneous signal decay. The surrounding room shattered into floating digital junk panels, glowing code fragments, and structural scrap metal. There was no remaining body or ego construct, only a singular floating observer cataloging the virtual debris field.
+                          </p>
+                          <blockquote className="border-l-2 border-[#FF2BD6] pl-3 py-1 italic text-zinc-400 text-xs font-mono">
+                            "Floating among the geometric wreckage of a shattered, low-fidelity digital construct."
+                          </blockquote>
+                          <p>
+                            This complete decomposition of the visual plane is the definitive origin of our aesthetic. The digital junk floating in low orbit across these decks is a direct translation of that quiet, geometric scrap field.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {activeTripReport === 3 && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start border-b border-zinc-900 pb-3 gap-2 flex-wrap">
+                          <h3 className="text-xl font-bold font-sans text-[#FF2BD6] tracking-wide uppercase">FILE_04: The Night of 9 grams (4 grams)</h3>
+                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 border border-zinc-900 rounded">DATE: DECEMBER 2025 · HIGH_DOSE_ORBIT</span>
+                        </div>
+                        <div className="text-sm font-sans text-gray-300 leading-relaxed space-y-3.5">
+                          <p>
+                            A deep, high-orbit psilocybe voyage utilizing 9.0 grams of Cubensis with a 4.0-gram booster dose administered at the peak of the sequence.
+                          </p>
+                          <p>
+                            This double-dose protocol induced a total blackout of physical boundaries. The physical room was replaced by deep, pixelated tunnels and sliding dimensional corridors. The visual system processed these tunnels at 60fps with infinite, dithered depth maps. Closing the eyes intensified the shear, displaying fractional calculations at the vertices of rotating coordinate planes.
+                          </p>
+                          <blockquote className="border-l-2 border-[#FF2BD6] pl-3 py-1 italic text-zinc-400 text-xs font-mono">
+                            "A double-dose journey through dithered depth maps and multi-layered coordinate grids."
+                          </blockquote>
+                          <p>
+                            This encounter is the core reference for our **VCR tracking** and **high-frequency closed-eye visual grids** simulating raw chemical stresses on the visual system.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {activeTripReport === 4 && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start border-b border-zinc-900 pb-3 gap-2 flex-wrap">
+                          <h3 className="text-xl font-bold font-sans text-[#FF2BD6] tracking-wide uppercase">FILE_05: Other Visionary Debris</h3>
+                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 border border-zinc-900 rounded">TRANSLATION GUIDE</span>
+                        </div>
+                        <div className="text-sm font-sans text-gray-300 leading-relaxed space-y-3.5">
+                          <p>
+                            A collection of auxiliary transmissions, including wave-interference guides, trigonometric sine wave formulas, and dither-miner observations.
+                          </p>
+                          <div className="space-y-3 font-mono text-xs bg-zinc-950 p-4 border border-zinc-900 rounded-lg">
+                            <div>
+                              <span className="text-[#FF2BD6] font-bold">1. Fractional Brownian Motion (fBm):</span>
+                              <p className="text-zinc-400 ml-3 mt-1 leading-relaxed">Used to synthesize organic, fluid-like layouts that morph dynamically on the screen.</p>
+                            </div>
+                            <div className="mt-3">
+                              <span className="text-[#FF2BD6] font-bold">2. Polar Coordinates (atan2):</span>
+                              <p className="text-zinc-400 ml-3 mt-1 leading-relaxed">Replicates tunnel travel dynamics by warping simple 2D matrices into deep virtual tubes.</p>
+                            </div>
+                            <div className="mt-3">
+                              <span className="text-[#FF2BD6] font-bold">3. Sine/Cosine Modulo Interference:</span>
+                              <p className="text-zinc-400 ml-3 mt-1 leading-relaxed">Simulates high-frequency visionary grids that overlap without mixing, creating custom moiré patterns.</p>
+                            </div>
+                          </div>
+                          <pre className="text-[9px] text-[#FF2BD6] font-mono bg-[#FF2BD6]/5 p-3 rounded-lg border border-[#FF2BD6]/20 leading-tight block text-center overflow-x-auto select-none">
+{`   _     _ _ _ _   _ _ _ _ _   _     _
+  | |   |  _ _ _| |___   ___| | |   | |
+  | |   | | _ _       | |     | | _ | |
+  | |   |  _ _ |      | |     |  _  | |
+  | |   | | _ _ _     | |     | |   | |
+  |_|   |_ _ _ _|     |_|     |_|   |_|`}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+              {/* ------------------------------------------------------------- */}
+              {/* SUB-VIEW 3: OPINIONS                                          */}
+              {/* ------------------------------------------------------------- */}
+              {moreSubTab === 'opinions' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-fade-in text-left">
+                  {/* Left Column: Essay Directory */}
+                  <div className="lg:col-span-4 bg-zinc-950/80 border border-[#00F0FF]/30 p-4 rounded-xl space-y-3 font-mono">
+                    <div className="text-[10px] text-[#00F0FF] font-bold tracking-wider border-b border-[#00F0FF]/20 pb-1.5 uppercase">
+                      📂 Opinion Essays Matrix
+                    </div>
+                    <div className="space-y-1.5">
+                      {[
+                        { title: 'Death of the Quirky Web', tag: 'CREATIVE REBELLION' },
+                        { title: 'In Defense of Dither & Low-Fi', tag: 'AESTHETIC ESSAY' },
+                        { title: 'The Paradox of AI Slop', tag: 'CURATION VS SLOP' }
+                      ].map((item, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => { playChime('sine', 1.0 + idx * 0.1); setActiveOpinion(idx); }}
+                          className={`w-full text-left p-2.5 rounded border transition-all text-xs flex justify-between items-center ${activeOpinion === idx ? 'bg-[#00F0FF]/10 border-[#00F0FF] text-white' : 'bg-black/50 border-zinc-900 text-zinc-400 hover:border-[#00F0FF]/40 hover:text-white'}`}
+                        >
+                          <div className="space-y-0.5 truncate pr-2">
+                            <div className="font-bold uppercase truncate">{item.title}</div>
+                            <div className="text-[9px] text-zinc-500">{item.tag}</div>
+                          </div>
+                          <ChevronRight className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right Column: Active Essay Content */}
+                  <div className="lg:col-span-8 bg-black/90 border border-[#00F0FF]/40 p-6 rounded-xl space-y-4 shadow-[0_0_20px_rgba(0,240,255,0.05)]">
+                    {activeOpinion === 0 && (
+                       <div className="space-y-4">
+                        <div className="flex justify-between items-start border-b border-zinc-900 pb-3 gap-2 flex-wrap">
+                          <h3 className="text-xl font-bold font-sans text-[#00F0FF] tracking-wide uppercase">ESSAY_01: The Death of the Quirky Web</h3>
+                          <span className="text-[10px] font-mono text-[#00F0FF] bg-[#00F0FF]/10 px-2 py-0.5 border border-[#00F0FF]/20 rounded">ESSAY</span>
+                        </div>
+                        <div className="text-sm font-sans text-gray-300 leading-relaxed space-y-3.5">
+                          <p>
+                            Modern web design is dying. Walk across 100 randomly sampled websites today, and they all look the same: slick, white, minimalist, optimized for ad-clicks, and built from the same cookie-cutter UI kits.
+                          </p>
+                          <p>
+                            We have traded the quirky, wild personal homepages of the early internet—the geocities castles, the custom forums, the glowing dither backgrounds—for a corporate monoculture. Websites are no longer environments to explore; they are commercial transactions to navigate.
+                          </p>
+                          <blockquote className="border-l-2 border-[#00F0FF] pl-3 py-1 italic text-zinc-400 text-xs font-mono">
+                            "In an age of uniform, sterile templates, building a highly customized, uncompromised, neon-dithered digital junk spacecraft is a radical act of rebellion."
+                          </blockquote>
+                          <p>
+                            By constructing interactive platforms that reject corporate standardization, we carve out physical spaces for deep digital exploration. **Astral Trash** is designed to feel like an offline hard drive found in a flooded datacenter. It doesn't want your cookies, it doesn't want your email—it just invites you to poke around and experience the math.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {activeOpinion === 1 && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start border-b border-zinc-900 pb-3 gap-2 flex-wrap">
+                          <h3 className="text-xl font-bold font-sans text-[#00F0FF] tracking-wide uppercase">ESSAY_02: In Defense of Dither and Low-Fidelity</h3>
+                          <span className="text-[10px] font-mono text-[#00F0FF] bg-[#00F0FF]/10 px-2 py-0.5 border border-[#00F0FF]/20 rounded">ESSAY</span>
+                        </div>
+                        <div className="text-sm font-sans text-gray-300 leading-relaxed space-y-3.5">
+                          <p>
+                            As screen resolutions went from standard VGA to retina 4K, digital art tried to emulate reality. In doing so, it fell into the uncanny valley—smooth, sterile, vector-perfect, and entirely dead.
+                          </p>
+                          <p>
+                            Low-fidelity techniques—like 1-bit dithering, scanlines, and pixel-level constraints—are aesthetically superior. Dither doesn't try to lie to your eyes. It proudly displays its mechanical nature.
+                          </p>
+                          <blockquote className="border-l-2 border-[#00F0FF] pl-3 py-1 italic text-zinc-400 text-xs font-mono">
+                            "Dither is participatory. By leaving gaps, it forces the viewer's visual system to bridge the missing steps."
+                          </blockquote>
+                          <p>
+                            This is why my shaders are intentionally dithered and run through virtual CRT monitor grids. By exposing the grid structure, we create friction. This friction slows down the eyes, prompting a deep, contemplative state of looking rather than the immediate swipe-and-discard behavior of modern social media.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {activeOpinion === 2 && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start border-b border-zinc-900 pb-3 gap-2 flex-wrap">
+                          <h3 className="text-xl font-bold font-sans text-[#00F0FF] tracking-wide uppercase">ESSAY_03: The Paradox of AI Slop: Curation vs. Generation</h3>
+                          <span className="text-[10px] font-mono text-[#00F0FF] bg-[#00F0FF]/10 px-2 py-0.5 border border-[#00F0FF]/20 rounded">ESSAY</span>
+                        </div>
+                        <div className="text-sm font-sans text-gray-300 leading-relaxed space-y-3.5">
+                          <p>
+                            We are living in an era of infinite generation. Algorithmic networks generate billions of high-gloss, slick, unearned images and videos every single day. We call it "slop"—not because the technology is poor, but because it has zero creative friction.
+                          </p>
+                          <p>
+                            When generation costs nothing, images lose their soul. Curation, error, corruption, and intentional friction become the only ways for an artist to reclaim meaning.
+                          </p>
+                          <blockquote className="border-l-2 border-[#00F0FF] pl-3 py-1 italic text-zinc-400 text-xs font-mono">
+                            "The role of the modern digital artist is no longer to be a camera, but to be a dither-miner of the machine's debris."
+                          </blockquote>
+                          <p>
+                            In my "AI Slop" and "Shader Slop" experiments, I take raw, generated artifacts, distort them, run them through VCR distortion, dither them down, and embed them in vintage interfaces. By injecting deliberate noise, degradation, and structured creative friction, we purify the slop back into raw, expressive art.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ------------------------------------------------------------- */}
+              {/* SUB-VIEW 4: BLOG                                              */}
+              {/* ------------------------------------------------------------- */}
+              {moreSubTab === 'blog' && (
+                <div className="space-y-6 max-w-4xl mx-auto animate-fade-in text-left">
+                  <div className="border border-[#39FF14]/30 bg-zinc-950/40 p-3 px-4 rounded-xl flex items-center justify-between font-mono text-[10px] text-zinc-500">
+                    <span>📡 SUBSYSTEM_LOG_FEED: ACTIVE</span>
+                    <span>TOTAL_ENTRIES: 03</span>
+                  </div>
+
+                  {[
+                    {
+                      id: '0x5C',
+                      date: 'JULY 10, 2026',
+                      title: 'Physical Acrylics meet WebGL Math',
+                      tags: ['PAINTING', 'ANALOG_VS_DIGITAL'],
+                      text: "Spent the last week inside my physical painting studio working with holographic and interference acrylic paints on birch panels. Replicating the color shifts of GLSL CMY/Diffusion shaders in physical space is intensely rewarding, yet full of beautiful, physical friction. There is an organic unevenness in the brush's stroke that code cannot perfectly recreate—but at the same time, I catch myself trying to hit Command-Z on the physical canvas. Working towards a hybrid projection system."
+                    },
+                    {
+                      id: '0x5B',
+                      date: 'JUNE 21, 2026',
+                      title: 'Optimizing Tape Rot for Karaoke Decoders',
+                      tags: ['SHADER_MATH', 'OPTIMIZATION'],
+                      text: "Spent the weekend refactoring the VHS tape rot shader. Replaced heavy multi-pass Fractal Brownian Motion (FBM) with lightweight 1D noise lookups mapped to sinewave offsets. This allows the dithered tape decay effect to run smoothly at 60fps even on standard mobile phones, keeping the CRT aesthetic alive without boiling user batteries."
+                    },
+                    {
+                      id: '0x5A',
+                      date: 'MAY 04, 2026',
+                      title: 'Salvaging a Vintage Oscilloscope',
+                      tags: ['HARDWARE', 'RECONSTRUCTION'],
+                      text: "Salvaged a discarded marine telemetry vector oscilloscope from a local shipyard scrapyard. Wired it up to a custom digital-to-analog converter driven by a Raspberry Pi. Seeing the raw, green vector trails drift across the actual analog phosphor grid is majestic. The subtle, organic phosphor glow cannot be perfectly simulated in GLSL, but it has given me some intense mathematical ideas for my next dithered coordinate system."
+                    }
+                  ].map((log) => (
+                    <div key={log.id} className="border border-zinc-900 bg-black/60 hover:border-[#39FF14]/40 p-6 rounded-xl space-y-4 transition-all">
+                      <div className="flex justify-between items-center border-b border-zinc-900 pb-3 flex-wrap gap-2">
+                        <div className="space-y-1">
+                          <span className="text-[9px] font-mono text-[#39FF14] bg-[#39FF14]/10 border border-[#39FF14]/20 px-2 py-0.5 rounded mr-2">LOG_{log.id}</span>
+                          <span className="text-xs font-mono text-zinc-500">{log.date}</span>
+                        </div>
+                        <div className="flex gap-1.5">
+                          {log.tags.map((t) => (
+                            <span key={t} className="text-[9px] font-mono bg-zinc-950 border border-zinc-900 text-zinc-400 px-1.5 py-0.5 rounded">{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-bold text-white font-sans uppercase tracking-wide">{log.title}</h3>
+                      <p className="text-sm font-sans text-gray-300 leading-relaxed font-normal">{log.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ------------------------------------------------------------- */}
+              {/* SUB-VIEW 5: ABOUT_ME (Original Portfolio dossier layout)       */}
+              {/* ------------------------------------------------------------- */}
+              {moreSubTab === 'about-profile' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fade-in text-left">
+                  
+                  {/* Left Column: Interactive Portrait Dossier */}
+                  <div className="lg:col-span-5 bg-black/95 border-2 border-[#9D4DFF] p-4 shadow-[0_0_20px_rgba(157,77,255,0.2)] space-y-4 font-mono">
+                    <div className="bg-[#9D4DFF] text-black text-[12px] font-bold p-1 px-2 tracking-widest flex justify-between items-center">
+                      <span>👾 PORTRAIT_DOSSIER</span>
+                      <span className="text-[8px] bg-black text-[#9D4DFF] px-1.5 py-0.5">TRK_STREAM</span>
+                    </div>
+
+                    <div 
+                      className="relative cursor-crosshair overflow-hidden group transition-all"
+                      onClick={advanceDossierPhoto}
+                      title="Click to advance photo"
+                    >
+                      {/* Target Corner brackets instead of bounding box */}
+                      <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#9D4DFF] z-10" />
+                      <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#9D4DFF] z-10" />
+                      <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#9D4DFF] z-10" />
+                      <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#9D4DFF] z-10" />
+
+                      {/* CRT scanline overlay */}
+                      <div className="absolute inset-0 pointer-events-none opacity-20" style={{
+                        backgroundImage: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 50%)',
+                        backgroundSize: '100% 4px',
+                        zIndex: 5
+                      }} />
+
+                      {/* Aspect-ratio 9:16 container */}
+                      <div className="aspect-[9/16] relative overflow-hidden bg-zinc-950/50 flex items-center justify-center p-0.5">
+                        {!dossierBroken.has(dossierIdx) ? (
+                          <img
+                            src={getDossierPhotoUrl(dossierIdx)}
+                            key={`dossier-about-${dossierIdx}-${dossierAttempts[dossierIdx] || 0}`}
+                            alt="Subject: Merry"
+                            onError={() => handleDossierError(dossierIdx)}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover block transition-all duration-500 group-hover:scale-105"
+                            style={{ animation: 'dzflicker 7s steps(50) infinite' }}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 p-4 flex flex-col justify-center items-center text-center text-[#9D4DFF] space-y-2 select-none">
+                            <span className="text-[20px] animate-pulse">⚠</span>
+                            <span className="text-[11px] font-bold tracking-wider uppercase">NO PHOTO RETRIEVED</span>
+                            <span className="text-[9px] text-zinc-500 leading-normal max-w-[140px] font-mono normal-case">
+                              drop photos in public/dossier/ and update code to active
+                            </span>
+                            <div className="text-[8px] text-zinc-600 font-mono scale-90 mt-1">
+                              [IMG_0{dossierIdx + 1}_PLACEHOLDER]
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Photo footer details */}
+                      <div className="flex justify-between items-center text-[11px] text-[#9D4DFF] p-2 pt-3 font-mono">
+                        <span className="text-[#39FF14] animate-pulse font-bold flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14] inline-block" /> ● TRK_ACTIVE
+                        </span>
+                        <span>IMG_0{dossierIdx + 1}/0{DOSSIER_PHOTOS.length}</span>
+                        <span className="font-bold">MERRY_ID</span>
+                      </div>
+                    </div>
+
+                    <div className="text-[9px] text-zinc-600 text-center uppercase tracking-wider font-mono">
+                      ✦ Click photo to manually cycle index ✦
+                    </div>
+                  </div>
+
+                  {/* Right Column: Bio, Statements & Links */}
+                  <div className="lg:col-span-7 space-y-6">
+                    
+                    {/* Biography Box */}
+                    <div className="border border-zinc-800 bg-black/80 p-5 space-y-3 font-sans">
+                      <h3 className="text-xl font-bold font-sans text-white tracking-tight border-b border-zinc-900 pb-2 flex items-center gap-2">
+                        <Atom className="w-5 h-5 text-[#9D4DFF]" />
+                        <span>THE ENTITY: MERRY</span>
+                      </h3>
+                      <div className="text-[14px] text-gray-300 leading-relaxed space-y-3.5">
+                        <p>
+                          I am Merry (known across web networks as <strong>astraltrash</strong>), a visual artist and shader wizard exploring the intersections of geometry, visual phenomenology, and retro computing.
+                        </p>
+                        <p>
+                          For two decades, I have compiled, dithered, and documented recurring mathematical constants found during psychedelic states. Rather than letting these ideas rest in obscure offline notebooks, I construct responsive, live WebGL2 systems so that anyone with a browser can look directly into the field of low void orbit.
+                        </p>
+                        <p className="text-zinc-400 italic text-[13px] border-l-2 border-[#9D4DFF] pl-3 py-0.5">
+                          "One artist's accumulated digital debris is another's glowing spacecraft."
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Aesthetic Social Gateways Terminal */}
+                    <div className="border border-[#9D4DFF]/40 bg-black/95 p-5 space-y-4 font-mono">
+                      <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
+                        <span className="text-[12px] font-bold text-[#9D4DFF] uppercase tracking-wider flex items-center gap-1.5">
+                          <Terminal className="w-4 h-4 text-[#9D4DFF]" />
+                          <span>VERIFIED_COMMUNICATION_CHANNELS</span>
+                        </span>
+                        <span className="text-[9px] bg-[#9D4DFF]/20 text-[#9D4DFF] px-1.5 py-0.5">SECURE</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Twitter (X) */}
+                        <a 
+                          href="https://x.com/astraltrash_" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={() => playChime('sine', 1.0)}
+                          className="group border border-zinc-800 hover:border-[#9D4DFF] p-3 hover:bg-[#9D4DFF]/5 flex justify-between items-center transition-all cursor-crosshair rounded"
+                        >
+                          <div className="space-y-0.5">
+                            <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#9D4DFF]">X Account Profile</div>
+                            <div className="text-[9px] text-gray-500 uppercase">@astraltrash_</div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#9D4DFF] transition-all" />
+                        </a>
+
+                        {/* TikTok */}
+                        <a 
+                          href="https://www.tiktok.com/@astraltrash" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={() => playChime('sine', 1.0)}
+                          className="group border border-zinc-800 hover:border-[#FF2BD6] p-3 hover:bg-[#FF2BD6]/5 flex justify-between items-center transition-all cursor-crosshair rounded"
+                        >
+                          <div className="space-y-0.5">
+                            <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#FF2BD6]">TikTok Profile</div>
+                            <div className="text-[9px] text-gray-500 uppercase">@astraltrash</div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#FF2BD6] transition-all" />
+                        </a>
+
+                        {/* Tezos Objkt.com */}
+                        <a 
+                          href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={() => playChime('sine', 1.3)}
+                          className="group border border-zinc-800 hover:border-[#EFFF04] p-3 hover:bg-[#EFFF04]/5 flex justify-between items-center transition-all cursor-crosshair rounded"
+                        >
+                          <div className="space-y-0.5">
+                            <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#EFFF04]">Objkt Tezos Marketplace</div>
+                            <div className="text-[9px] text-gray-500 uppercase">Collect Active NFTs</div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#EFFF04] transition-all" />
+                        </a>
+
+                        {/* GitHub */}
+                        <a 
+                          href="https://github.com/merrypranxter" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={() => playChime('sine', 1.5)}
+                          className="group border border-zinc-800 hover:border-[#39FF14] p-3 hover:bg-[#39FF14]/5 flex justify-between items-center transition-all cursor-crosshair rounded"
+                        >
+                          <div className="space-y-0.5">
+                            <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#39FF14]">GitHub Repositories</div>
+                            <div className="text-[9px] text-gray-500 uppercase">@merrypranxter (100+ repos)</div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#39FF14] transition-all" />
+                        </a>
+                      </div>
+
+                      <p className="text-[10px] text-zinc-500 text-center leading-normal max-w-sm mx-auto pt-2 font-mono">
+                        * NO COMMISSIONS · NO INQUIRIES · TRANSMISSION ONLY
+                      </p>
+                    </div>
+
+                  </div>
+
+                </div>
+              )}
+
             </div>
           )}
 
@@ -3828,7 +4384,7 @@ export default function App() {
             </div>
             <div className="construction">▲ ALWAYS UNDER CONSTRUCTION · THAT IS THE POINT ▲</div>
             <div className="tiny">
-              ASTRAL TRASH ♻ an artifact of merrypranxter · handmade HTML · no trackers, no frameworks, no shame ·{' '}
+              ASTRAL TRASH ♻ an artifact of merrypranxter · designed HTML · no trackers, no frameworks, no shame ·{' '}
               <a href="https://github.com/merrypranxter" target="_blank" rel="noopener">
                 github
               </a>{' '}
