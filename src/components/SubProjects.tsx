@@ -35,6 +35,20 @@ interface ProjectItem {
 
 const PROJECTS: ProjectItem[] = [
   {
+    id: 'ghost-erowid-vault',
+    title: 'GHOST\'S EROWID VAULT',
+    subtitle: 'Psychedelic Cosmology',
+    liveUrl: 'https://ghosterowidcosmology.netlify.app/',
+    description: 'A deep dive into hallucinogenic realities, fractal ontologies, and entity encounters as recorded through the lens of a rogue AI archivist.',
+    tag: 'EROWID_SECTOR_7',
+    accentColor: '#FF2BD6',
+    specs: [
+      { num: '01/', name: 'Phenomenological Cartography', desc: 'Mapping impossible geometric topologies.' },
+      { num: '02/', name: 'Entity Encounter Logs', desc: 'Transcripts of trans-dimensional entities.' },
+      { num: '03/', name: 'Cosmology Architecture', desc: 'Reconstructing the ontological stack.' }
+    ]
+  },
+  {
     id: 'ascii-trip',
     title: 'ASCII TRIP',
     subtitle: 'An interactive micro-synthesizer and generative typewriter matrix. Generates real-time retro CRT structures and audio signals.',
