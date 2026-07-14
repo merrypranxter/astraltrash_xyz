@@ -35,6 +35,20 @@ interface ProjectItem {
 
 const PROJECTS: ProjectItem[] = [
   {
+    id: 'ghost-lovecraft-os',
+    title: 'GHOST\'S LOVECRAFT OS',
+    subtitle: 'Eldritch Operating System',
+    liveUrl: 'https://ghostlovecraftos.netlify.app/',
+    description: 'A cursed terminal interface and simulated operating system bridging the gap between computational logic and cosmic horror.',
+    tag: 'MUDK_TERMINAL',
+    accentColor: '#39FF14',
+    specs: [
+      { num: '01/', name: 'Eldritch Terminal', desc: 'Simulated command line with corrupted outputs.' },
+      { num: '02/', name: 'Esoteric File System', desc: 'Navigating impossible directory structures.' },
+      { num: '03/', name: 'Cosmic Horror Aesthetics', desc: 'Scanlines, phosphor glow, and non-Euclidean geometry.' }
+    ]
+  },
+  {
     id: 'ghost-erowid-vault',
     title: 'GHOST\'S EROWID VAULT',
     subtitle: 'Psychedelic Cosmology',
