@@ -1,4 +1,7 @@
 const PSY_INTRO = [
+  `This is not a doctrine, a diagnosis, or a tidy little theory of the universe. It is the running index of what keeps returning: impossible architecture, recursive rooms, geometric intelligence, emotional surgery, comedy at the edge of language, and the occasional complete demolition of whatever I thought “me” was.`,
+  `The interesting part is not that psychedelics make things weird. Of course they do. The interesting part is that the weirdness has structure. Certain visual grammars, spatial behaviors, entities, moods, and symbolic systems recur across years, doses, substances, and entirely different circumstances.`,
+  `A lot of my art is an attempt to rebuild that structure using code: feedback, interference, symmetry, chromatic splitting, cellular systems, recursive geometry, corrupted signal, and mathematics behaving like it has a secret personality. Not illustration of a trip. More like reverse-engineering its physics from memory.`,
   `I've been using psychedelics on and off for about twenty years.`,
   `It didn't start as some grand spiritual quest. Honestly, I just wanted to get fucked up. I wanted to escape, and if something could temporarily make reality feel different, I would probably try it. I spent a lot of years chasing escape through whatever worked.`,
   `Over time, almost everything else fell away. Mushrooms stayed.`,
@@ -13,22 +16,9 @@ const PSY_INTRO = [
 
 const PSY_REPORTS = [
   {
-    number: '00',
-    title: 'THE MAP OF THE TERRITORY',
-    nav: 'summary of everything',
-    meta: 'twenty years / many thresholds / no final answer',
-    glyph: '◉',
-    quote: 'The pattern repeats. The interpretation keeps mutating.',
-    paragraphs: [
-      `This is not a doctrine, a diagnosis, or a tidy little theory of the universe. It is the running index of what keeps returning: impossible architecture, recursive rooms, geometric intelligence, emotional surgery, comedy at the edge of language, and the occasional complete demolition of whatever I thought “me” was.`,
-      `The interesting part is not that psychedelics make things weird. Of course they do. The interesting part is that the weirdness has structure. Certain visual grammars, spatial behaviors, entities, moods, and symbolic systems recur across years, doses, substances, and entirely different circumstances.`,
-      `A lot of my art is an attempt to rebuild that structure using code: feedback, interference, symmetry, chromatic splitting, cellular systems, recursive geometry, corrupted signal, and mathematics behaving like it has a secret personality. Not illustration of a trip. More like reverse-engineering its physics from memory.`
-    ]
-  },
-  {
     number: '01',
-    title: 'THE TETRAGRAMMATON',
-    nav: 'the tetragrammaton',
+    title: 'my tetragrammaton',
+    nav: 'my tetragrammaton',
     meta: 'recurring structure / fourfold engine / language failure',
     glyph: '✣',
     quote: 'Not a symbol floating in space. More like the machinery that was generating space.',
@@ -42,7 +32,7 @@ const PSY_REPORTS = [
     number: '02',
     title: 'THE SHIPWREKTD EVENT',
     nav: 'shipwrekt',
-    meta: 'august 2025 / structural failure / beautiful debris',
+    meta: 'august twenty-twenty-five / structural failure / beautiful debris',
     glyph: '⌁',
     quote: 'Reality did not dissolve. It broke into parts and continued operating incorrectly.',
     paragraphs: [
@@ -53,9 +43,9 @@ const PSY_REPORTS = [
   },
   {
     number: '03',
-    title: 'THE NIGHT OF 9 GRAMS (4 GRAMS)',
-    nav: '9 grams (4 grams)',
-    meta: 'december 2025 / dose math also tripping / high orbit',
+    title: 'THE NIGHT OF NINE GRAMS',
+    nav: 'night of nine grams',
+    meta: 'december twenty-twenty-five / dose math also tripping / high orbit',
     glyph: '9?',
     quote: 'The dose had one job: be numerically knowable. It failed.',
     paragraphs: [
@@ -81,18 +71,18 @@ const PSY_REPORTS = [
 
 const PORTAL_ID = 'psy-trip-portal';
 let activeReport = 0;
-let portal = null;
+let portal: HTMLElement | null = null;
 let animationFrame = 0;
-let observer = null;
-let reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let observer: MutationObserver | null = null;
+let reducedMotion = typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false;
 let intensity = 0.78;
-let pointer = { x: 0.5, y: 0.5 };
+const pointer = { x: 0.5, y: 0.5 };
 let lastCanvasFrame = 0;
 
-function htmlEscape(value) {
+function htmlEscape(value: string) {
   return value.replace(/[&<>'"]/g, character => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-  })[character]);
+  })[character] || character);
 }
 
 function psychedelicViewExists() {
@@ -104,8 +94,6 @@ function psychedelicViewExists() {
 function renderNav() {
   return PSY_REPORTS.map((report, index) => `
     <button class="psy-fragment ${index === activeReport ? 'is-active' : ''}" data-report="${index}" type="button">
-      <span class="psy-fragment-number">${report.number}</span>
-      <span class="psy-fragment-glyph" aria-hidden="true">${report.glyph}</span>
       <span class="psy-fragment-title">${htmlEscape(report.nav)}</span>
     </button>
   `).join('');
@@ -115,16 +103,11 @@ function renderReport() {
   const report = PSY_REPORTS[activeReport];
   return `
     <article class="psy-report" data-report-index="${activeReport}" style="view-transition-name: psy-report">
-      <div class="psy-report-index">MEMORY FRAGMENT / ${report.number}</div>
       <h2>${htmlEscape(report.title)}</h2>
       <div class="psy-report-meta">${htmlEscape(report.meta)}</div>
       <blockquote>${htmlEscape(report.quote)}</blockquote>
       <div class="psy-report-copy">
         ${report.paragraphs.map(paragraph => `<p>${htmlEscape(paragraph)}</p>`).join('')}
-      </div>
-      <div class="psy-report-footer">
-        <span>certainty level: absolutely not</span>
-        <span>${String(activeReport + 1).padStart(2, '0')} / ${String(PSY_REPORTS.length).padStart(2, '0')}</span>
       </div>
     </article>
   `;
@@ -132,15 +115,11 @@ function renderReport() {
 
 function renderIntro() {
   return `
-    <details class="psy-intro" open>
-      <summary>
-        <span>READ THIS FIRST / HOW I GOT HERE</span>
-        <span class="psy-intro-toggle">fold reality</span>
-      </summary>
+    <div class="psy-intro">
       <div class="psy-intro-copy">
         ${PSY_INTRO.map((paragraph, index) => `<p style="--paragraph:${index}">${htmlEscape(paragraph)}</p>`).join('')}
       </div>
-    </details>
+    </div>
   `;
 }
 
@@ -166,23 +145,28 @@ function portalMarkup() {
 
     <main class="psy-shell">
       <section class="psy-hero" aria-labelledby="psy-title">
-        <div class="psy-eyebrow">ASTRAL TRASH PRESENTS / PERSONAL FIELD NOTES FROM OUTSIDE THE DEFAULT SETTINGS</div>
+        <div class="psy-eyebrow">TWO DECADES OF FIELD NOTES FROM THE OTHER SIDE</div>
+        <div class="psy-dingbats-bg" aria-hidden="true">
+          <span class="dingbat-1">a</span>
+          <span class="dingbat-2">b</span>
+          <span class="dingbat-3">c</span>
+          <span class="dingbat-4">d</span>
+        </div>
         <h1 id="psy-title" class="psy-title" aria-label="Psychedelics">
           ${[...title].map((letter, index) => `<span style="animation-delay:${(-index * 0.19).toFixed(2)}s" aria-hidden="true">${letter}</span>`).join('')}
         </h1>
         <div class="psy-title-echo" aria-hidden="true">THE TRIP REPORT ARCHIVE // THE TRIP REPORT ARCHIVE // THE TRIP REPORT ARCHIVE //</div>
-        <p class="psy-deck">Not enlightenment content. Not wellness branding. A twenty-year collection of mushrooms, recurring geometry, impossible rooms, accidental medicine, cosmic slapstick, and whatever the fuck consciousness thinks it is doing.</p>
+        <p class="psy-deck">A Psychonaut's Notes: Twenty+ Years Of Psychedelic Exploration & My Attempts To Integrate It, Understand It, & Art it.</p>
       </section>
+
+      ${renderIntro()}
 
       <section class="psy-stage">
         <nav class="psy-fragments" aria-label="Trip report fragments">
-          <div class="psy-fragments-label">CHOOSE A MEMORY / DO NOT EXPECT LINEAR TIME</div>
           ${renderNav()}
         </nav>
         <div class="psy-report-host">${renderReport()}</div>
       </section>
-
-      ${renderIntro()}
 
       <footer class="psy-bottom">
         <span>THIS ARCHIVE IS A PERSONAL RECORD, NOT A RECOMMENDATION.</span>
@@ -210,7 +194,7 @@ function mountPortal() {
   lastCanvasFrame = 0;
   drawField(performance.now());
   requestAnimationFrame(() => portal?.classList.add('is-visible'));
-  portal.querySelector('.psy-exit')?.focus({ preventScroll: true });
+  (portal.querySelector('.psy-exit') as HTMLElement | null)?.focus({ preventScroll: true });
 }
 
 function unmountPortal() {
@@ -226,10 +210,10 @@ function unmountPortal() {
   window.setTimeout(() => doomed.remove(), 350);
 }
 
-function findOriginalButton(label) {
+function findOriginalButton(label: string) {
   return [...document.querySelectorAll('#root button')].find(button =>
     button.textContent?.includes(label)
-  );
+  ) as HTMLButtonElement | null;
 }
 
 function closeTrip() {
@@ -238,12 +222,12 @@ function closeTrip() {
   unmountPortal();
 }
 
-function changeReport(index) {
+function changeReport(index: number) {
   if (!portal || index === activeReport || !PSY_REPORTS[index]) return;
   const update = () => {
     activeReport = index;
-    const nav = portal.querySelector('.psy-fragments');
-    const host = portal.querySelector('.psy-report-host');
+    const nav = portal?.querySelector('.psy-fragments');
+    const host = portal?.querySelector('.psy-report-host');
     if (nav) {
       nav.querySelectorAll('.psy-fragment').forEach((button, buttonIndex) => {
         button.classList.toggle('is-active', buttonIndex === activeReport);
@@ -252,8 +236,8 @@ function changeReport(index) {
     if (host) host.innerHTML = renderReport();
   };
 
-  if (document.startViewTransition && !reducedMotion) {
-    document.startViewTransition(update);
+  if ((document as any).startViewTransition && !reducedMotion) {
+    (document as any).startViewTransition(update);
   } else {
     update();
   }
@@ -278,7 +262,7 @@ function wireEvents() {
   }, { passive: true });
 
   portal.querySelector('.psy-intensity')?.addEventListener('input', event => {
-    intensity = Number(event.target.value) / 100;
+    intensity = Number((event.target as HTMLInputElement).value) / 100;
     applyIntensity();
   });
 
@@ -286,7 +270,7 @@ function wireEvents() {
   window.addEventListener('keydown', handleKeys);
 }
 
-function handleKeys(event) {
+function handleKeys(event: KeyboardEvent) {
   if (!portal) return;
   if (event.key === 'Escape') closeTrip();
   if (event.key === 'ArrowRight') changeReport((activeReport + 1) % PSY_REPORTS.length);
@@ -335,7 +319,7 @@ function resizeCanvas() {
   canvas.height = Math.max(96, Math.floor(window.innerHeight * 0.16 * scale));
 }
 
-function drawField(now) {
+function drawField(now: number) {
   if (!portal) return;
   if (!reducedMotion && lastCanvasFrame && now - lastCanvasFrame < 34) {
     animationFrame = requestAnimationFrame(drawField);
@@ -387,6 +371,7 @@ function syncPortal() {
 }
 
 function bootWatcher() {
+  if (typeof window === 'undefined') return;
   const root = document.getElementById('root');
   if (!root) {
     requestAnimationFrame(bootWatcher);
@@ -397,4 +382,6 @@ function bootWatcher() {
   syncPortal();
 }
 
-bootWatcher();
+export function startPsychedelicPortalWatcher() {
+  bootWatcher();
+}
