@@ -3699,102 +3699,184 @@ export default function App() {
               {/* SUB-VIEW 1: LANDING MENU                                      */}
               {/* ------------------------------------------------------------- */}
               {moreSubTab === 'landing' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
-                  
-                  {/* Card 1: Psychedelic */}
-                  <div 
-                    onClick={() => { setMoreSubTab('psychedelic'); playChime('sine', 1.1); }}
-                    className="group relative cursor-crosshair bg-[#14001c]/90 border-2 border-[#FF2BD6]/30 hover:border-[#FF2BD6] p-6 rounded-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_25px_rgba(255,43,214,0.25)] flex flex-col justify-between h-[280px]"
-                  >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,43,214,0.03)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none rounded-xl" />
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-2xl select-none">🌀</span>
-                        <span className="text-[9px] font-mono text-[#FF2BD6] bg-[#FF2BD6]/10 border border-[#FF2BD6]/20 px-2 py-0.5 rounded uppercase tracking-wider">PHENO_DATA</span>
+                <div className="animate-fade-in">
+                  <style>{`
+                    /* ===== MORE//MENU sector-select deck — scoped to this view only ===== */
+                    .menu-prompt{font-family:'Jersey 10',sans-serif;font-size:26px;letter-spacing:.1em;text-transform:uppercase;color:var(--acid);text-shadow:0 0 16px rgba(239,255,4,.55),2px 0 0 rgba(255,43,214,.5),-2px 0 0 rgba(0,240,255,.5)}
+                    .menu-blink{animation:menu-blink 1.1s steps(2,start) infinite}
+                    @keyframes menu-blink{0%,55%{opacity:1}56%,100%{opacity:0}}
+                    .menu-rainbow{height:4px;background:repeating-linear-gradient(90deg,#FF2BD6 0 44px,#EFFF04 44px 88px,#39FF14 88px 132px,#00F0FF 132px 176px,#9D4DFF 176px 220px);animation:menu-slide 5s linear infinite}
+                    @keyframes menu-slide{to{background-position:220px 0}}
+                    .menu-ticker{overflow:hidden;white-space:nowrap;border-top:1px dashed rgba(239,255,4,.3);border-bottom:1px dashed rgba(239,255,4,.3);padding:5px 0;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.16em;background:rgba(0,0,0,.5)}
+                    .menu-ticker-inner{display:inline-block;animation:menu-tickmove 30s linear infinite}
+                    @keyframes menu-tickmove{to{transform:translateX(-50%)}}
+                    .menu-cart{position:relative;cursor:crosshair;border:2px solid var(--mc-soft);overflow:hidden;transition:transform .3s ease,box-shadow .3s ease,border-color .3s ease}
+                    .menu-cart:hover{border-color:var(--mc);box-shadow:0 0 34px var(--mc-soft),inset 0 0 26px var(--mc-faint)}
+                    .menu-tilt-l{transform:rotate(-.55deg)}
+                    .menu-tilt-r{transform:rotate(.45deg)}
+                    .menu-tilt-l:hover,.menu-tilt-r:hover{transform:rotate(0deg) scale(1.015)}
+                    .menu-dither{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,var(--mc-faint) 1px,transparent 1px);background-size:7px 7px;opacity:.55}
+                    .menu-scan{position:absolute;left:0;right:0;top:-70px;height:52px;pointer-events:none;background:linear-gradient(to bottom,transparent,var(--mc-soft),transparent);opacity:0;mix-blend-mode:screen}
+                    .menu-cart:hover .menu-scan{opacity:.8;animation:menu-sweep 1.7s linear infinite}
+                    @keyframes menu-sweep{to{transform:translateY(560px)}}
+                    .menu-corner{position:absolute;font-family:'Share Tech Mono',monospace;font-size:15px;line-height:1;color:var(--mc);z-index:3;pointer-events:none;text-shadow:0 0 8px var(--mc-soft)}
+                    .menu-masthead{position:relative;height:96px;overflow:hidden;border-bottom:2px solid var(--mc-soft)}
+                    .menu-masthead-fx{position:absolute;inset:0;background-size:320% 320%;animation:menu-drift 17s ease-in-out infinite alternate,menu-hue 8s ease-in-out infinite alternate}
+                    @keyframes menu-drift{from{background-position:0% 0%}to{background-position:100% 100%}}
+                    @keyframes menu-hue{from{filter:hue-rotate(-24deg) saturate(1.15)}to{filter:hue-rotate(24deg) saturate(1.3)}}
+                    .menu-masthead-dots{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(0,0,0,.5) 1.2px,transparent 1.2px);background-size:5px 5px}
+                    .menu-masthead-lines{position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.35) 0 2px,transparent 2px 4px)}
+                    .menu-title{position:absolute;left:14px;right:72px;bottom:6px;z-index:2;font-family:'Jersey 10',sans-serif;font-size:29px;line-height:1;letter-spacing:.05em;text-transform:uppercase;color:#fff;text-shadow:2px 0 0 rgba(255,43,214,.9),-2px 0 0 rgba(0,240,255,.9),0 2px 12px rgba(0,0,0,.95)}
+                    .menu-cart:hover .menu-title{animation:jitter 4s infinite}
+                    .menu-glyph{position:absolute;right:14px;top:50%;margin-top:-26px;z-index:2;font-size:44px;animation:menu-bob 3.6s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(0,0,0,.85))}
+                    @keyframes menu-bob{0%,100%{transform:translateY(-4px) rotate(-6deg)}50%{transform:translateY(5px) rotate(7deg)}}
+                    .menu-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--mc-soft);background:var(--mc-faint);color:var(--mc);font-family:'Silkscreen',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px}
+                    .menu-led{width:6px;height:6px;background:var(--mc);animation:pulse 1.2s infinite;box-shadow:0 0 6px var(--mc)}
+                    .menu-eq{display:inline-flex;align-items:flex-end;gap:2px;height:13px}
+                    .menu-eq i{width:3px;background:var(--mc);animation:menu-eqb .85s ease-in-out infinite alternate;box-shadow:0 0 5px var(--mc-soft)}
+                    .menu-eq i:nth-child(2){animation-delay:.14s}
+                    .menu-eq i:nth-child(3){animation-delay:.28s}
+                    .menu-eq i:nth-child(4){animation-delay:.42s}
+                    .menu-eq i:nth-child(5){animation-delay:.56s}
+                    @keyframes menu-eqb{from{height:3px}to{height:13px}}
+                    .menu-stats{border:1px dashed var(--mc-soft);background:rgba(0,0,0,.45);padding:9px 11px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;display:flex;flex-direction:column;gap:5px}
+                    .menu-access{display:inline-flex;align-items:center;gap:6px;font-family:'Jersey 10',sans-serif;font-size:16px;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--mc);color:var(--mc);background:rgba(0,0,0,.55);padding:4px 13px;transition:all .15s}
+                    .menu-cart:hover .menu-access{background:var(--mc);color:#000;box-shadow:0 0 20px var(--mc)}
+                    .menu-sticker{position:absolute;top:10px;right:12px;z-index:4;font-family:'Silkscreen',monospace;font-size:9px;letter-spacing:.1em;background:var(--acid);color:#000;padding:3px 8px;transform:rotate(8deg) scale(.4);opacity:0;transition:all .25s cubic-bezier(.2,1.6,.4,1);pointer-events:none;box-shadow:0 0 14px rgba(239,255,4,.6)}
+                    .menu-cart:hover .menu-sticker{opacity:1;transform:rotate(8deg) scale(1)}
+                  `}</style>
+
+                  {/* Select prompt + rainbow data-strip */}
+                  <div className="flex flex-col gap-2 mb-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="menu-prompt select-none">▚▚ Select Your Sector <span className="menu-blink">█</span></div>
+                      <div className="hidden md:flex items-center gap-2 font-mono text-[9px] text-zinc-500 uppercase tracking-widest">
+                        <span className="menu-blink text-[#39FF14]">●</span> 4 DECKS ONLINE // 0 LOCKED
                       </div>
-                      <h3 className="text-xl font-bold text-white tracking-wide uppercase font-sans mb-2 group-hover:text-[#FF2BD6] transition-colors">
-                        Psychedelic Archive
-                      </h3>
-                      <p className="text-zinc-400 font-mono text-xs leading-relaxed">
-                        Visionary geometry logs, trip research, and dither-mapped visual reports exploring altered dimensional states of consciousness.
-                      </p>
                     </div>
-                    <div className="flex items-center justify-between font-mono text-[10px] text-[#FF2BD6] border-t border-[#FF2BD6]/10 pt-3">
-                      <span>SECURE_ENTRY_STREAM</span>
-                      <span className="group-hover:translate-x-1 transition-transform">ACCESS DECK ▸</span>
+                    <div className="menu-rainbow" />
+                  </div>
+
+                  {/* Scrolling system chatter */}
+                  <div className="menu-ticker text-[#9fdc96] mb-7 select-none" aria-hidden="true">
+                    <div className="menu-ticker-inner">
+                      <span>✦ 4 SECTORS ONLINE ✦ PHENO_DATA STREAM: STABLE ✦ THOUGHT_MATRIX: LEAKING UNENCRYPTED OPINIONS ✦ PROCESS_FEED: PAINT STILL WET ✦ ENTITY DOSSIER: DECLASSIFIED ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE ✦ DIAL-UP SOULS WELCOME&nbsp;</span>
+                      <span>✦ 4 SECTORS ONLINE ✦ PHENO_DATA STREAM: STABLE ✦ THOUGHT_MATRIX: LEAKING UNENCRYPTED OPINIONS ✦ PROCESS_FEED: PAINT STILL WET ✦ ENTITY DOSSIER: DECLASSIFIED ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE ✦ DIAL-UP SOULS WELCOME&nbsp;</span>
                     </div>
                   </div>
 
-                  {/* Card 2: Opinions */}
-                  <div 
-                    onClick={() => { setMoreSubTab('opinions'); playChime('sine', 1.2); }}
-                    className="group relative cursor-crosshair bg-[#00171a]/90 border-2 border-[#00F0FF]/30 hover:border-[#00F0FF] p-6 rounded-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_25px_rgba(0,240,255,0.25)] flex flex-col justify-between h-[280px]"
-                  >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(0,240,255,0.03)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none rounded-xl" />
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-2xl select-none">🧠</span>
-                        <span className="text-[9px] font-mono text-[#00F0FF] bg-[#00F0FF]/10 border border-[#00F0FF]/20 px-2 py-0.5 rounded uppercase tracking-wider">UNENCRYPTED</span>
+                  {/* Sector cartridges */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {([
+                      {
+                        id: 'psychedelic', chime: 1.1, glyph: '🌀', title: 'Psychedelic Archive',
+                        tag: 'PHENO_DATA', stream: 'SECURE_ENTRY_STREAM',
+                        desc: 'Visionary geometry logs, trip research, and dither-mapped visual reports exploring altered dimensional states of consciousness.',
+                        accent: '#FF2BD6', soft: 'rgba(255,43,214,.4)', faint: 'rgba(255,43,214,.13)', bg: 'rgba(20,0,28,.92)',
+                        grad: 'conic-gradient(from 120deg, #FF2BD6, #9D4DFF, #00F0FF, #EFFF04, #FF2BD6)',
+                        stats: [
+                          ['GEOMETRY_DEPTH', '▓▓▓▓▓▓▓░░ LVL_7'],
+                          ['REALITY_ANCHOR', '12% // SLIPPING'],
+                          ['ENTITY_CONTACT', 'CONFIRMED x3 ✦'],
+                        ],
+                      },
+                      {
+                        id: 'opinions', chime: 1.2, glyph: '🧠', title: 'Opinions Board',
+                        tag: 'UNENCRYPTED', stream: 'THOUGHT_MATRIX',
+                        desc: 'Unencrypted brain debris and critical essays defending the weird web, the physics of low-fidelity dither, and anti-slop curation.',
+                        accent: '#00F0FF', soft: 'rgba(0,240,255,.4)', faint: 'rgba(0,240,255,.12)', bg: 'rgba(0,23,26,.92)',
+                        grad: 'repeating-radial-gradient(circle at 30% 40%, #00F0FF 0 14px, #050a1e 14px 28px, #FF2BD6 28px 42px, #050a1e 42px 56px)',
+                        stats: [
+                          ['HOT_TAKES_LOADED', '47 ROUNDS'],
+                          ['SPICE_LEVEL', '▓▓▓▓▓▓▓▓░ 91%'],
+                          ['FILTER_STATUS', 'NONE_DETECTED'],
+                        ],
+                      },
+                      {
+                        id: 'blog', chime: 1.3, glyph: '📝', title: "Artist's Blog",
+                        tag: 'ACTIVE_LOGS', stream: 'PROCESS_FEED',
+                        desc: 'Weekly process updates on shader engineering, physical painting, vintage hardware salvages, and custom visual bibles.',
+                        accent: '#39FF14', soft: 'rgba(57,255,20,.4)', faint: 'rgba(57,255,20,.12)', bg: 'rgba(5,28,2,.92)',
+                        grad: 'linear-gradient(135deg, #0b3d0b, #39FF14 35%, #EFFF04 65%, #FF6B00)',
+                        stats: [
+                          ['LOG_FREQUENCY', 'WEEKLY-ISH'],
+                          ['PAINT_ON_HANDS', '▓▓▓▓▓▓▓▓░ 84%'],
+                          ['SOLDER_FUMES', 'NOMINAL ☻'],
+                        ],
+                      },
+                      {
+                        id: 'about-profile', chime: 1.4, glyph: '👾', title: 'About the Artist',
+                        tag: 'ENTITY_INFO', stream: 'PROFILE_DOSSIER',
+                        desc: 'Original biography, interactive portrait photo dossier, stats matrix, and verified transmission/social networks.',
+                        accent: '#9D4DFF', soft: 'rgba(157,77,255,.4)', faint: 'rgba(157,77,255,.13)', bg: 'rgba(17,1,33,.92)',
+                        grad: 'conic-gradient(from 0deg, #9D4DFF, #00F0FF, #39FF14, #FF2BD6, #9D4DFF)',
+                        stats: [
+                          ['ENTITY_CLASS', 'HUMAN (?)'],
+                          ['VIBE_OUTPUT', '▓▓▓▓▓▓▓▓▓ 97%'],
+                          ['LAST_SEEN', 'THE_ASTRAL_BIN'],
+                        ],
+                      },
+                    ] as const).map((c, i) => (
+                      <div
+                        key={c.id}
+                        onClick={() => { setMoreSubTab(c.id); playChime('sine', c.chime); }}
+                        className={`group menu-cart ${i % 2 === 0 ? 'menu-tilt-l' : 'menu-tilt-r'}`}
+                        style={{ '--mc': c.accent, '--mc-soft': c.soft, '--mc-faint': c.faint, background: c.bg } as any}
+                      >
+                        <div className="menu-dither" />
+                        <span className="menu-corner" style={{ top: 3, left: 6 }}>╔</span>
+                        <span className="menu-corner" style={{ top: 3, right: 6 }}>╗</span>
+                        <span className="menu-corner" style={{ bottom: 4, left: 6 }}>╚</span>
+                        <span className="menu-corner" style={{ bottom: 4, right: 6 }}>╝</span>
+
+                        {/* Animated psychedelic masthead */}
+                        <div className="menu-masthead">
+                          <div className="menu-masthead-fx" style={{ backgroundImage: c.grad }} />
+                          <div className="menu-masthead-dots" />
+                          <div className="menu-masthead-lines" />
+                          <span className="menu-glyph select-none">
+                            <span className="inline-block transition-transform duration-700 group-hover:rotate-[360deg] group-hover:scale-125">{c.glyph}</span>
+                          </span>
+                          <h3 className="menu-title">{c.title}</h3>
+                        </div>
+
+                        <div className="relative p-5 pt-4">
+                          {/* Status row */}
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="menu-chip"><i className="menu-led" />{c.tag}</span>
+                            <span className="menu-eq" aria-hidden="true"><i /><i /><i /><i /><i /></span>
+                          </div>
+
+                          <p className="text-zinc-400 font-mono text-xs leading-relaxed mb-4">
+                            {c.desc}
+                          </p>
+
+                          {/* Fake telemetry block */}
+                          <div className="menu-stats mb-4">
+                            {c.stats.map(([k, v]) => (
+                              <div key={k} className="flex justify-between gap-3">
+                                <span className="text-zinc-500">{k}</span>
+                                <span className="text-right" style={{ color: 'var(--mc)' }}>{v}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: 'var(--mc-faint)' }}>
+                            <span className="font-mono text-[10px] tracking-wider" style={{ color: 'var(--mc)' }}>
+                              <span className="menu-blink">▮</span> {c.stream}
+                            </span>
+                            <span className="menu-access">ACCESS DECK <span className="inline-block transition-transform group-hover:translate-x-1">▸</span></span>
+                          </div>
+                        </div>
+
+                        <span className="menu-sticker">CLICK ME!!</span>
+                        <div className="menu-scan" />
                       </div>
-                      <h3 className="text-xl font-bold text-white tracking-wide uppercase font-sans mb-2 group-hover:text-[#00F0FF] transition-colors">
-                        Opinions Board
-                      </h3>
-                      <p className="text-zinc-400 font-mono text-xs leading-relaxed">
-                        Unencrypted brain debris and critical essays defending the weird web, the physics of low-fidelity dither, and anti-slop curation.
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between font-mono text-[10px] text-[#00F0FF] border-t border-[#00F0FF]/10 pt-3">
-                      <span>THOUGHT_MATRIX</span>
-                      <span className="group-hover:translate-x-1 transition-transform">ACCESS DECK ▸</span>
-                    </div>
+                    ))}
                   </div>
 
-                  {/* Card 3: Artist Blog */}
-                  <div 
-                    onClick={() => { setMoreSubTab('blog'); playChime('sine', 1.3); }}
-                    className="group relative cursor-crosshair bg-[#051c02]/90 border-2 border-[#39FF14]/30 hover:border-[#39FF14] p-6 rounded-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_25px_rgba(57,255,20,0.25)] flex flex-col justify-between h-[280px]"
-                  >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(57,255,20,0.03)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none rounded-xl" />
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-2xl select-none">📝</span>
-                        <span className="text-[9px] font-mono text-[#39FF14] bg-[#39FF14]/10 border border-[#39FF14]/20 px-2 py-0.5 rounded uppercase tracking-wider">ACTIVE_LOGS</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-white tracking-wide uppercase font-sans mb-2 group-hover:text-[#39FF14] transition-colors">
-                        Artist's Blog
-                      </h3>
-                      <p className="text-zinc-400 font-mono text-xs leading-relaxed">
-                        Weekly process updates on shader engineering, physical painting, vintage hardware salvages, and custom visual bibles.
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between font-mono text-[10px] text-[#39FF14] border-t border-[#39FF14]/10 pt-3">
-                      <span>PROCESS_FEED</span>
-                      <span className="group-hover:translate-x-1 transition-transform">ACCESS DECK ▸</span>
-                    </div>
-                  </div>
-
-                  {/* Card 4: About Me profile */}
-                  <div 
-                    onClick={() => { setMoreSubTab('about-profile'); playChime('sine', 1.4); }}
-                    className="group relative cursor-crosshair bg-[#110121]/90 border-2 border-[#9D4DFF]/30 hover:border-[#9D4DFF] p-6 rounded-xl transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_25px_rgba(157,77,255,0.25)] flex flex-col justify-between h-[280px]"
-                  >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(157,77,255,0.03)_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none rounded-xl" />
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-2xl select-none">👾</span>
-                        <span className="text-[9px] font-mono text-[#9D4DFF] bg-[#9D4DFF]/10 border border-[#9D4DFF]/20 px-2 py-0.5 rounded uppercase tracking-wider">ENTITY_INFO</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-white tracking-wide uppercase font-sans mb-2 group-hover:text-[#9D4DFF] transition-colors">
-                        About the Artist
-                      </h3>
-                      <p className="text-zinc-400 font-mono text-xs leading-relaxed">
-                        Original biography, interactive portrait photo dossier, stats matrix, and verified transmission/social networks.
-                      </p>
-                    </div>
-                    <div className="flex items-center justify-between font-mono text-[10px] text-[#9D4DFF] border-t border-[#9D4DFF]/10 pt-3">
-                      <span>PROFILE_DOSSIER</span>
-                      <span className="group-hover:translate-x-1 transition-transform">ACCESS DECK ▸</span>
-                    </div>
+                  <div className="mt-7 text-center font-mono text-[10px] tracking-[.3em] text-zinc-600 select-none uppercase">
+                    ── ✦ END_OF_DIRECTORY // CHOOSE_WISELY ✦ ──
                   </div>
                 </div>
               )}
