@@ -332,7 +332,7 @@
     const title = [...document.querySelectorAll("h1")].find((heading) =>
       heading.textContent?.replace(/\s/g, "") === "AstralTrash"
     );
-    return title || null;
+    return title ? title.closest('.hero') || title.parentElement : null;
   }
 
     function placeSprite() {
@@ -371,8 +371,7 @@
     homeHero = nextHero;
     if (canvas.parentElement !== document.body) document.body.appendChild(canvas);
 
-                                                const heroRect = homeHero.getBoundingClientRect();
-    const isMobile = window.innerWidth < 768;
+                                                    const isMobile = window.innerWidth < 768;
     
     // Scale matching the red box proportion
     cssScale = isMobile ? 1.2 : 1.6;
@@ -384,37 +383,40 @@
     let topPos = 0;
     let leftPos = 0;
     
-    if (subElement && !isMobile) {
+    if (subElement && h1Element && !isMobile) {
       const subRect = subElement.getBoundingClientRect();
+      const h1Rect = h1Element.getBoundingClientRect();
+      
       // Feet right on the very surface of the translucent black box
       topPos = subRect.top + window.scrollY - (H * cssScale) + 12;
       
-      // Let's place her aligned to the RIGHT edge of the .sub box. 
-      leftPos = subRect.right + window.scrollX - (W * cssScale) - 10;
+      // The user wants her FARTHER RIGHT. 
+      // In the screenshot, she is basically aligned to the right edge of the .sub box!
+      leftPos = subRect.right + window.scrollX - (W * cssScale);
       
-      // CRITICAL: Make absolutely sure she doesn't overlap the h1 text
-      if (h1Element) {
-        const h1Rect = h1Element.getBoundingClientRect();
-        // Give a healthy 30px margin to the right of the h1
-        const minLeft = h1Rect.right + window.scrollX + 30;
-        if (leftPos < minLeft) {
-           leftPos = minLeft;
-        }
+      // Make absolutely sure she's to the right of the h1 text
+      const minLeft = h1Rect.right + window.scrollX + 25;
+      if (leftPos < minLeft) {
+         leftPos = minLeft;
       }
+      
+    } else if (subElement && isMobile) {
+      const subRect = subElement.getBoundingClientRect();
+      topPos = subRect.top + window.scrollY - (H * cssScale) + 8;
+      leftPos = subRect.right + window.scrollX - (W * cssScale) - 10;
     } else {
+      const heroRect = homeHero.getBoundingClientRect();
       topPos = heroRect.bottom + window.scrollY - (H * cssScale) + (isMobile ? 10 : 15);
       leftPos = heroRect.right + window.scrollX - (W * cssScale) - 10;
     }
     
-    // Bounds check - BUT NEVER push her left of the minLeft we just calculated
+    // Bounds check
     let maxLeft = window.innerWidth - (W * cssScale) - 10;
     
     if (h1Element && !isMobile) {
         const h1Rect = h1Element.getBoundingClientRect();
-        const minLeft = h1Rect.right + window.scrollX + 30;
+        const minLeft = h1Rect.right + window.scrollX + 25;
         if (maxLeft < minLeft) {
-            // Screen is too narrow to fit her without overlapping the h1.
-            // Let her overflow the right side of the screen rather than overlapping the text!
             maxLeft = minLeft; 
         }
     }
