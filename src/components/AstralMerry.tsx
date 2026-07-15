@@ -109,9 +109,9 @@ export function AstralMerry() {
       title="poke the astral gremlin"
     >
       <span className="astral-merry__stage" aria-hidden="true">
-        <img className="astral-merry__ghost astral-merry__ghost--cyan" src="/merry/merry-no-freckles.webp" alt="" />
-        <img className="astral-merry__ghost astral-merry__ghost--pink" src="/merry/merry-no-freckles.webp" alt="" />
-        <img className="astral-merry__body" src="/merry/merry-no-freckles.webp" alt="" />
+        <img className="astral-merry__ghost astral-merry__ghost--cyan" src="/merry/merry-no-freckles.svg" alt="" />
+        <img className="astral-merry__ghost astral-merry__ghost--pink" src="/merry/merry-no-freckles.svg" alt="" />
+        <img className="astral-merry__body" src="/merry/merry-no-freckles.svg" alt="" />
       </span>
     </button>
   );
