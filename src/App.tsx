@@ -291,8 +291,7 @@ export default function App() {
   const [allShaders, setAllShaders] = useState<ShaderItem[]>([]);
   const [galleryFilter, setGalleryFilter] = useState<string>('ALL');
   const [isFetchingRepoList, setIsFetchingRepoList] = useState<boolean>(false);
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  
+
   const [shaderSpeed, setShaderSpeed] = useState<number>(1.0);
   const [shaderScale, setShaderScale] = useState<number>(1.0);
   const [shaderIntensity, setShaderIntensity] = useState<number>(1.0);
@@ -1220,18 +1219,6 @@ export default function App() {
     return `${pad(minutes)}:${pad(seconds)}.${pad(centiseconds)}`;
   };
 
-  const scrollDeck = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const scrollAmount = 450; // scrolls roughly 3 thumbnail slots
-      container.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-      playChime('triangle', 1.1);
-    }
-  };
-
   // Helper to inject a style tag to completely hide the interactive HUD box in files
   const injectHudHidingStyle = (htmlString: string) => {
     const styleTag = `
@@ -1522,7 +1509,10 @@ export default function App() {
       })
       .then((data) => {
         console.log('Successfully retrieved external explanations from repository:', data);
-        setExternalExplanations(data);
+        // Merge over local defaults instead of replacing them — the committed
+        // src/explanations.json stays the master copy, remote entries only
+        // override matching ids. A truncated remote file can't wipe the rest.
+        setExternalExplanations(prev => ({ ...prev, ...data }));
       })
       .catch((err) => {
         console.info('External explanations load bypassed (using local defaults):', err.message || err);
@@ -3096,115 +3086,211 @@ export default function App() {
           {/* SECTION B: SHADERSLOP - INTERACTIVE FULL-RESOLUTION GALLERY               */}
           {/* ========================================================================= */}
           {activeTab === 'shaderslop' && (
-            <div className="frame py-8 space-y-8">
-              {/* Majestic Jittery White/Greenish Gallery Heading */}
-              <div className="text-center pt-6 md:pt-10 space-y-3">
-                <h2 
-                  className="text-5xl md:text-6xl font-extrabold text-white tracking-wider uppercase mb-2 font-sans"
-                  style={{
-                    fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
-                    textShadow: '0 0 8px var(--phosphor), 0 0 30px rgba(57,255,20,0.5), 3px 0 0 rgba(255,43,214,0.8), -3px 0 0 rgba(0,240,255,0.8)',
-                    animation: 'jitter 6s infinite'
-                  }}
-                >
-                  ☢ ShaderSlop Gallery ☢
+            <div
+              className="frame py-8"
+              style={{
+                '--cab-glow': 'rgba(255,43,214,.8)',
+                '--cab-glow-soft': 'rgba(255,43,214,.35)',
+                '--cab-tick': 'rgba(255,43,214,.35)'
+              } as any}
+            >
+              {/* ================= 1. HEADER ================= */}
+              <div className="text-center space-y-5 pt-4 pb-2">
+                <div className="cab-dings cab-dings-circle text-[#FF2BD6] opacity-90" aria-hidden="true">
+                  ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJ
+                </div>
+                <h2 className="cab-title select-none">
+                  ShaderSlop Gallery
                 </h2>
-                <div className="flex justify-center items-center flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-500 font-mono">
-                  <span>RENDER_PLATFORM: WebGL2_GENATIVE</span>
+                <p
+                  className="text-[11px] sm:text-xs text-[#FF2BD6] max-w-2xl mx-auto uppercase tracking-[0.2em] font-bold"
+                  style={{ fontFamily: "'Silkscreen', monospace" }}
+                >
+                  ☢ Some of my code is interactive! Poke at it with your mouse + find out what (if anything) happens ☢
+                </p>
+                <div className="cab-squigs text-[#00F0FF] opacity-80" aria-hidden="true">
+                  abcdefghijklmnopqrstuvwxyzabcdefghij
+                </div>
+                <div className="flex justify-center items-center flex-wrap gap-x-3 gap-y-1 text-[10px] text-zinc-500 font-mono uppercase tracking-widest pt-1">
+                  <span>RENDER_PLATFORM: WEBGL2_GENERATIVE</span>
                   <span>•</span>
-                  <span>DIRECTORY: {allShaders.length} SHARDS IDENTIFIED</span>
+                  <span>{allShaders.length} SHARDS IDENTIFIED</span>
                   {isFetchingRepoList && (
                     <span className="text-[#39FF14] animate-pulse font-bold">[POLLING REMOTE REPOSITORY...]</span>
                   )}
                 </div>
-                <p className="text-[#9fdc96] text-[13px] leading-relaxed max-w-3xl mx-auto">
-                  Some of my code is interactive! Some of it is not. Feel free to poke around at it with your mouse and find out what (if anything) happens!
-                </p>
               </div>
 
-              {/* Master Lab Command Station: Active Viewer (Left 7/12) & Active Info/Controls (Right 5/12) */}
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
-                
-                {/* Left Side: Centerpiece IFrame Viewer (Defaults to 1:1) */}
-                <div className="xl:col-span-7 bg-black/95 border border-[#FF2BD6]/30 p-4 space-y-4">
-                  <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 border-b border-zinc-900 pb-2">
-                    <span className="text-zinc-400 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                      <Atom className="w-3.5 h-3.5 text-[#FF2BD6] animate-spin" />
-                      <span>Live Simulation Feed // {selectedShader?.title || 'Inactive'}</span>
-                    </span>
-                    <span>FRAME_SYNC: CRT_EMU</span>
+              {/* Rainbow strip + prompt row */}
+              <div className="flex flex-col gap-2 mt-4 mb-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div
+                    className="select-none uppercase text-[#FF2BD6]"
+                    style={{
+                      fontFamily: "'Jersey 10', sans-serif",
+                      fontSize: 24,
+                      letterSpacing: '.1em',
+                      textShadow: '0 0 16px rgba(255,43,214,.55), 2px 0 0 rgba(239,255,4,.5), -2px 0 0 rgba(0,240,255,.5)'
+                    }}
+                  >
+                    ▚▚ Select A Shard <span className="cab-blink">█</span>
                   </div>
+                  <div className="hidden md:flex items-center gap-2 font-mono text-[9px] text-zinc-500 uppercase tracking-widest">
+                    <span className="cab-blink text-[#39FF14]">●</span> LAB READY // {allShaders.length} SHARDS ONLINE
+                  </div>
+                </div>
+                <div className="cab-rainbow" />
+              </div>
 
-                  {selectedShader ? (
-                    <div className="flex justify-center w-full bg-black border border-[#FF2BD6]/20 relative overflow-hidden select-none clean-container">
-                      <div className={`relative ${
-                        selectedAspect === '1:1' ? 'aspect-square w-full max-w-[580px]' :
-                        selectedAspect === '16:9' ? 'aspect-video w-full' :
-                        selectedAspect === '4:3' ? 'aspect-[4/3] w-full max-w-[580px]' :
-                        'w-full h-[500px]'
-                      } bg-black overflow-hidden flex items-center justify-center`}>
-                        
-                        {galleryHtml ? (
-                          <iframe 
-                            srcDoc={injectRuntimeLabMods(galleryHtml, selectedResolution, shaderStartTimeOffset, !isShaderPlaying)}
-                            className="w-full h-full border-0 block bg-black shader-iframe-clean"
-                            title={selectedShader.title}
-                            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                            sandbox="allow-scripts allow-same-origin"
-                            id={`gallery-iframe-${selectedShader.id}`}
-                            onContextMenu={(e) => e.preventDefault()}
-                          />
-                        ) : (
-                          <div className="text-[#FF2BD6] font-mono text-[10px] animate-pulse">
-                            RETRIEVING CHROMATIC MATRIX...
+              {/* Scrolling system chatter */}
+              <div className="cab-ticker text-[#f4a6e3] mb-8 select-none" aria-hidden="true">
+                <div className="cab-ticker-inner">
+                  <span>✦ {allShaders.length} SHARDS RECOVERED ✦ EVERY PIXEL IS LIVE CODE ✦ POKE THE BIG ONE — IT POKES BACK ✦ THUMBNAILS = SHITTY LITTLE RENDERS (ON PURPOSE) ✦ COLLECT DEBRIS ON OBJKT ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE SLOP&nbsp;</span>
+                  <span>✦ {allShaders.length} SHARDS RECOVERED ✦ EVERY PIXEL IS LIVE CODE ✦ POKE THE BIG ONE — IT POKES BACK ✦ THUMBNAILS = SHITTY LITTLE RENDERS (ON PURPOSE) ✦ COLLECT DEBRIS ON OBJKT ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE SLOP&nbsp;</span>
+                </div>
+              </div>
+
+              {/* ================= 2. LAB STATION: Viewer (7) + Control Tower (5) ================= */}
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-7 items-start mb-12">
+
+                {/* Left: Live Simulation Feed — fully interactive, never covered */}
+                <div
+                  className="xl:col-span-7 cab-panel p-4"
+                  style={{
+                    '--mc': '#FF2BD6',
+                    '--mc-soft': 'rgba(255,43,214,.4)',
+                    '--mc-faint': 'rgba(255,43,214,.13)',
+                    '--cab-panel-bg': 'rgba(20,0,17,.92)'
+                  } as any}
+                >
+                  <div className="cab-dither" />
+                  <span className="cab-corner" style={{ top: 3, left: 6 }}>╔</span>
+                  <span className="cab-corner" style={{ top: 3, right: 6 }}>╗</span>
+                  <span className="cab-corner" style={{ bottom: 4, left: 6 }}>╚</span>
+                  <span className="cab-corner" style={{ bottom: 4, right: 6 }}>╝</span>
+
+                  <div className="relative space-y-3">
+                    <div className="flex flex-wrap justify-between items-center gap-2 border-b pb-2.5" style={{ borderColor: 'var(--mc-faint)' }}>
+                      <span className="cab-chip">
+                        <Atom className="w-3 h-3 animate-spin" style={{ animationDuration: '5s' }} />
+                        LIVE_SIM_FEED // {selectedShader?.title || 'INACTIVE'}
+                      </span>
+                      <span className="cab-eq" aria-hidden="true"><i /><i /><i /><i /><i /></span>
+                    </div>
+
+                    {selectedShader ? (
+                      <div className="flex justify-center w-full bg-black relative overflow-hidden select-none clean-container border-2" style={{ borderColor: 'var(--mc-faint)' }}>
+                        <div className={`relative ${
+                          selectedAspect === '1:1' ? 'aspect-square w-full max-w-[580px]' :
+                          selectedAspect === '16:9' ? 'aspect-video w-full' :
+                          selectedAspect === '4:3' ? 'aspect-[4/3] w-full max-w-[580px]' :
+                          'w-full h-[500px]'
+                        } bg-black overflow-hidden flex items-center justify-center`}>
+
+                          {galleryHtml ? (
+                            <iframe
+                              srcDoc={injectRuntimeLabMods(galleryHtml, selectedResolution, shaderStartTimeOffset, !isShaderPlaying)}
+                              className="w-full h-full border-0 block bg-black shader-iframe-clean"
+                              title={selectedShader.title}
+                              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                              sandbox="allow-scripts allow-same-origin"
+                              id={`gallery-iframe-${selectedShader.id}`}
+                              onContextMenu={(e) => e.preventDefault()}
+                            />
+                          ) : (
+                            <div className="text-[#FF2BD6] font-mono text-[10px] animate-pulse">
+                              RETRIEVING CHROMATIC MATRIX...
+                            </div>
+                          )}
+
+                          {/* HUD badges — decorative only, never intercept the mouse */}
+                          <div className="absolute top-2 left-2 bg-black/90 border border-[#FF2BD6] text-[#FF2BD6] font-mono text-[9px] px-2 py-0.5 flex items-center gap-1 backdrop-blur-md select-none pointer-events-none">
+                            <Maximize2 className="w-2.5 h-2.5" />
+                            <span>INTERACTIVE FEED // {selectedAspect}</span>
                           </div>
-                        )}
-                        
-                        {/* Visual Overlay Indicators */}
-                        <div className="absolute top-2 left-2 bg-black/90 border border-[#FF2BD6] text-[#FF2BD6] font-mono text-[9px] px-2 py-0.5 flex items-center gap-1 backdrop-blur-md select-none pointer-events-none">
-                          <Maximize2 className="w-2.5 h-2.5" />
-                          <span>CODE LAB FEED // {selectedAspect}</span>
-                        </div>
-
-                        <div className="absolute bottom-2 right-2 bg-black/90 border border-gray-800 text-gray-500 font-mono text-[8px] px-2 py-0.5 backdrop-blur-md select-none pointer-events-none">
-                          RES: {selectedResolution.toUpperCase()} // FILE: {selectedShader.fileName}
+                          <div className="absolute bottom-2 right-2 bg-black/90 border border-gray-800 text-gray-500 font-mono text-[8px] px-2 py-0.5 backdrop-blur-md select-none pointer-events-none">
+                            RES: {selectedResolution.toUpperCase()} // FILE: {selectedShader.fileName}
+                          </div>
                         </div>
                       </div>
+                    ) : (
+                      <div className="aspect-square w-full max-w-[580px] mx-auto flex flex-col items-center justify-center border-2 border-dashed text-center p-6 text-gray-500 font-mono" style={{ borderColor: 'var(--mc-faint)' }}>
+                        <Atom className="w-12 h-12 text-[#FF2BD6]/30 animate-spin mb-4" style={{ animationDuration: '8s' }} />
+                        <h4 className="text-white text-md font-sans font-bold uppercase mb-1" style={{ fontFamily: "'Chakra Petch', sans-serif" }}>NO SHARD CHOSEN</h4>
+                        <p className="text-[11px] max-w-xs uppercase tracking-wider">
+                          Pick a cartridge from the Debris Deck below to boot rendering.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center font-mono text-[9px] text-zinc-600 uppercase tracking-widest">
+                      <span>FRAME_SYNC: CRT_EMU</span>
+                      <span className="cab-pixlabel" style={{ color: 'var(--mc)' }}>MOUSE_INPUT: FORWARDED ✓</span>
                     </div>
-                  ) : (
-                    <div className="aspect-square w-full max-w-[580px] mx-auto flex flex-col items-center justify-center border border-dashed border-[#FF2BD6]/20 text-center p-6 text-gray-500 font-mono">
-                      <Atom className="w-12 h-12 text-[#FF2BD6]/30 animate-spin mb-4" style={{ animationDuration: '8s' }} />
-                      <h4 className="text-white text-md font-sans font-bold uppercase mb-1">NO SHARD CHOSEN</h4>
-                      <p className="text-[12px] max-w-xs">
-                        Browse the Debris Deck below and choose any shard block to boot rendering.
-                      </p>
-                    </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* Right Side: Configuration Panel, Metadata, and Controller Stations */}
-                <div className="xl:col-span-5 bg-black/95 border border-zinc-800 p-7 space-y-8">
-                  {selectedShader ? (
-                    <div className="space-y-8">
-                      
-                      {/* Configuration Controls Console */}
-                      <div className="bg-zinc-950 p-5 border border-zinc-900 space-y-4 font-mono text-xs text-gray-400">
-                        <div className="flex items-center gap-1.5 border-b border-zinc-900 pb-2">
-                          <Sliders className="w-3.5 h-3.5 text-[#FF2BD6]" />
-                          <span className="text-[#FF2BD6] font-bold text-xs uppercase tracking-wider">LAB VIEWER CONFIG</span>
-                        </div>
+                {/* Right: Control Tower */}
+                <div
+                  className="xl:col-span-5 cab-panel p-5"
+                  style={{
+                    '--mc': '#00F0FF',
+                    '--mc-soft': 'rgba(0,240,255,.4)',
+                    '--mc-faint': 'rgba(0,240,255,.12)',
+                    '--cab-panel-bg': 'rgba(0,18,22,.92)'
+                  } as any}
+                >
+                  <div className="cab-dither" />
+                  <span className="cab-corner" style={{ top: 3, left: 6 }}>╔</span>
+                  <span className="cab-corner" style={{ top: 3, right: 6 }}>╗</span>
+                  <span className="cab-corner" style={{ bottom: 4, left: 6 }}>╚</span>
+                  <span className="cab-corner" style={{ bottom: 4, right: 6 }}>╝</span>
 
-                        <div className="grid grid-cols-2 gap-4">
-                          {/* Aspect Ratio Selector */}
+                  {selectedShader ? (
+                    <div className="relative space-y-5">
+
+                      {/* Shard identity */}
+                      <div className="flex flex-col gap-2 border-b pb-4" style={{ borderColor: 'var(--mc-faint)' }}>
+                        <div className="flex flex-wrap justify-between items-start gap-2">
+                          <h3
+                            className="text-xl md:text-2xl text-white uppercase leading-tight"
+                            style={{
+                              fontFamily: "'Jersey 10', sans-serif",
+                              letterSpacing: '.05em',
+                              textShadow: '2px 0 0 rgba(255,43,214,.9), -2px 0 0 rgba(0,240,255,.9)'
+                            }}
+                          >
+                            {selectedShader.title}
+                          </h3>
+                          <span
+                            className="px-2.5 py-1 text-[10px] text-black font-extrabold tracking-widest uppercase shrink-0"
+                            style={{ backgroundColor: selectedShader.tagColor, fontFamily: "'Silkscreen', monospace" }}
+                          >
+                            {selectedShader.tag} MATRIX
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[#39FF14] tracking-wider font-mono uppercase">
+                          FILE: {selectedShader.fileName} // ID: {selectedShader.id.toUpperCase()}
+                        </p>
+                      </div>
+
+                      {/* Viewer config */}
+                      <div className="cab-specs" style={{ textTransform: 'none' }}>
+                        <div className="flex items-center gap-1.5 pb-1" style={{ color: 'var(--mc)' }}>
+                          <Sliders className="w-3.5 h-3.5" />
+                          <span className="uppercase font-bold tracking-widest text-[10px]">LAB_VIEWER_CONFIG</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
-                            <span className="text-zinc-500 text-[10px]">ASPECT RATIO</span>
-                            <select 
+                            <span className="text-zinc-500 text-[9px] uppercase tracking-widest">ASPECT RATIO</span>
+                            <select
                               value={selectedAspect}
                               onChange={(e) => {
                                 setSelectedAspect(e.target.value);
                                 playChime('sine', 1.3);
                               }}
-                              className="bg-black border border-[#FF2BD6]/40 text-[#FF2BD6] hover:border-[#FF2BD6] px-2 py-1.5 w-full focus:outline-none cursor-crosshair text-[10px]"
+                              className="cab-select"
+                              style={{ '--mc': '#FF2BD6', '--mc-soft': 'rgba(255,43,214,.4)', '--mc-faint': 'rgba(255,43,214,.13)' } as any}
                             >
                               <option value="1:1">1:1 (SQUARE)</option>
                               <option value="16:9">16:9 (WIDESCREEN)</option>
@@ -3212,17 +3298,16 @@ export default function App() {
                               <option value="full">FULL (RESPONSIVE BOX)</option>
                             </select>
                           </div>
-
-                          {/* Resolution Quality Selector */}
                           <div className="space-y-1">
-                            <span className="text-zinc-500 text-[10px]">RENDER QUALITY</span>
-                            <select 
+                            <span className="text-zinc-500 text-[9px] uppercase tracking-widest">RENDER QUALITY</span>
+                            <select
                               value={selectedResolution}
                               onChange={(e) => {
                                 setSelectedResolution(e.target.value);
                                 playChime('sine', 1.3);
                               }}
-                              className="bg-black border border-[#39FF14]/40 text-[#39FF14] hover:border-[#39FF14] px-2 py-1.5 w-full focus:outline-none cursor-crosshair text-[10px]"
+                              className="cab-select"
+                              style={{ '--mc': '#39FF14', '--mc-soft': 'rgba(57,255,20,.4)', '--mc-faint': 'rgba(57,255,20,.12)' } as any}
                             >
                               <option value="low">LOW (0.35x)</option>
                               <option value="med">MED (0.70x)</option>
@@ -3234,242 +3319,148 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* Interactive Time & Simulation Clock Station */}
-                      <div className="bg-zinc-950 border border-[#FF2BD6]/30 p-5 font-mono text-xs space-y-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-900 pb-2">
-                          <div className="flex items-center gap-1.5 text-gray-400">
-                            <Clock className="w-4 h-4 text-[#00F0FF]" />
-                            <span className="uppercase text-xs tracking-wider">WebGL Simulation Clock</span>
+                      {/* Simulation clock */}
+                      <div className="cab-specs" style={{ textTransform: 'none' }}>
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-1">
+                          <div className="flex items-center gap-1.5" style={{ color: 'var(--mc)' }}>
+                            <Clock className="w-3.5 h-3.5" />
+                            <span className="uppercase font-bold tracking-widest text-[10px]">SIM_CLOCK</span>
                           </div>
-                          
                           <div className="flex items-center gap-2">
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded-none font-bold ${
-                              isShaderPlaying 
-                                ? 'bg-[#39FF14]/10 text-[#39FF14] border border-[#39FF14]/30' 
-                                : 'bg-red-500/10 text-red-500 border border-red-500/30'
-                            }`}>
-                              {isShaderPlaying ? 'ACTIVE // RENDERING' : 'PAUSED // HALTED'}
+                            <span
+                              className="cab-chip"
+                              style={isShaderPlaying
+                                ? { '--mc': '#39FF14', '--mc-soft': 'rgba(57,255,20,.5)', '--mc-faint': 'rgba(57,255,20,.12)' } as any
+                                : { '--mc': '#FF2B2B', '--mc-soft': 'rgba(255,43,43,.5)', '--mc-faint': 'rgba(255,43,43,.12)' } as any}
+                            >
+                              {isShaderPlaying ? 'RENDERING' : 'HALTED'}
                             </span>
-                            <span className="text-[#00F0FF] font-bold text-sm tracking-widest bg-black px-2 py-0.5 border border-zinc-900 shadow-inner">
+                            <span className="text-[#00F0FF] font-bold text-sm tracking-widest bg-black px-2 py-0.5 border border-zinc-900 font-mono">
                               {formatShaderTime(currentShaderTime)}
                             </span>
                           </div>
                         </div>
 
-                        {/* Interactive Timeline Scrub Slider */}
                         <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] text-gray-500">
-                            <span>00:00.00</span>
-                            <span className="text-[#FF2BD6]">TEMPORAL SCRUB COORDINATE (MAX 20M)</span>
-                            <span>20:00.00</span>
+                          <div className="flex justify-between text-[9px] text-zinc-600 font-mono uppercase">
+                            <span>00:00</span>
+                            <span className="text-[#FF2BD6]">TEMPORAL SCRUB (MAX 20M)</span>
+                            <span>20:00</span>
                           </div>
-                          <input 
-                            type="range" 
-                            min="0" 
-                            max="1200" 
+                          <input
+                            type="range"
+                            min="0"
+                            max="1200"
                             step="0.5"
                             value={currentShaderTime}
                             onChange={(e) => {
                               const val = parseFloat(e.target.value);
                               jumpToShaderTime(val);
                             }}
-                            className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-900 h-1 rounded-none border border-zinc-850"
+                            className="w-full accent-[#FF2BD6] cursor-crosshair bg-zinc-900 h-1"
                           />
                         </div>
 
-                        {/* Simulation Actions & Instant Jump */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                          <div className="flex items-center gap-1">
-                            <button 
-                              onClick={() => adjustShaderTime(-30)}
-                              className="text-[10px] border border-zinc-800 hover:border-[#FF2BD6] px-2 py-1 text-gray-400 hover:text-white transition-all cursor-crosshair flex items-center gap-0.5"
-                              title="Rewind 30 seconds"
-                            >
-                              <ChevronsLeft className="w-3.5 h-3.5" />
-                              <span>-30s</span>
-                            </button>
-                            <button 
-                              onClick={() => adjustShaderTime(-10)}
-                              className="text-[10px] border border-zinc-800 hover:border-[#FF2BD6] px-2 py-1 text-gray-400 hover:text-white transition-all cursor-crosshair flex items-center gap-0.5"
-                              title="Rewind 10 seconds"
-                            >
-                              <ChevronLeft className="w-3.5 h-3.5" />
-                              <span>-10s</span>
-                            </button>
-                            
-                            <button 
-                              onClick={toggleShaderPlayback}
-                              className={`border px-3 py-1 flex items-center gap-1.5 transition-all font-bold cursor-crosshair ${
-                                isShaderPlaying 
-                                  ? 'bg-red-500/10 border-red-500/40 text-red-400 hover:bg-red-500/20' 
-                                  : 'bg-[#39FF14]/10 border-[#39FF14]/40 text-[#39FF14] hover:bg-[#39FF14]/20'
-                              }`}
-                              title={isShaderPlaying ? "Pause rendering" : "Play rendering"}
-                            >
-                              {isShaderPlaying ? (
-                                <>
-                                  <Pause className="w-3.5 h-3.5" />
-                                  <span>PAUSE</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Play className="w-3.5 h-3.5 fill-current" />
-                                  <span>PLAY</span>
-                                </>
-                              )}
-                            </button>
-
-                            <button 
-                              onClick={() => adjustShaderTime(10)}
-                              className="text-[10px] border border-zinc-800 hover:border-[#FF2BD6] px-2 py-1 text-gray-400 hover:text-white transition-all cursor-crosshair flex items-center gap-0.5"
-                              title="Fast-forward 10 seconds"
-                            >
-                              <span>+10s</span>
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                            <button 
-                              onClick={() => adjustShaderTime(30)}
-                              className="text-[10px] border border-zinc-800 hover:border-[#FF2BD6] px-2 py-1 text-gray-400 hover:text-white transition-all cursor-crosshair flex items-center gap-0.5"
-                              title="Fast-forward 30 seconds"
-                            >
-                              <span>+30s</span>
-                              <ChevronsRight className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            <button 
-                              onClick={() => jumpToShaderTime(0)}
-                              className="text-[10px] border border-zinc-800 hover:border-white px-2 py-1 text-gray-400 hover:text-white transition-all cursor-crosshair flex items-center gap-1"
-                              title="Reset simulation to 0.00"
-                            >
-                              <RotateCcw className="w-3 h-3" />
-                              <span>RESET</span>
-                            </button>
-
-                            <div className="h-4 w-[1px] bg-zinc-900 mx-1" />
-
-                            <form 
-                              onSubmit={(e) => {
-                                e.preventDefault();
-                                const parsed = parseFloat(customJumpInput);
-                                if (!isNaN(parsed) && parsed >= 0) {
-                                  jumpToShaderTime(parsed);
-                                }
-                              }}
-                              className="flex items-center gap-1"
-                            >
-                              <input 
-                                type="text"
-                                placeholder="JUMP SEC..."
-                                value={customJumpInput}
-                                onChange={(e) => setCustomJumpInput(e.target.value)}
-                                className="bg-black border border-zinc-800 text-white font-mono px-1.5 py-0.5 text-[10px] w-16 focus:border-[#FF2BD6] focus:outline-none placeholder:text-gray-650 rounded-none text-right"
-                              />
-                              <button 
-                                type="submit"
-                                className="text-[10px] bg-[#FF2BD6]/10 border border-[#FF2BD6]/30 text-[#FF2BD6] hover:bg-[#FF2BD6]/20 px-2 py-1 transition-all cursor-crosshair"
-                              >
-                                GO
-                              </button>
-                            </form>
-                          </div>
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          <button onClick={() => adjustShaderTime(-30)} className="cab-ctl" title="Rewind 30 seconds">
+                            <ChevronsLeft className="w-3 h-3" />-30
+                          </button>
+                          <button onClick={() => adjustShaderTime(-10)} className="cab-ctl" title="Rewind 10 seconds">
+                            <ChevronLeft className="w-3 h-3" />-10
+                          </button>
+                          <button
+                            onClick={toggleShaderPlayback}
+                            className="cab-ctl"
+                            style={isShaderPlaying
+                              ? { '--mc': '#FF2B2B', '--mc-soft': 'rgba(255,43,43,.5)' } as any
+                              : { '--mc': '#39FF14', '--mc-soft': 'rgba(57,255,20,.5)' } as any}
+                            title={isShaderPlaying ? 'Pause rendering' : 'Play rendering'}
+                          >
+                            {isShaderPlaying ? (<><Pause className="w-3 h-3" />PAUSE</>) : (<><Play className="w-3 h-3 fill-current" />PLAY</>)}
+                          </button>
+                          <button onClick={() => adjustShaderTime(10)} className="cab-ctl" title="Fast-forward 10 seconds">
+                            +10<ChevronRight className="w-3 h-3" />
+                          </button>
+                          <button onClick={() => adjustShaderTime(30)} className="cab-ctl" title="Fast-forward 30 seconds">
+                            +30<ChevronsRight className="w-3 h-3" />
+                          </button>
+                          <button onClick={() => jumpToShaderTime(0)} className="cab-ctl" title="Reset simulation to 0.00">
+                            <RotateCcw className="w-3 h-3" />RESET
+                          </button>
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              const parsed = parseFloat(customJumpInput);
+                              if (!isNaN(parsed) && parsed >= 0) {
+                                jumpToShaderTime(parsed);
+                              }
+                            }}
+                            className="flex items-center gap-1.5 ml-auto"
+                          >
+                            <input
+                              type="text"
+                              placeholder="JUMP_S"
+                              value={customJumpInput}
+                              onChange={(e) => setCustomJumpInput(e.target.value)}
+                              className="cab-key-input !w-16 !py-1 !px-2 !text-[10px] text-right"
+                              style={{ borderColor: 'var(--mc-soft)', color: 'var(--mc)' }}
+                            />
+                            <button type="submit" className="cab-ctl">GO</button>
+                          </form>
                         </div>
                       </div>
 
-                      {/* Header Title with tags */}
-                      <div className="flex flex-col md:flex-row justify-between items-start gap-4 border-b border-zinc-900 pb-4">
-                        <div>
-                          <h3 className="text-2xl md:text-3xl font-extrabold font-sans text-white tracking-tight uppercase">{selectedShader.title}</h3>
-                          <p className="text-[12.5px] text-[#39FF14] mt-1.5 tracking-wider font-mono uppercase">
-                            FILE: {selectedShader.fileName} // ARCHETYPE_ID: {selectedShader.id.toUpperCase()}
-                          </p>
-                        </div>
-                        <span 
-                          className="px-2.5 py-1 text-[10px] text-black font-extrabold tracking-widest uppercase shrink-0" 
-                          style={{ backgroundColor: selectedShader.tagColor }}
-                        >
-                          {selectedShader.tag} MATRIX
-                        </span>
-                      </div>
-
-                      {/* Descriptive Wording & Specs */}
-                      <div className="border-l-2 border-[#FF2BD6] pl-4 py-2 my-2 space-y-4">
-                        <p className="text-[15.5px] text-gray-200 leading-relaxed font-sans">
+                      {/* Explanation + tech specs */}
+                      <div className="border-l-2 border-[#FF2BD6] pl-4 py-1 space-y-3">
+                        <p className="text-[14px] text-gray-200 leading-relaxed font-sans">
                           {getShaderExplanation(selectedShader)}
                         </p>
-                        <p className="text-[12px] text-[#9fdc96] font-mono italic">
+                        <p className="text-[11px] text-[#9fdc96] font-mono italic">
                           TECHNICAL SPECS: {getShaderTechnicalDetails(selectedShader)}
                         </p>
                       </div>
 
-                      {/* Phenomenological Field Notes Section */}
+                      {/* Phenomenological field notes */}
                       {getShaderFieldNotes(selectedShader) ? (
-                        <div className="border border-[#00F0FF]/30 bg-[#00F0FF]/5 p-5 space-y-3.5">
-                          <div className="flex justify-between items-center text-xs md:text-[13px] font-mono text-[#00F0FF] border-b border-[#00F0FF]/25 pb-2 uppercase font-bold tracking-wider">
-                            <span className="flex items-center gap-1.5">✦ PHENOMENOLOGICAL FIELD NOTES</span>
-                            <span className="text-[9px] bg-black border border-[#00F0FF]/30 px-1.5 py-0.5">RESOLVED THEORY</span>
+                        <div className="cab-specs" style={{ textTransform: 'none' }}>
+                          <div className="flex justify-between items-center pb-1">
+                            <span className="uppercase font-bold tracking-widest text-[10px]" style={{ color: 'var(--mc)' }}>✦ PHENOMENOLOGICAL FIELD NOTES</span>
+                            <span className="cab-pixlabel" style={{ color: 'var(--mc)' }}>RESOLVED_THEORY</span>
                           </div>
-                          <p className="text-[13.5px] text-gray-300 leading-relaxed font-sans italic whitespace-pre-line">
+                          <p className="text-[12.5px] text-gray-300 leading-relaxed font-sans italic whitespace-pre-line">
                             {getShaderFieldNotes(selectedShader)}
                           </p>
                         </div>
                       ) : null}
 
-                      {/* Instructions for custom explanations.json */}
-                      <div className="border border-dashed border-zinc-850 p-3.5 bg-zinc-950/40 text-[11px] font-mono space-y-2.5">
-                        <div className="text-[#39FF14] uppercase tracking-wider font-bold flex items-center gap-1 text-[10px]">
-                          <span>✦ REPOSITORY DOCUMENTATION OVERRIDE</span>
-                        </div>
-                        <p className="text-zinc-400 leading-relaxed text-[11px] font-sans">
-                          Want to display your long, fascinating explanations and field notes here dynamically? 
-                          You can manage them inside your GitHub repository by uploading an <span className="text-[#00F0FF] font-bold">explanations.json</span> file to the root of your <code className="text-zinc-300 font-mono text-[10.5px]">shaderslop_designs</code> repo. Structure it like:
-                        </p>
-                        <pre className="bg-black p-2.5 text-[9px] text-[#39FF14] overflow-x-auto border border-zinc-900 leading-tight">
-{`{
-  "${selectedShader.id}": {
-    "explanation": "Your custom deep explanation...",
-    "technicalDetails": "WebGL details...",
-    "fieldNotes": "Your long phenomenological notes..."
-  }
-}`}
-                        </pre>
-                        <p className="text-zinc-500 text-[10px] leading-relaxed font-sans">
-                          This application automatically fetches this file from your branch on load and overrides default strings with your rich repository-hosted notes live!
-                        </p>
-                      </div>
-
-                      {/* View Source Code Block & NFT Link */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                        <a 
+                      {/* Actions */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                        <a
                           href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9"
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => playChime('triangle', 1.4)}
-                          className="text-[10px] border border-[#EFFF04]/50 text-[#EFFF04] hover:bg-[#EFFF04]/10 px-3 py-1.5 uppercase font-mono transition-all cursor-crosshair"
+                          className="cab-ctl"
+                          style={{ '--mc': '#EFFF04', '--mc-soft': 'rgba(239,255,4,.5)' } as any}
                         >
                           COLLECT DEBRIS ON OBJKT ↗
                         </a>
-
-                        <button 
+                        <button
                           onClick={() => {
                             setShowGLSL(!showGLSL);
                             playChime('sine', 1.4);
                           }}
-                          className={`text-[10px] border px-3 py-1.5 transition-all flex items-center gap-1.5 cursor-crosshair font-mono ${
-                            showGLSL 
-                              ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
-                              : 'border-[#FF2BD6]/30 text-[#FF2BD6] hover:bg-[#FF2BD6]/10'
-                          }`}
+                          className={`cab-ctl ${showGLSL ? 'is-active' : ''}`}
+                          style={{ '--mc': '#FF2BD6', '--mc-soft': 'rgba(255,43,214,.5)' } as any}
                         >
-                          <Code className="w-3.5 h-3.5" />
-                          <span>{showGLSL ? 'HIDE FILE CODE' : 'VIEW RAW FILE CODE'}</span>
+                          <Code className="w-3 h-3" />
+                          {showGLSL ? 'HIDE FILE CODE' : 'VIEW RAW FILE CODE'}
                         </button>
                       </div>
 
-                      {/* Expandable raw File Code View */}
+                      {/* Raw source viewer */}
                       {showGLSL && (
-                        <div className="bg-[#020202] border border-[#FF2BD6]/40 p-4 font-mono text-[11px] text-[#39FF14] relative max-h-[250px] overflow-y-auto select-text">
+                        <div className="bg-[#020202] border border-[#FF2BD6]/40 p-4 font-mono text-[11px] text-[#39FF14] relative max-h-[250px] overflow-y-auto select-text custom-scrollbar">
                           <div className="sticky top-0 bg-[#020202]/95 border-b border-zinc-900 pb-1 mb-2 text-gray-500 text-[10px] uppercase flex justify-between items-center">
                             <span>{selectedShader.fileName}</span>
                             <span className="text-[#FF2BD6]">LIVE SOURCE</span>
@@ -3484,11 +3475,11 @@ export default function App() {
 
                     </div>
                   ) : (
-                    <div className="h-[400px] flex flex-col items-center justify-center border border-dashed border-[#FF2BD6]/25 text-center p-6 text-gray-500 font-mono">
-                      <Atom className="w-12 h-12 text-[#FF2BD6]/30 animate-spin mb-4" style={{ animationDuration: '8s' }} />
-                      <h4 className="text-white text-md font-sans font-bold uppercase mb-1">NO SHARD CONFIGURED</h4>
-                      <p className="text-[12px] max-w-sm">
-                        Browse the Debris Deck below and select an orbital coordinate to boot up compiling.
+                    <div className="relative h-[400px] flex flex-col items-center justify-center border border-dashed text-center p-6 text-gray-500 font-mono" style={{ borderColor: 'var(--mc-faint)' }}>
+                      <Atom className="w-12 h-12 animate-spin mb-4" style={{ animationDuration: '8s', color: 'var(--mc-soft)' }} />
+                      <h4 className="text-white text-md font-bold uppercase mb-1" style={{ fontFamily: "'Chakra Petch', sans-serif" }}>NO SHARD CONFIGURED</h4>
+                      <p className="text-[11px] max-w-sm uppercase tracking-wider">
+                        Select an orbital coordinate below to boot up compiling.
                       </p>
                     </div>
                   )}
@@ -3496,44 +3487,35 @@ export default function App() {
 
               </div>
 
-              {/* SECTION B_SUB: HORIZONTAL SHARD DECK SELECTOR */}
-              <div className="border-t border-[#FF2BD6]/20 pt-12 pb-2 space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="space-y-2">
-                    <h3 className="text-xl md:text-2xl font-extrabold font-sans text-white tracking-wide uppercase flex items-center gap-2.5">
-                      <Atom className="w-5 h-5 text-[#FF2BD6] animate-spin" style={{ animationDuration: '6s' }} />
-                      <span>DEBRIS DECK SELECTOR</span>
-                    </h3>
-                    <p className="text-[12px] text-zinc-500 font-mono mt-1">BROWSE ALL REPOSITORY ARTIFACTS · SELECT SHARD TO INJECT TO LAB</p>
+              {/* ================= 3. DEBRIS DECK: mini-cartridge grid ================= */}
+              <div className="space-y-5">
+                <div className="flex flex-wrap items-end justify-between gap-2">
+                  <div
+                    className="select-none uppercase text-[#FF2BD6]"
+                    style={{
+                      fontFamily: "'Jersey 10', sans-serif",
+                      fontSize: 24,
+                      letterSpacing: '.1em',
+                      textShadow: '0 0 16px rgba(255,43,214,.55), 2px 0 0 rgba(239,255,4,.5), -2px 0 0 rgba(0,240,255,.5)'
+                    }}
+                  >
+                    ▚▚ Debris Deck <span className="cab-blink">█</span>
                   </div>
-
-                  {/* Horizontal Scroll Deck Nav Buttons */}
-                  <div className="flex items-center gap-2 self-end">
-                    <button 
-                      onClick={() => scrollDeck('left')}
-                      className="border border-[#FF2BD6]/40 hover:border-[#FF2BD6] text-[#FF2BD6] hover:bg-[#FF2BD6]/10 px-3 py-1.5 text-[10px] font-mono font-bold uppercase transition-all cursor-crosshair"
-                    >
-                      ◀ SCROLL LEFT
-                    </button>
-                    <button 
-                      onClick={() => scrollDeck('right')}
-                      className="border border-[#FF2BD6]/40 hover:border-[#FF2BD6] text-[#FF2BD6] hover:bg-[#FF2BD6]/10 px-3 py-1.5 text-[10px] font-mono font-bold uppercase transition-all cursor-crosshair"
-                    >
-                      SCROLL RIGHT ▶
-                    </button>
-                  </div>
+                  <span className="font-mono text-[9px] text-zinc-500 uppercase tracking-widest">
+                    PICK A CARTRIDGE TO INJECT INTO THE LAB ▲
+                  </span>
                 </div>
 
-                {/* Tactical category tabs for quick grouping filtering */}
-                <div className="flex flex-wrap gap-1.5 border-b border-zinc-900 pb-3 font-mono text-[10px]">
+                {/* Category filter chips */}
+                <div className="flex flex-wrap gap-1.5">
                   {[
-                    { id: 'ALL', label: 'ALL DEBRIS', count: allShaders.length },
-                    { id: 'VHS', label: 'VHS / CRT', count: allShaders.filter(s => s.tag === 'VHS' || s.tag === 'CRT').length },
-                    { id: 'MATH', label: 'COMPUTATIONAL MATH', count: allShaders.filter(s => s.tag === 'MATH' || s.tag === 'CYCLE').length },
-                    { id: 'CMY', label: 'CMY / DIFFUSION', count: allShaders.filter(s => s.tag === 'CMY' || s.tag === 'PRISM' || s.tag === 'FBM').length },
-                    { id: 'FLUID', label: 'BIOMORPHIC FLUID', count: allShaders.filter(s => s.tag === 'FLUID' || s.tag === 'BIO' || s.tag === 'SILK').length },
-                    { id: 'GLITCH', label: 'GLITCH / CYBER', count: allShaders.filter(s => s.tag === 'GLITCH' || s.tag === 'Y2K' || s.tag === 'VOID').length },
-                    { id: 'DYNAMIC', label: 'DYNAMIC REPO', count: allShaders.filter(s => s.thumbClass === 'dynamic').length },
+                    { id: 'ALL', label: 'ALL DEBRIS', count: allShaders.length, color: '#FF2BD6' },
+                    { id: 'VHS', label: 'VHS / CRT', count: allShaders.filter(s => s.tag === 'VHS' || s.tag === 'CRT').length, color: '#FF6B00' },
+                    { id: 'MATH', label: 'COMPUTATIONAL MATH', count: allShaders.filter(s => s.tag === 'MATH' || s.tag === 'CYCLE').length, color: '#39FF14' },
+                    { id: 'CMY', label: 'CMY / DIFFUSION', count: allShaders.filter(s => s.tag === 'CMY' || s.tag === 'PRISM' || s.tag === 'FBM').length, color: '#EFFF04' },
+                    { id: 'FLUID', label: 'BIOMORPHIC FLUID', count: allShaders.filter(s => s.tag === 'FLUID' || s.tag === 'BIO' || s.tag === 'SILK').length, color: '#00F0FF' },
+                    { id: 'GLITCH', label: 'GLITCH / CYBER', count: allShaders.filter(s => s.tag === 'GLITCH' || s.tag === 'Y2K' || s.tag === 'VOID').length, color: '#9D4DFF' },
+                    { id: 'DYNAMIC', label: 'DYNAMIC REPO', count: allShaders.filter(s => s.thumbClass === 'dynamic').length, color: '#FF007F' },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -3541,66 +3523,79 @@ export default function App() {
                         setGalleryFilter(tab.id);
                         playChime('sine', 1.3);
                       }}
-                      className={`px-3 py-1.5 transition-all border font-bold cursor-crosshair ${
-                        galleryFilter === tab.id 
-                          ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
-                          : 'bg-black text-gray-400 border-zinc-900 hover:border-zinc-700 hover:text-white'
-                      }`}
+                      className={`cab-ctl ${galleryFilter === tab.id ? 'is-active' : ''}`}
+                      style={{ '--mc': tab.color, '--mc-soft': `color-mix(in srgb, ${tab.color} 45%, transparent)` } as any}
                     >
                       {tab.label} ({tab.count})
                     </button>
                   ))}
                 </div>
 
-                {/* Horizontal scroll container with interactive items */}
-                <div 
-                  ref={scrollContainerRef}
-                  className="flex gap-4 overflow-x-auto pb-4 pt-2 px-1 scroll-smooth"
-                  style={{
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: '#FF2BD633 #000000'
-                  }}
-                >
-                  {filteredShaders.length > 0 ? (
-                    filteredShaders.map((item) => (
-                      <div 
-                        key={item.id}
-                        onClick={() => {
-                          setSelectedShader(item);
-                          setShaderSpeed(item.defaultParams.speed);
-                          setShaderScale(item.defaultParams.scale);
-                          setShaderIntensity(item.defaultParams.intensity);
-                          setShaderHue(item.defaultParams.hue);
-                          setShowGLSL(false);
-                          playChime('square', 1.0);
-                        }}
-                        className={`group border cursor-crosshair p-3 transition-all shrink-0 w-[170px] select-none ${
-                          selectedShader?.id === item.id 
-                            ? 'bg-[#FF2BD6]/10 border-[#FF2BD6] shadow-[0_0_15px_rgba(255,43,214,0.3)]' 
-                            : 'bg-black/80 border-zinc-900 hover:border-[#FF2BD6]/50'
-                        }`}
-                      >
-                        <div className="aspect-square w-full mb-2 relative overflow-hidden border border-zinc-950">
-                          <ShaderThumbnail shaderId={item.id} fileName={item.fileName} />
-                          <div className="absolute inset-0 bg-black/15 group-hover:bg-transparent transition-colors pointer-events-none" />
-                          <div className="absolute top-1 left-1 text-[8px] bg-black/90 text-white px-1.5 py-0.5 font-mono border border-white/10">
-                            {item.tag}
+                {/* Mini-cartridge grid */}
+                {filteredShaders.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 items-start">
+                    {filteredShaders.map((item, idx) => {
+                      const isSel = selectedShader?.id === item.id;
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedShader(item);
+                            setShaderSpeed(item.defaultParams.speed);
+                            setShaderScale(item.defaultParams.scale);
+                            setShaderIntensity(item.defaultParams.intensity);
+                            setShaderHue(item.defaultParams.hue);
+                            setShowGLSL(false);
+                            playChime('square', 1.0);
+                          }}
+                          className={`group cab-cart select-none p-2 pb-2.5 ${isSel ? 'cab-maxed' : idx % 2 === 0 ? 'cab-tilt-l' : 'cab-tilt-r'}`}
+                          style={{
+                            '--mc': item.tagColor,
+                            '--mc-soft': `color-mix(in srgb, ${item.tagColor} 45%, transparent)`,
+                            '--mc-faint': `color-mix(in srgb, ${item.tagColor} 14%, transparent)`,
+                            background: 'rgba(5,5,8,.92)',
+                            ...(isSel ? { borderColor: item.tagColor, boxShadow: '0 0 22px var(--mc-soft), inset 0 0 18px var(--mc-faint)' } : {})
+                          } as any}
+                        >
+                          <div className="cab-dither" />
+                          <span className="cab-corner" style={{ top: 2, left: 5 }}>╔</span>
+                          <span className="cab-corner" style={{ top: 2, right: 5 }}>╗</span>
+
+                          <div className="relative aspect-square w-full mb-2 overflow-hidden border" style={{ borderColor: 'var(--mc-faint)' }}>
+                            <ShaderThumbnail shaderId={item.id} fileName={item.fileName} />
+                            <div className="absolute top-1 left-1 z-20 cab-chip">{item.tag}</div>
                           </div>
+
+                          <h4 className="relative text-white text-[11px] font-bold truncate tracking-wide" title={item.title} style={{ fontFamily: "'Chakra Petch', sans-serif" }}>
+                            {item.title}
+                          </h4>
+                          <div className="relative flex justify-between items-center mt-1">
+                            <span className="cab-pixlabel" style={{ color: 'var(--mc)' }}>
+                              {isSel ? (<><span className="cab-blink">▮</span> LOADED</>) : `${item.tag}_SHARD`}
+                            </span>
+                            <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" style={{ color: 'var(--mc)' }} />
+                          </div>
+
+                          <span className="cab-sticker">{isSel ? 'PLAYING!!' : 'LOAD ME!!'}</span>
+                          <div className="cab-scan" />
                         </div>
-                        <h4 className="text-white text-[12px] font-sans font-bold truncate tracking-wide" title={item.title}>
-                          {item.title}
-                        </h4>
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-[8px] text-[#FF2BD6] uppercase tracking-widest">{item.tag} SHARD</span>
-                          <ChevronRight className="w-3.5 h-3.5 text-[#FF2BD6] group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="py-12 text-center w-full text-zinc-600 font-mono text-[11px] uppercase tracking-wider border border-dashed border-zinc-900">
-                      [ NO SHARDS RECOVERED IN THIS CATEGORY DIRECTORY ]
-                    </div>
-                  )}
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center w-full text-zinc-600 font-mono text-[11px] uppercase tracking-wider border border-dashed border-zinc-900">
+                    [ NO SHARDS RECOVERED IN THIS CATEGORY DIRECTORY ]
+                  </div>
+                )}
+              </div>
+
+              {/* ================= 4. FOOTER ================= */}
+              <div className="mt-12 text-center space-y-6 select-none">
+                <div className="cab-dings text-[#FF2BD6] opacity-80" aria-hidden="true">
+                  KLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRST
+                </div>
+                <div className="font-mono text-[10px] tracking-[.3em] text-zinc-600 uppercase">
+                  ── ✦ END_OF_GALLERY // TOUCH THE MATH ✦ ──
                 </div>
               </div>
 

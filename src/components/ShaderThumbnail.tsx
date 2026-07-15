@@ -8,10 +8,47 @@ interface ShaderThumbnailProps {
 // Global memory cache to prevent duplicate fetches for thumbnails
 const thumbnailCache: { [fileName: string]: string } = {};
 
+// Frozen snapshot cache: once a shard has rendered a frame, we keep the PNG
+// data URL and never boot a live WebGL context for it again this session.
+const snapshotCache: { [fileName: string]: string } = {};
+
+// Concurrency gate: browsers only allow a handful of live WebGL contexts at
+// once, so only a few thumbnails may run their boot->snapshot cycle in
+// parallel. The rest wait in line.
+const MAX_LIVE_THUMBS = 4;
+let liveThumbCount = 0;
+const thumbWaitQueue: (() => void)[] = [];
+
+const acquireThumbSlot = (cb: () => void) => {
+  if (liveThumbCount < MAX_LIVE_THUMBS) {
+    liveThumbCount++;
+    cb();
+  } else {
+    thumbWaitQueue.push(cb);
+  }
+};
+
+const releaseThumbSlot = () => {
+  liveThumbCount = Math.max(0, liveThumbCount - 1);
+  const next = thumbWaitQueue.shift();
+  if (next) {
+    liveThumbCount++;
+    next();
+  }
+};
+
+// How long a thumbnail renders live before we freeze it to a static image,
+// and how long we wait before giving up on a snapshot (keeps the live iframe).
+const SNAPSHOT_AFTER_MS = 2500;
+const SNAPSHOT_TIMEOUT_MS = 9000;
+
 export const ShaderThumbnail: React.FC<ShaderThumbnailProps> = ({ shaderId, fileName }) => {
   const [srcDoc, setSrcDoc] = useState<string>('');
+  const [snapshot, setSnapshot] = useState<string>(snapshotCache[fileName] || '');
   const [isVisible, setIsVisible] = useState<boolean>(false);
+  const [hasSlot, setHasSlot] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const slotHeldRef = useRef<boolean>(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -33,8 +70,61 @@ export const ShaderThumbnail: React.FC<ShaderThumbnailProps> = ({ shaderId, file
     };
   }, []);
 
+  // Wait for a live-render slot (skipped entirely if a snapshot already exists)
   useEffect(() => {
-    if (!isVisible || !fileName) return;
+    if (!isVisible || !fileName || snapshot) return;
+    let cancelled = false;
+    acquireThumbSlot(() => {
+      if (cancelled) {
+        releaseThumbSlot();
+        return;
+      }
+      slotHeldRef.current = true;
+      setHasSlot(true);
+    });
+    return () => {
+      cancelled = true;
+      if (slotHeldRef.current) {
+        slotHeldRef.current = false;
+        releaseThumbSlot();
+      }
+    };
+  }, [isVisible, fileName, snapshot]);
+
+  // Listen for the snapshot postMessage coming back from our own iframe
+  useEffect(() => {
+    if (!hasSlot || snapshot) return;
+
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data;
+      if (d && d.type === 'astral-thumb-snap' && d.id === fileName && typeof d.data === 'string' && d.data.startsWith('data:image')) {
+        snapshotCache[fileName] = d.data;
+        setSnapshot(d.data);
+        if (slotHeldRef.current) {
+          slotHeldRef.current = false;
+          releaseThumbSlot();
+        }
+      }
+    };
+    window.addEventListener('message', onMessage);
+
+    // If no snapshot ever arrives (shader crashed, no canvas, etc.) release the
+    // slot so the queue keeps moving; the live iframe stays as a fallback.
+    const bail = setTimeout(() => {
+      if (slotHeldRef.current) {
+        slotHeldRef.current = false;
+        releaseThumbSlot();
+      }
+    }, SNAPSHOT_TIMEOUT_MS);
+
+    return () => {
+      window.removeEventListener('message', onMessage);
+      clearTimeout(bail);
+    };
+  }, [hasSlot, snapshot, fileName]);
+
+  useEffect(() => {
+    if (!hasSlot || !fileName || snapshot) return;
 
     if (thumbnailCache[fileName]) {
       setSrcDoc(thumbnailCache[fileName]);
@@ -47,8 +137,41 @@ export const ShaderThumbnail: React.FC<ShaderThumbnailProps> = ({ shaderId, file
         return res.text();
       })
       .then((text) => {
-        // Inject a custom style tag to completely hide dat.GUI, HUDs, scrolls,
-        // and force the canvas to fill the small viewport pixelated
+        // 1. Force preserveDrawingBuffer so the canvas can be snapshotted, and
+        //    post a single frozen frame back to the parent after a short live
+        //    warm-up. Must be injected BEFORE the shader's own scripts run.
+        const snapshotScript = `
+          <script>
+            (function () {
+              var origGetContext = HTMLCanvasElement.prototype.getContext;
+              HTMLCanvasElement.prototype.getContext = function (type, attrs) {
+                if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
+                  attrs = Object.assign({}, attrs || {}, { preserveDrawingBuffer: true });
+                }
+                return origGetContext.call(this, type, attrs);
+              };
+              function snap() {
+                try {
+                  var c = document.querySelector('canvas');
+                  if (c && c.width > 0) {
+                    var data = c.toDataURL('image/png');
+                    if (data && data.length > 256) {
+                      parent.postMessage({ type: 'astral-thumb-snap', id: ${JSON.stringify(fileName)}, data: data }, '*');
+                      return;
+                    }
+                  }
+                } catch (e) {}
+                setTimeout(snap, 1200);
+              }
+              window.addEventListener('load', function () {
+                setTimeout(snap, ${SNAPSHOT_AFTER_MS});
+              });
+            })();
+          </script>
+        `;
+
+        // 2. Hide dat.GUI, HUDs, scrolls, and force the canvas to fill the
+        //    small viewport pixelated
         const customStyle = `
           <style>
             #hud, .hud, [id="hud"], #hideBtn, #saveBtn, #resetBtn, .hud-panel, .control-box,
@@ -83,12 +206,17 @@ export const ShaderThumbnail: React.FC<ShaderThumbnailProps> = ({ shaderId, file
           </script>
         `;
 
+        const inject = snapshotScript + customStyle;
         let modified = text;
-        if (text.toLowerCase().includes('</head>')) {
-          const idx = text.toLowerCase().indexOf('</head>');
-          modified = text.substring(0, idx) + customStyle + text.substring(idx);
+        const lower = text.toLowerCase();
+        if (lower.includes('<head>')) {
+          const idx = lower.indexOf('<head>') + '<head>'.length;
+          modified = text.substring(0, idx) + inject + text.substring(idx);
+        } else if (lower.includes('</head>')) {
+          const idx = lower.indexOf('</head>');
+          modified = text.substring(0, idx) + inject + text.substring(idx);
         } else {
-          modified = customStyle + text;
+          modified = inject + text;
         }
 
         thumbnailCache[fileName] = modified;
@@ -97,14 +225,24 @@ export const ShaderThumbnail: React.FC<ShaderThumbnailProps> = ({ shaderId, file
       .catch((err) => {
         console.warn('Failed to load thumbnail code for:', fileName, err);
       });
-  }, [isVisible, fileName]);
+  }, [hasSlot, fileName, snapshot]);
 
   return (
-    <div 
-      ref={containerRef} 
+    <div
+      ref={containerRef}
       className="w-full h-full bg-black relative flex items-center justify-center overflow-hidden select-none clean-container"
     >
-      {srcDoc ? (
+      {snapshot ? (
+        // Frozen "shitty little render" — a real frame of the real code,
+        // costing zero GPU after capture.
+        <img
+          src={snapshot}
+          alt={`render of ${shaderId}`}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ imageRendering: 'pixelated' }}
+          draggable={false}
+        />
+      ) : srcDoc ? (
         <iframe
           srcDoc={srcDoc}
           title={`thumb-${shaderId}`}
