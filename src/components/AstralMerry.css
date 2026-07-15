@@ -1,42 +1,32 @@
-.astral-merry {
-  --merry-facing: 1;
+.astral-merry-sticker {
   position: fixed;
   z-index: 10020;
-  bottom: max(8px, env(safe-area-inset-bottom));
-  width: 132px;
-  height: 232px;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: left 2.45s cubic-bezier(.22,.68,.24,1);
-  filter: drop-shadow(0 8px 10px rgba(0,0,0,.34));
-  -webkit-tap-highlight-color: transparent;
+  right: clamp(10px, 2.2vw, 30px);
+  bottom: max(10px, env(safe-area-inset-bottom));
+  width: clamp(82px, 8.5vw, 116px);
+  aspect-ratio: 420 / 735;
+  pointer-events: none;
+  isolation: isolate;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, .38));
 }
 
-.astral-merry:focus-visible {
-  outline: 2px dashed #00f6ff;
-  outline-offset: 5px;
-  border-radius: 48%;
-}
-
-.astral-merry__stage {
-  position: absolute;
-  inset: 0;
-  display: block;
-  transform: scaleX(var(--merry-facing));
-  transform-origin: 50% 100%;
-}
-
-.astral-merry__body,
-.astral-merry__ghost {
+.astral-merry-sticker__stage,
+.astral-merry-sticker__body,
+.astral-merry-sticker__ghost {
   position: absolute;
   inset: 0;
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.astral-merry-sticker__stage {
+  transform-origin: 50% 100%;
+  animation: astral-merry-wiggle 4.2s cubic-bezier(.45, .05, .55, .95) infinite;
+}
+
+.astral-merry-sticker__body,
+.astral-merry-sticker__ghost {
   object-fit: contain;
   object-position: center bottom;
   user-select: none;
@@ -44,127 +34,86 @@
   transform-origin: 50% 100%;
 }
 
-.astral-merry__ghost {
+.astral-merry-sticker__body {
+  animation: astral-merry-breathe 3.1s ease-in-out infinite;
+}
+
+.astral-merry-sticker__ghost {
   opacity: 0;
-  pointer-events: none;
   mix-blend-mode: screen;
 }
 
-.astral-merry--idle .astral-merry__body {
-  animation: merry-idle 3.4s ease-in-out infinite;
-}
-
-.astral-merry--dance .astral-merry__body {
-  animation: merry-dance .48s cubic-bezier(.45,.02,.55,.98) infinite alternate;
-}
-
-.astral-merry--dance .astral-merry__stage {
-  animation: merry-dance-travel 2.1s ease-in-out both;
-}
-
-.astral-merry--jump .astral-merry__stage {
-  animation: merry-jump .9s cubic-bezier(.3,.02,.3,1) both;
-}
-
-.astral-merry--walk .astral-merry__body {
-  animation: merry-walk .3s ease-in-out infinite alternate;
-}
-
-.astral-merry--glitch .astral-merry__stage {
-  animation: merry-glitch-shake .12s steps(2,end) infinite;
-}
-
-.astral-merry--glitch .astral-merry__body {
-  animation: merry-glitch-body .76s steps(2,end) both;
-}
-
-.astral-merry--glitch .astral-merry__ghost {
-  opacity: .62;
-}
-
-.astral-merry--glitch .astral-merry__ghost--cyan {
+.astral-merry-sticker__ghost--cyan {
   filter: sepia(1) saturate(8) hue-rotate(125deg);
-  animation: merry-ghost-cyan .18s steps(2,end) infinite;
+  animation: astral-merry-cyan-ghost 9s steps(1, end) infinite;
 }
 
-.astral-merry--glitch .astral-merry__ghost--pink {
+.astral-merry-sticker__ghost--pink {
   filter: sepia(1) saturate(10) hue-rotate(265deg);
-  animation: merry-ghost-pink .14s steps(2,end) infinite;
+  animation: astral-merry-pink-ghost 9s steps(1, end) infinite;
 }
 
-@keyframes merry-idle {
-  0%,100% { transform: translateY(0) rotate(-1deg) scaleY(1); }
-  50% { transform: translateY(-4px) rotate(1.2deg) scaleY(1.012); }
+.astral-merry-sticker__aura {
+  position: absolute;
+  z-index: -1;
+  left: 10%;
+  right: 10%;
+  bottom: 2%;
+  height: 18%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse, rgba(0, 246, 255, .34), transparent 56%),
+    radial-gradient(ellipse, rgba(255, 35, 190, .32), transparent 72%);
+  filter: blur(10px);
+  animation: astral-merry-aura 3.1s ease-in-out infinite;
 }
 
-@keyframes merry-dance {
-  0% { transform: translate(-5px,0) rotate(-7deg) scale(.98,1.02); }
-  50% { transform: translate(0,-11px) rotate(1deg) scale(1.03,.98); }
-  100% { transform: translate(6px,-1px) rotate(8deg) scale(.98,1.02); }
+@keyframes astral-merry-wiggle {
+  0%, 100% { transform: translateY(0) rotate(-1.1deg); }
+  25% { transform: translateY(-2px) rotate(.5deg); }
+  50% { transform: translateY(-4px) rotate(1.2deg); }
+  75% { transform: translateY(-1px) rotate(-.4deg); }
 }
 
-@keyframes merry-dance-travel {
-  0%,100% { filter: drop-shadow(-4px 0 0 rgba(0,246,255,.25)) drop-shadow(4px 0 0 rgba(255,35,190,.25)); }
-  50% { filter: drop-shadow(7px 0 0 rgba(0,246,255,.5)) drop-shadow(-7px 0 0 rgba(255,35,190,.5)); }
+@keyframes astral-merry-breathe {
+  0%, 100% { transform: scaleX(1) scaleY(1); }
+  50% { transform: scaleX(1.012) scaleY(1.008); }
 }
 
-@keyframes merry-jump {
-  0%,100% { transform: scaleX(var(--merry-facing)) translateY(0) rotate(0); }
-  18% { transform: scaleX(var(--merry-facing)) translateY(5px) scaleY(.94); }
-  50% { transform: scaleX(var(--merry-facing)) translateY(-92px) rotate(7deg) scaleY(1.04); }
-  78% { transform: scaleX(var(--merry-facing)) translateY(2px) scaleY(.96); }
+@keyframes astral-merry-aura {
+  0%, 100% { opacity: .5; transform: scale(.88); }
+  50% { opacity: .92; transform: scale(1.08); }
 }
 
-@keyframes merry-walk {
-  from { transform: translateY(0) rotate(-2.2deg) scaleY(1.01); }
-  to { transform: translateY(-7px) rotate(2.2deg) scaleY(.99); }
+@keyframes astral-merry-cyan-ghost {
+  0%, 91%, 100% { opacity: 0; transform: translateX(0); clip-path: inset(0); }
+  92% { opacity: .38; transform: translateX(-3px); clip-path: inset(0 0 62% 0); }
+  93% { opacity: .22; transform: translateX(2px); clip-path: inset(45% 0 16% 0); }
+  94% { opacity: 0; transform: translateX(0); clip-path: inset(0); }
 }
 
-@keyframes merry-glitch-shake {
-  0% { transform: scaleX(var(--merry-facing)) translate(0,0); }
-  33% { transform: scaleX(var(--merry-facing)) translate(-5px,2px) skewX(2deg); }
-  66% { transform: scaleX(var(--merry-facing)) translate(6px,-2px) skewX(-3deg); }
-  100% { transform: scaleX(var(--merry-facing)) translate(-2px,1px); }
-}
-
-@keyframes merry-glitch-body {
-  0%,100% { clip-path: inset(0); filter: none; }
-  20% { clip-path: polygon(0 0,100% 0,100% 28%,3% 34%,3% 67%,100% 61%,100% 100%,0 100%); filter: saturate(1.7) contrast(1.2); }
-  45% { clip-path: polygon(0 0,100% 0,97% 45%,0 39%,0 76%,100% 70%,100% 100%,0 100%); filter: hue-rotate(70deg) saturate(2); }
-  70% { clip-path: polygon(0 0,100% 0,100% 18%,0 23%,4% 83%,100% 78%,100% 100%,0 100%); filter: hue-rotate(-55deg) saturate(1.8); }
-}
-
-@keyframes merry-ghost-cyan {
-  from { transform: translateX(-8px); clip-path: inset(0 0 54% 0); }
-  to { transform: translateX(9px); clip-path: inset(47% 0 0 0); }
-}
-
-@keyframes merry-ghost-pink {
-  from { transform: translateX(7px); clip-path: inset(30% 0 34% 0); }
-  to { transform: translateX(-10px); clip-path: inset(62% 0 12% 0); }
+@keyframes astral-merry-pink-ghost {
+  0%, 91%, 100% { opacity: 0; transform: translateX(0); clip-path: inset(0); }
+  92% { opacity: .34; transform: translateX(3px); clip-path: inset(58% 0 0 0); }
+  93% { opacity: .2; transform: translateX(-2px); clip-path: inset(18% 0 51% 0); }
+  94% { opacity: 0; transform: translateX(0); clip-path: inset(0); }
 }
 
 @media (max-width: 640px) {
-  .astral-merry {
-    width: 96px;
-    height: 168px;
-    bottom: max(4px, env(safe-area-inset-bottom));
-  }
-
-  @keyframes merry-jump {
-    0%,100% { transform: scaleX(var(--merry-facing)) translateY(0) rotate(0); }
-    18% { transform: scaleX(var(--merry-facing)) translateY(4px) scaleY(.94); }
-    50% { transform: scaleX(var(--merry-facing)) translateY(-58px) rotate(7deg) scaleY(1.04); }
-    78% { transform: scaleX(var(--merry-facing)) translateY(2px) scaleY(.96); }
+  .astral-merry-sticker {
+    right: 8px;
+    bottom: max(6px, env(safe-area-inset-bottom));
+    width: 74px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .astral-merry,
-  .astral-merry *,
-  .astral-merry *::before,
-  .astral-merry *::after {
+  .astral-merry-sticker,
+  .astral-merry-sticker * {
     animation: none !important;
-    transition: none !important;
+  }
+
+  .astral-merry-sticker__ghost {
+    display: none;
   }
 }
