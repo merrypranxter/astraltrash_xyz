@@ -323,6 +323,11 @@ body.light-theme .bg-zinc-950\/40 {
 @font-face { font-family: 'Pixelogist'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Pixelogist.woff2') format('woff2'); }
 @font-face { font-family: 'BarcodeFont'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/BarcodeFont.woff2') format('woff2'); }
 @font-face { font-family: 'VICTM___'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/VICTM___.woff2') format('woff2'); }
+@font-face { font-family: 'Pixelmania'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Pixelmania.woff2') format('woff2'); }
+@font-face { font-family: 'Dogica Pixel'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/dogicapixelbold.woff2') format('woff2'); }
+@font-face { font-family: 'StarThings'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/StarThings-DLZx.woff2') format('woff2'); }
+@font-face { font-family: 'CircleThings2'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/CircleThings2-ap6J.woff2') format('woff2'); }
+@font-face { font-family: 'Slsquiggles'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Slsquiggles-RJ96.woff2') format('woff2'); }
 
 
 body.psy-trip-active {

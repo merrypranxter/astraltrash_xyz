@@ -4411,17 +4411,7 @@ export default function App() {
           {/* SECTION G: PROJECTS TAB - DYNAMIC BENTO-GRID MULTI-LANDING HUBS            */}
           {/* ========================================================================= */}
           {activeTab === 'projects' && (
-            <SubProjects
-              playChime={playChime}
-              ghostInput={ghostInput}
-              setGhostInput={setGhostInput}
-              ghostHistory={ghostHistory}
-              setGhostHistory={setGhostHistory}
-              collabActiveColor={collabActiveColor}
-              setCollabActiveColor={setCollabActiveColor}
-              collabCanvas={collabCanvas}
-              setCollabCanvas={setCollabCanvas}
-            />
+            <SubProjects playChime={playChime} />
           )}
 
         </div>

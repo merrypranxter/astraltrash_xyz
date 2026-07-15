@@ -1,24 +1,21 @@
 import React, { useState } from 'react';
-import { 
-  Github, 
-  ExternalLink, 
-  Terminal, 
-  Cpu, 
+import {
+  Github,
+  ExternalLink,
   RotateCcw,
-  Volume2,
-  Layers
+  Eye,
+  EyeOff,
+  KeyRound,
+  Maximize2,
+  Minimize2,
+  Copy,
+  Trash2,
+  Terminal,
+  Check
 } from 'lucide-react';
 
 interface SubProjectsProps {
   playChime: (type: 'sine' | 'triangle' | 'sawtooth' | 'square', pitchModifier: number) => void;
-  ghostInput: string;
-  setGhostInput: (val: string) => void;
-  ghostHistory: { sender: 'user' | 'ghost'; text: string }[];
-  setGhostHistory: React.Dispatch<React.SetStateAction<{ sender: 'user' | 'ghost'; text: string }[]>>;
-  collabActiveColor: string;
-  setCollabActiveColor: (val: string) => void;
-  collabCanvas: string[];
-  setCollabCanvas: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 interface ProjectItem {
@@ -31,17 +28,30 @@ interface ProjectItem {
   tag: string;
   specs: { num: string; name: string; desc: string }[];
   accentColor: string;
+  soft: string;
+  faint: string;
+  bg: string;
+  grad: string;
+  glyph: string;
+  aiPowered?: boolean;
 }
+
+const GEMINI_KEY_STORAGE = 'astraltrash_gemini_key';
 
 const PROJECTS: ProjectItem[] = [
   {
     id: 'ghost-lovecraft-os',
-    title: 'GHOST\'S LOVECRAFT OS',
+    title: "GHOST'S LOVECRAFT OS",
     subtitle: 'Eldritch Operating System',
     liveUrl: 'https://ghostlovecraftos.netlify.app/',
     description: 'A cursed terminal interface and simulated operating system bridging the gap between computational logic and cosmic horror.',
     tag: 'MUDK_TERMINAL',
     accentColor: '#39FF14',
+    soft: 'rgba(57,255,20,.4)',
+    faint: 'rgba(57,255,20,.12)',
+    bg: 'rgba(3,24,2,.92)',
+    grad: 'conic-gradient(from 40deg, #39FF14, #00F0FF, #0b3d0b, #EFFF04, #39FF14)',
+    glyph: '🐙',
     specs: [
       { num: '01/', name: 'Eldritch Terminal', desc: 'Simulated command line with corrupted outputs.' },
       { num: '02/', name: 'Esoteric File System', desc: 'Navigating impossible directory structures.' },
@@ -50,12 +60,17 @@ const PROJECTS: ProjectItem[] = [
   },
   {
     id: 'ghost-erowid-vault',
-    title: 'GHOST\'S EROWID VAULT',
+    title: "GHOST'S EROWID VAULT",
     subtitle: 'Psychedelic Cosmology',
     liveUrl: 'https://ghosterowidcosmology.netlify.app/',
     description: 'A deep dive into hallucinogenic realities, fractal ontologies, and entity encounters as recorded through the lens of a rogue AI archivist.',
     tag: 'EROWID_SECTOR_7',
     accentColor: '#FF2BD6',
+    soft: 'rgba(255,43,214,.4)',
+    faint: 'rgba(255,43,214,.13)',
+    bg: 'rgba(24,0,20,.92)',
+    grad: 'conic-gradient(from 120deg, #FF2BD6, #9D4DFF, #00F0FF, #EFFF04, #FF2BD6)',
+    glyph: '🍄',
     specs: [
       { num: '01/', name: 'Phenomenological Cartography', desc: 'Mapping impossible geometric topologies.' },
       { num: '02/', name: 'Entity Encounter Logs', desc: 'Transcripts of trans-dimensional entities.' },
@@ -65,26 +80,38 @@ const PROJECTS: ProjectItem[] = [
   {
     id: 'ascii-trip',
     title: 'ASCII TRIP',
-    subtitle: 'An interactive micro-synthesizer and generative typewriter matrix. Generates real-time retro CRT structures and audio signals.',
+    subtitle: 'Generative Typewriter Matrix',
     liveUrl: 'https://asciitrip.netlify.app/',
     repoUrl: 'https://github.com/merrypranxter/Glitch-Cookbook',
-    description: 'An interactive retro keyboard sequencer and typewriter utilizing web audio oscillators and CRT character dither pipelines.',
+    description: 'An interactive retro keyboard sequencer and micro-synthesizer utilizing web audio oscillators and CRT character dither pipelines.',
     tag: 'ASCII_TRIP_PORT_80',
-    accentColor: '#EFFF04', // Radiant Gold
+    accentColor: '#EFFF04',
+    soft: 'rgba(239,255,4,.4)',
+    faint: 'rgba(239,255,4,.12)',
+    bg: 'rgba(26,26,0,.92)',
+    grad: 'repeating-radial-gradient(circle at 30% 40%, #EFFF04 0 14px, #1a1a00 14px 28px, #FF6B00 28px 42px, #1a1a00 42px 56px)',
+    glyph: '📟',
+    aiPowered: true,
     specs: [
-      { num: '01/', name: 'ASCII Character Rasterization', desc: 'Interactive real-time text matrix character map.' },
+      { num: '01/', name: 'ASCII Rasterization', desc: 'Interactive real-time text matrix character map.' },
       { num: '02/', name: 'Web Audio Oscillators', desc: 'Real-time microtonal oscillator sound design engine.' },
-      { num: '03/', name: 'Keyboard Typewriter Loop', desc: 'Sound waves mapped to custom retro character inputs.' }
+      { num: '03/', name: 'Typewriter Loop', desc: 'Sound waves mapped to custom retro character inputs.' }
     ]
   },
   {
     id: 'ghost-node',
     title: 'GHOST NODE',
-    subtitle: 'An autonomous, generative poetic presence and deep analog projection environment.',
+    subtitle: 'Autonomous Poetic Presence',
     liveUrl: 'https://melodious-zabaione-c5fb66.netlify.app/',
     description: 'A sensory poetic stream environment designed with haunting text fragments, feedback noise, and interactive frequency generators.',
     tag: 'GHOST_NODE_PORT_80',
-    accentColor: '#FF007F', // Neon Pink
+    accentColor: '#FF007F',
+    soft: 'rgba(255,0,127,.4)',
+    faint: 'rgba(255,0,127,.13)',
+    bg: 'rgba(28,0,12,.92)',
+    grad: 'linear-gradient(135deg, #2b000f, #FF007F 35%, #9D4DFF 65%, #00F0FF)',
+    glyph: '👻',
+    aiPowered: true,
     specs: [
       { num: '01/', name: 'Poetic Language Matrix', desc: 'Autonomous lyric generation based on structural algorithms.' },
       { num: '02/', name: 'Nostalgic Terminal Styling', desc: 'Atmospheric interface featuring feedback layers and grain scanlines.' },
@@ -94,471 +121,514 @@ const PROJECTS: ProjectItem[] = [
   {
     id: 'terence-chatbot',
     title: 'TERENCE BOT',
-    subtitle: 'A hyper-dimensional linguistic synthesizer mirroring the thoughts, syntax, and voice of Terence McKenna.',
+    subtitle: 'Hyper-Dimensional Linguistic Synthesizer',
     liveUrl: 'https://terencechatbot.netlify.app/',
     description: 'An AI linguistic sandbox tuned to synthesize thoughts regarding DMT, alchemy, history, the i Ching, novel theory, and hyper-dimensional fungal consciousness.',
     tag: 'TERENCE_CHAT_PORT_80',
-    accentColor: '#39FF14', // Toxic Green
+    accentColor: '#FF6B00',
+    soft: 'rgba(255,107,0,.4)',
+    faint: 'rgba(255,107,0,.13)',
+    bg: 'rgba(26,10,0,.92)',
+    grad: 'conic-gradient(from 0deg, #FF6B00, #EFFF04, #39FF14, #FF2BD6, #FF6B00)',
+    glyph: '🍄‍🟫',
+    aiPowered: true,
     specs: [
-      { num: '01/', name: 'Psychonautic Lexicon', desc: 'Dynamic stream of consciousness output mirroring McKenna\'s lectures.' },
+      { num: '01/', name: 'Psychonautic Lexicon', desc: "Dynamic stream of consciousness output mirroring McKenna's lectures." },
       { num: '02/', name: 'Linguistic Alchemy', desc: 'Conversational loop built to discuss novel theory and time wave zero.' },
-      { num: '03/', name: 'Dimensional Static', desc: 'Generative noise algorithms that respond as you dive deeper into linguistic space.' }
+      { num: '03/', name: 'Dimensional Static', desc: 'Generative noise that responds as you dive deeper into linguistic space.' }
     ]
   },
   {
     id: 'tensor-tantrum',
     title: 'TENSOR TANTRUM',
-    subtitle: 'A high-energy interactive neural shader playground and model weight visualizer.',
+    subtitle: 'Neural Shader Playground',
     liveUrl: 'https://tensortantrum.netlify.app/',
     repoUrl: 'https://github.com/merrypranxter/Glitch-Cookbook',
     description: 'An immersive interactive sandbox visualizing cognitive vector spaces, multi-dimensional tensor matrices, and dynamic feedback structures.',
     tag: 'TENSOR_TANTRUM_PORT_80',
-    accentColor: '#00F0FF', // Cyan
+    accentColor: '#00F0FF',
+    soft: 'rgba(0,240,255,.4)',
+    faint: 'rgba(0,240,255,.12)',
+    bg: 'rgba(0,20,26,.92)',
+    grad: 'repeating-radial-gradient(circle at 70% 30%, #00F0FF 0 14px, #001a1e 14px 28px, #9D4DFF 28px 42px, #001a1e 42px 56px)',
+    glyph: '🧠',
+    aiPowered: true,
     specs: [
       { num: '01/', name: 'Neural Tensor Visualization', desc: 'Real-time multi-dimensional vector array mapping.' },
       { num: '02/', name: 'Dynamic Feedback Matrix', desc: 'Generative interactive feedback loops responsive to cursor vectors.' },
-      { num: '03/', name: 'Cognitive WebGL Shaders', desc: 'High-energy color-shifting WebGL render passes simulating network layers.' }
+      { num: '03/', name: 'Cognitive WebGL Shaders', desc: 'Color-shifting WebGL render passes simulating network layers.' }
     ]
   }
 ];
 
-export function SubProjects({
-  playChime,
-  ghostInput,
-  setGhostInput,
-  ghostHistory,
-  setGhostHistory,
-  collabActiveColor,
-  setCollabActiveColor,
-  collabCanvas,
-  setCollabCanvas
-}: SubProjectsProps) {
+export function SubProjects({ playChime }: SubProjectsProps) {
   const [crtFilter, setCrtFilter] = useState<boolean>(true);
   const [refreshKeys, setRefreshKeys] = useState<Record<string, number>>({});
   const [loadedProjects, setLoadedProjects] = useState<Record<string, boolean>>({});
+  const [maximized, setMaximized] = useState<string | null>(null);
+
+  // Bring-Your-Own-Key console state (key lives ONLY in the visitor's browser)
+  const [geminiKey, setGeminiKey] = useState<string>(() => {
+    try {
+      return localStorage.getItem(GEMINI_KEY_STORAGE) || '';
+    } catch (_) {
+      return '';
+    }
+  });
+  const [keyDraft, setKeyDraft] = useState<string>('');
+  const [showKey, setShowKey] = useState<boolean>(false);
+  const [keyCopied, setKeyCopied] = useState<boolean>(false);
+
+  // Reload any already-booted smart cartridges so they pick up the new key
+  const rebootSmartFrames = () => {
+    setRefreshKeys(prev => {
+      const next = { ...prev };
+      PROJECTS.filter(p => p.aiPowered).forEach(p => {
+        next[p.id] = (next[p.id] || 0) + 1;
+      });
+      return next;
+    });
+  };
+
+  const handleSaveKey = () => {
+    const trimmed = keyDraft.trim();
+    if (!trimmed) return;
+    try {
+      localStorage.setItem(GEMINI_KEY_STORAGE, trimmed);
+    } catch (_) {}
+    setGeminiKey(trimmed);
+    setKeyDraft('');
+    rebootSmartFrames();
+    playChime('triangle', 1.6);
+  };
+
+  const handleClearKey = () => {
+    try {
+      localStorage.removeItem(GEMINI_KEY_STORAGE);
+    } catch (_) {}
+    setGeminiKey('');
+    setKeyDraft('');
+    rebootSmartFrames();
+    playChime('square', 0.7);
+  };
+
+  const handleCopyKey = () => {
+    if (!geminiKey) return;
+    try {
+      navigator.clipboard.writeText(geminiKey);
+      setKeyCopied(true);
+      setTimeout(() => setKeyCopied(false), 1600);
+      playChime('sine', 1.4);
+    } catch (_) {}
+  };
+
+  // Smart cartridges get the visitor's key riding along as ?apiKey=...
+  const buildUrl = (proj: ProjectItem) => {
+    if (proj.aiPowered && geminiKey) {
+      const sep = proj.liveUrl.includes('?') ? '&' : '?';
+      return `${proj.liveUrl}${sep}apiKey=${encodeURIComponent(geminiKey)}`;
+    }
+    return proj.liveUrl;
+  };
 
   const handleRefreshIframe = (id: string) => {
     playChime('square', 1.2);
-    setRefreshKeys(prev => ({
-      ...prev,
-      [id]: (prev[id] || 0) + 1
-    }));
+    setRefreshKeys(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
   };
 
-  const scrollToSection = (id: string) => {
-    playChime('triangle', 1.1);
+  const handleBoot = (id: string) => {
+    playChime('square', 1.2);
     setLoadedProjects(prev => ({ ...prev, [id]: true }));
-    setTimeout(() => {
-      const element = document.getElementById(`section-${id}`);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 50);
   };
 
-  const scrollToTop = () => {
-    playChime('sine', 1.0);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleMaximize = (id: string) => {
+    playChime('triangle', maximized === id ? 0.9 : 1.5);
+    setMaximized(prev => (prev === id ? null : id));
+    setTimeout(() => {
+      document.getElementById(`cart-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 60);
   };
 
   return (
-    <div className="w-full flex flex-col items-center pt-28 md:pt-36 pb-16 px-4 animate-fade-in" id="projects-mainframe">
-      <div className="w-full max-w-5xl space-y-24">
-      
-      {/* 1. Header Segment: Spacious and Atmospheric */}
-      <div className="w-full flex flex-col items-center justify-center text-center space-y-5">
-        <h1 
-          className="text-2xl sm:text-3xl md:text-5xl lg:text-5xl xl:text-6xl font-extrabold uppercase tracking-wider text-white select-none leading-none text-center"
-          style={{
-            fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
-            textShadow: '0 0 15px #EFFF04, 0 0 50px rgba(239,255,4,0.3)'
-          }}
-        >
+    <div className="frame py-8 animate-fade-in" id="projects-mainframe">
+      <style>{`
+        /* ===== PROJECTS//CABINET arcade deck — scoped to this view only ===== */
+        .cab-title{font-family:'Pixelmania','Bitcount Prop Double','Chakra Petch',sans-serif;font-size:clamp(1.15rem,3.4vw,2.3rem);color:#fff;line-height:1.4;letter-spacing:.05em;text-transform:uppercase;padding:.35em 0;text-shadow:0 0 14px rgba(255,107,0,.8),0 0 45px rgba(255,107,0,.35),3px 0 0 rgba(255,43,214,.8),-3px 0 0 rgba(0,240,255,.8)}
+        .cab-title:hover{animation:jitter 4s infinite}
+        .cab-dings{font-family:'StarThings','CircleThings2',sans-serif;font-size:22px;letter-spacing:.35em;line-height:1;user-select:none;white-space:nowrap;overflow:hidden}
+        .cab-squigs{font-family:'Slsquiggles',sans-serif;font-size:20px;letter-spacing:.3em;line-height:1;user-select:none;white-space:nowrap;overflow:hidden}
+        .cab-pixlabel{font-family:'Dogica Pixel','Silkscreen',monospace;font-size:8px;letter-spacing:.16em;text-transform:uppercase}
+        .cab-blink{animation:cab-blink 1.1s steps(2,start) infinite}
+        @keyframes cab-blink{0%,55%{opacity:1}56%,100%{opacity:0}}
+        .cab-rainbow{height:4px;background:repeating-linear-gradient(90deg,#FF2BD6 0 44px,#EFFF04 44px 88px,#39FF14 88px 132px,#00F0FF 132px 176px,#9D4DFF 176px 220px);animation:cab-slide 5s linear infinite}
+        @keyframes cab-slide{to{background-position:220px 0}}
+        .cab-ticker{overflow:hidden;white-space:nowrap;border-top:1px dashed rgba(255,107,0,.35);border-bottom:1px dashed rgba(255,107,0,.35);padding:5px 0;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.16em;background:rgba(0,0,0,.5)}
+        .cab-ticker-inner{display:inline-block;animation:cab-tickmove 32s linear infinite}
+        @keyframes cab-tickmove{to{transform:translateX(-50%)}}
+        .cab-cart{position:relative;cursor:crosshair;border:2px solid var(--mc-soft);overflow:hidden;transition:transform .3s ease,box-shadow .3s ease,border-color .3s ease}
+        .cab-cart:hover{border-color:var(--mc);box-shadow:0 0 34px var(--mc-soft),inset 0 0 26px var(--mc-faint)}
+        .cab-tilt-l{transform:rotate(-.5deg)}
+        .cab-tilt-r{transform:rotate(.4deg)}
+        .cab-tilt-l:hover,.cab-tilt-r:hover,.cab-maxed{transform:rotate(0deg)}
+        .cab-dither{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,var(--mc-faint) 1px,transparent 1px);background-size:7px 7px;opacity:.55}
+        .cab-corner{position:absolute;font-family:'Share Tech Mono',monospace;font-size:15px;line-height:1;color:var(--mc);z-index:3;pointer-events:none;text-shadow:0 0 8px var(--mc-soft)}
+        .cab-masthead{position:relative;height:84px;overflow:hidden;border-bottom:2px solid var(--mc-soft)}
+        .cab-masthead-fx{position:absolute;inset:0;background-size:320% 320%;animation:cab-drift 17s ease-in-out infinite alternate,cab-hue 8s ease-in-out infinite alternate}
+        @keyframes cab-drift{from{background-position:0% 0%}to{background-position:100% 100%}}
+        @keyframes cab-hue{from{filter:hue-rotate(-24deg) saturate(1.15)}to{filter:hue-rotate(24deg) saturate(1.3)}}
+        .cab-masthead-dots{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(0,0,0,.5) 1.2px,transparent 1.2px);background-size:5px 5px}
+        .cab-masthead-lines{position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.35) 0 2px,transparent 2px 4px)}
+        .cab-cart-title{position:absolute;left:14px;right:66px;bottom:8px;z-index:2;font-family:'Jersey 10',sans-serif;font-size:26px;line-height:1;letter-spacing:.05em;text-transform:uppercase;color:#fff;text-shadow:2px 0 0 rgba(255,43,214,.9),-2px 0 0 rgba(0,240,255,.9),0 2px 12px rgba(0,0,0,.95)}
+        .cab-cart:hover .cab-cart-title{animation:jitter 4s infinite}
+        .cab-glyph{position:absolute;right:12px;top:50%;margin-top:-24px;z-index:2;font-size:40px;animation:cab-bob 3.6s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(0,0,0,.85))}
+        @keyframes cab-bob{0%,100%{transform:translateY(-4px) rotate(-6deg)}50%{transform:translateY(5px) rotate(7deg)}}
+        .cab-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--mc-soft);background:var(--mc-faint);color:var(--mc);font-family:'Silkscreen',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px}
+        .cab-led{width:6px;height:6px;background:var(--mc);animation:pulse 1.2s infinite;box-shadow:0 0 6px var(--mc)}
+        .cab-eq{display:inline-flex;align-items:flex-end;gap:2px;height:13px}
+        .cab-eq i{width:3px;background:var(--mc);animation:cab-eqb .85s ease-in-out infinite alternate;box-shadow:0 0 5px var(--mc-soft)}
+        .cab-eq i:nth-child(2){animation-delay:.14s}
+        .cab-eq i:nth-child(3){animation-delay:.28s}
+        .cab-eq i:nth-child(4){animation-delay:.42s}
+        .cab-eq i:nth-child(5){animation-delay:.56s}
+        @keyframes cab-eqb{from{height:3px}to{height:13px}}
+        .cab-specs{border:1px dashed var(--mc-soft);background:rgba(0,0,0,.45);padding:9px 11px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;display:flex;flex-direction:column;gap:5px}
+        .cab-boot-btn{display:inline-flex;align-items:center;gap:8px;font-family:'Jersey 10',sans-serif;font-size:19px;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--mc);color:var(--mc);background:rgba(0,0,0,.55);padding:8px 20px;transition:all .15s;cursor:crosshair}
+        .cab-boot-btn:hover{background:var(--mc);color:#000;box-shadow:0 0 24px var(--mc)}
+        .cab-ctl{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--mc-soft);color:var(--mc);background:rgba(0,0,0,.55);font-family:'Silkscreen',monospace;font-size:8px;letter-spacing:.12em;text-transform:uppercase;padding:6px 10px;transition:all .15s;cursor:crosshair}
+        .cab-ctl:hover{background:var(--mc);color:#000;box-shadow:0 0 14px var(--mc)}
+        .cab-sticker{position:absolute;top:10px;right:12px;z-index:4;font-family:'Silkscreen',monospace;font-size:9px;letter-spacing:.1em;background:var(--acid);color:#000;padding:3px 8px;transform:rotate(8deg) scale(.4);opacity:0;transition:all .25s cubic-bezier(.2,1.6,.4,1);pointer-events:none;box-shadow:0 0 14px rgba(239,255,4,.6)}
+        .cab-cart:hover .cab-sticker{opacity:1;transform:rotate(8deg) scale(1)}
+        .cab-scan{position:absolute;left:0;right:0;top:-70px;height:52px;pointer-events:none;background:linear-gradient(to bottom,transparent,var(--mc-soft),transparent);opacity:0;mix-blend-mode:screen;z-index:2}
+        .cab-cart:hover .cab-scan{opacity:.8;animation:cab-sweep 2s linear infinite}
+        @keyframes cab-sweep{to{transform:translateY(900px)}}
+        .cab-framebay-scan{position:absolute;inset:0;pointer-events:none;z-index:30;background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.22) 3px,rgba(0,0,0,.22) 4px);mix-blend-mode:multiply}
+        .cab-console{position:relative;border:2px dashed rgba(239,255,4,.45);background:rgba(10,10,0,.72);overflow:hidden}
+        .cab-console-dither{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(239,255,4,.07) 1px,transparent 1px);background-size:7px 7px}
+        .cab-key-input{background:rgba(0,0,0,.75);border:1px solid rgba(239,255,4,.4);color:#EFFF04;font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.06em;padding:9px 12px;width:100%;outline:none;transition:all .2s}
+        .cab-key-input:focus{border-color:#EFFF04;box-shadow:0 0 16px rgba(239,255,4,.3)}
+        .cab-key-input::placeholder{color:rgba(239,255,4,.35)}
+      `}</style>
+
+      {/* ================= 1. HEADER ================= */}
+      <div className="text-center space-y-4 pt-4 pb-2">
+        <div className="cab-dings text-[#FF2BD6] opacity-90" aria-hidden="true">
+          ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJ
+        </div>
+        <h1 className="cab-title select-none">
           Projects Cabinet
         </h1>
-        <p className="text-sm sm:text-base md:text-lg text-[#EFFF04] font-mono max-w-5xl mx-auto leading-relaxed uppercase tracking-[0.15em] font-bold text-center">
-          Hosting interactive micro-synthesizers, generative linguistic typewriters, and retro emulations.
-        </p>
-      </div>
-
-      {/* 2. Table of Contents: Cute, Pixely Index (NOT in a Box) */}
-      <div className="w-full max-w-5xl mx-auto py-8 space-y-10 flex flex-col items-center justify-center text-center">
-        <div 
-          className="text-zinc-500 uppercase tracking-[0.3em] text-[10px] sm:text-xs font-bold select-none flex items-center justify-center gap-3"
-          style={{ fontFamily: "'Silkscreen', sans-serif" }}
+        <p
+          className="text-[11px] sm:text-xs text-[#FF6B00] max-w-2xl mx-auto uppercase tracking-[0.2em] font-bold"
+          style={{ fontFamily: "'Silkscreen', monospace" }}
         >
-          <span className="text-[#EFFF04] animate-pulse">◄◄</span>
-          <span>Transmission Index // Smooth Scroll Routing</span>
-          <span className="text-[#EFFF04] animate-pulse">►►</span>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full justify-center px-4">
-          {PROJECTS.map((proj, idx) => (
-            <button
-              key={proj.id}
-              onClick={() => scrollToSection(proj.id)}
-              className="group relative flex flex-col items-center justify-between text-center p-6 bg-zinc-950/40 hover:bg-zinc-900/30 border border-zinc-900 hover:border-zinc-700/80 transition-all duration-300 cursor-crosshair h-36 select-none overflow-hidden"
-              style={{ fontFamily: "'Silkscreen', sans-serif" }}
-            >
-              {/* Corner bracket decorations */}
-              <span className="absolute top-1 left-2 text-[10px] text-zinc-800 group-hover:text-zinc-500 transition-colors">┌</span>
-              <span className="absolute top-1 right-2 text-[10px] text-zinc-800 group-hover:text-zinc-500 transition-colors">┐</span>
-              <span className="absolute bottom-1 left-2 text-[10px] text-zinc-800 group-hover:text-zinc-500 transition-colors">└</span>
-              <span className="absolute bottom-1 right-2 text-[10px] text-zinc-800 group-hover:text-zinc-500 transition-colors">┘</span>
-
-              {/* Header Index tag with LED indicator */}
-              <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest mb-1 transition-colors duration-300" style={{ color: proj.accentColor }}>
-                <span className="text-zinc-600 font-normal">#</span>
-                <span>0{idx + 1}</span>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse ml-0.5" style={{ backgroundColor: proj.accentColor, boxShadow: `0 0 8px ${proj.accentColor}` }} />
-              </div>
-              
-              {/* Title label in headline font style */}
-              <div 
-                className="text-sm sm:text-base font-extrabold tracking-widest text-zinc-200 group-hover:text-white group-hover:scale-105 transition-all duration-300 uppercase py-1"
-                style={{ fontFamily: "'Chakra Petch', sans-serif" }}
-              >
-                {proj.title}
-              </div>
-
-              {/* Accent-colored decorative custom divider */}
-              <div className="w-8 h-[2px] transition-all duration-350 bg-zinc-800 group-hover:w-full" style={{ backgroundColor: proj.accentColor }} />
-              
-              {/* Vibe subtitle status */}
-              <div className="mt-2 text-[9px] text-zinc-500 tracking-wider group-hover:text-zinc-300 transition-colors uppercase font-mono">
-                [ {proj.tag} ]
-              </div>
-
-              {/* Underline glow */}
-              <div className="absolute bottom-0 left-0 h-[2px] w-0 transition-all duration-300" style={{ backgroundColor: proj.accentColor }} />
-            </button>
-          ))}
+          Six playable machines · micro-synths · chatbots · haunted terminals
+        </p>
+        <div className="cab-squigs text-[#00F0FF] opacity-80" aria-hidden="true">
+          abcdefghijklmnopqrstuvwxyzabcdefghij
         </div>
       </div>
 
-      {/* 3. The Sequential Stream */}
-      <div className="space-y-72 lg:space-y-[26rem] pt-16">
+      {/* Rainbow strip + prompt row */}
+      <div className="flex flex-col gap-2 mt-4 mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div
+            className="select-none uppercase text-[#EFFF04]"
+            style={{
+              fontFamily: "'Jersey 10', sans-serif",
+              fontSize: 24,
+              letterSpacing: '.1em',
+              textShadow: '0 0 16px rgba(239,255,4,.55), 2px 0 0 rgba(255,43,214,.5), -2px 0 0 rgba(0,240,255,.5)'
+            }}
+          >
+            ▚▚ Insert Coin To Play <span className="cab-blink">█</span>
+          </div>
+          <div className="hidden md:flex items-center gap-2 font-mono text-[9px] text-zinc-500 uppercase tracking-widest">
+            <span className="cab-blink text-[#39FF14]">●</span> 6 CARTRIDGES DETECTED // 0 CORRUPTED
+          </div>
+        </div>
+        <div className="cab-rainbow" />
+      </div>
+
+      {/* Scrolling system chatter */}
+      <div className="cab-ticker text-[#9fdc96] mb-8 select-none" aria-hidden="true">
+        <div className="cab-ticker-inner">
+          <span>✦ 6 MACHINES ONLINE ✦ INSERT COIN TO PLAY ✦ SMART MODES REQUIRE YOUR OWN GEMINI KEY ✦ FREE MODES = DUMB BUT CUTE ✦ KEYS NEVER LEAVE YOUR BROWSER ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE ✦ DIAL-UP SOULS WELCOME&nbsp;</span>
+          <span>✦ 6 MACHINES ONLINE ✦ INSERT COIN TO PLAY ✦ SMART MODES REQUIRE YOUR OWN GEMINI KEY ✦ FREE MODES = DUMB BUT CUTE ✦ KEYS NEVER LEAVE YOUR BROWSER ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE ✦ DIAL-UP SOULS WELCOME&nbsp;</span>
+        </div>
+      </div>
+
+      {/* ================= 2. BYOK COIN-SLOT CONSOLE ================= */}
+      <div className="cab-console rounded-none p-5 sm:p-6 mb-10">
+        <div className="cab-console-dither" />
+        <span className="cab-corner" style={{ top: 3, left: 6, color: '#EFFF04', textShadow: '0 0 8px rgba(239,255,4,.4)' }}>╔</span>
+        <span className="cab-corner" style={{ top: 3, right: 6, color: '#EFFF04', textShadow: '0 0 8px rgba(239,255,4,.4)' }}>╗</span>
+        <span className="cab-corner" style={{ bottom: 4, left: 6, color: '#EFFF04', textShadow: '0 0 8px rgba(239,255,4,.4)' }}>╚</span>
+        <span className="cab-corner" style={{ bottom: 4, right: 6, color: '#EFFF04', textShadow: '0 0 8px rgba(239,255,4,.4)' }}>╝</span>
+
+        <div className="relative space-y-4">
+          {/* Console header */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#EFFF04]/25 pb-3">
+            <div className="flex items-center gap-2 text-[#EFFF04] font-bold uppercase tracking-[0.18em] text-xs" style={{ fontFamily: "'Silkscreen', monospace" }}>
+              <KeyRound className="w-4 h-4" />
+              <span>COIN_SLOT // BYOK_TERMINAL</span>
+            </div>
+            <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest">
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: geminiKey ? '#39FF14' : '#FF2B2B',
+                  boxShadow: `0 0 8px ${geminiKey ? '#39FF14' : '#FF2B2B'}`
+                }}
+              />
+              <span style={{ color: geminiKey ? '#39FF14' : '#FF6B6B' }}>
+                KEY_SLOT: {geminiKey ? 'LOADED ✓' : 'EMPTY'}
+              </span>
+            </div>
+          </div>
+
+          {/* The disclaimer — small type, straight from the operator */}
+          <p className="font-mono text-[11px] leading-relaxed text-zinc-300 max-w-3xl">
+            <span className="text-[#EFFF04] font-bold">LOOK GUYS —</span> you can totally play with my projects. for free. right here. BUT: the smart
+            ones talk to real AI models, and real AI models cost real money, so without a key they run in{' '}
+            <span className="text-[#FF2BD6]">dumb/demo mode</span>. if you want to play with the{' '}
+            <span className="text-[#39FF14] font-bold">REAL, SMART versions</span>, you've gotta bring your own Gemini API key — box provided below.
+            i simply cannot afford to pay for everyone's cosmic playtime. sorry. <span className="text-[#FF2BD6]">♥</span>
+          </p>
+
+          {/* Key input row */}
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch">
+            <div className="relative flex-grow">
+              <input
+                type={showKey ? 'text' : 'password'}
+                value={keyDraft}
+                onChange={(e) => setKeyDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveKey(); }}
+                placeholder={geminiKey ? '·· key loaded — paste a new one to replace ··' : 'PASTE_YOUR_GEMINI_API_KEY_HERE'}
+                className="cab-key-input pr-10"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button
+                onClick={() => { setShowKey(!showKey); playChime('sine', 1.1); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[#EFFF04]/60 hover:text-[#EFFF04] transition-colors"
+                title={showKey ? 'Hide key' : 'Show key'}
+              >
+                {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveKey}
+                disabled={!keyDraft.trim()}
+                className="cab-ctl disabled:opacity-30 disabled:pointer-events-none"
+                style={{ '--mc': '#39FF14', '--mc-soft': 'rgba(57,255,20,.5)' } as React.CSSProperties}
+              >
+                <KeyRound className="w-3.5 h-3.5" /> INSERT
+              </button>
+              <button
+                onClick={handleCopyKey}
+                disabled={!geminiKey}
+                className="cab-ctl disabled:opacity-30 disabled:pointer-events-none"
+                style={{ '--mc': '#00F0FF', '--mc-soft': 'rgba(0,240,255,.5)' } as React.CSSProperties}
+              >
+                {keyCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />} {keyCopied ? 'COPIED' : 'COPY'}
+              </button>
+              <button
+                onClick={handleClearKey}
+                disabled={!geminiKey}
+                className="cab-ctl disabled:opacity-30 disabled:pointer-events-none"
+                style={{ '--mc': '#FF2B2B', '--mc-soft': 'rgba(255,43,43,.5)' } as React.CSSProperties}
+              >
+                <Trash2 className="w-3.5 h-3.5" /> EJECT
+              </button>
+            </div>
+          </div>
+
+          <p className="font-mono text-[9px] text-zinc-500 uppercase tracking-wider">
+            ⚿ your key never leaves your browser — stored in localStorage + handed straight to the machine. i never see it. smart cartridges are marked with 🔑 below.
+          </p>
+        </div>
+      </div>
+
+      {/* ================= 3. GLOBAL CONTROL STRIP ================= */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6 font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+        <div className="flex items-center gap-2">
+          <span className="text-[#FF6B00] font-bold">📼 CABINET_FLOOR:</span>
+          <span>2-UP ARCADE GRID // SCROLL FOR MORE MACHINES</span>
+        </div>
+        <button
+          onClick={() => { playChime('triangle', 1.1); setCrtFilter(!crtFilter); }}
+          className="cab-ctl"
+          style={{ '--mc': crtFilter ? '#EFFF04' : '#666', '--mc-soft': crtFilter ? 'rgba(239,255,4,.5)' : 'rgba(120,120,120,.4)' } as React.CSSProperties}
+        >
+          <Terminal className="w-3.5 h-3.5" /> SCANLINES: {crtFilter ? 'ON' : 'OFF'}
+        </button>
+      </div>
+
+      {/* ================= 4. CARTRIDGE GRID — 2 UP ================= */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-7 items-start">
         {PROJECTS.map((proj, idx) => {
           const iframeKey = refreshKeys[proj.id] || 0;
+          const isLoaded = !!loadedProjects[proj.id];
+          const isMaxed = maximized === proj.id;
+          const smartArmed = !!(proj.aiPowered && geminiKey);
           return (
-            <div 
-              key={proj.id} 
-              id={`section-${proj.id}`} 
-              className="space-y-20 scroll-mt-24 pt-24 pb-12"
+            <div
+              key={proj.id}
+              id={`cart-${proj.id}`}
+              className={`group cab-cart scroll-mt-24 ${isMaxed ? 'md:col-span-2 cab-maxed' : idx % 2 === 0 ? 'cab-tilt-l' : 'cab-tilt-r'}`}
+              style={{
+                '--mc': proj.accentColor,
+                '--mc-soft': proj.soft,
+                '--mc-faint': proj.faint,
+                background: proj.bg
+              } as React.CSSProperties}
             >
-              
-              {/* Project Header Info: Breathable and Minimalist */}
-              <div className="space-y-6 border-b border-zinc-900/80 pb-8">
-                <div className="flex flex-wrap justify-between items-center gap-3 text-xs font-mono">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: proj.accentColor }} />
-                    <span className="text-zinc-500 uppercase tracking-widest font-semibold">SYSTEM_NODE // 0{idx + 1}</span>
-                    <span className="text-zinc-800">|</span>
-                    <span className="font-bold tracking-widest uppercase" style={{ color: proj.accentColor }}>{proj.tag}</span>
-                  </div>
-                  {proj.liveUrl && (
-                    <div className="flex items-center gap-3 text-zinc-500">
-                      <span className="hidden sm:inline font-mono text-[10px] tracking-tight">{proj.liveUrl}</span>
-                      <button 
-                        onClick={() => handleRefreshIframe(proj.id)}
-                        className="hover:text-white p-1.5 rounded hover:bg-zinc-900/60 transition-all"
-                        title="Re-Initialize Frame"
-                      >
-                        <RotateCcw className="w-4 h-4 animate-spin-hover" style={{ color: proj.accentColor }} />
-                      </button>
-                    </div>
-                  )}
-                </div>
+              <div className="cab-dither" />
+              <span className="cab-corner" style={{ top: 3, left: 6 }}>╔</span>
+              <span className="cab-corner" style={{ top: 3, right: 6 }}>╗</span>
+              <span className="cab-corner" style={{ bottom: 4, left: 6 }}>╚</span>
+              <span className="cab-corner" style={{ bottom: 4, right: 6 }}>╝</span>
 
-                <div className="space-y-6">
-                  <h2 
-                    className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold uppercase tracking-widest text-white select-all leading-none"
-                    style={{
-                      fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
-                      textShadow: `0 0 18px ${proj.accentColor}50, 0 0 50px rgba(255,255,255,0.1)`
-                    }}
-                  >
-                    {proj.title}
-                  </h2>
-                  <p 
-                    className="text-base sm:text-lg md:text-xl lg:text-2xl text-zinc-100 font-mono tracking-wider leading-relaxed max-w-5xl uppercase font-bold"
-                    style={{ textShadow: '0 0 10px rgba(255, 255, 255, 0.15)' }}
-                  >
-                    {proj.subtitle}
-                  </p>
-                </div>
+              {/* Animated psychedelic masthead */}
+              <div className="cab-masthead">
+                <div className="cab-masthead-fx" style={{ backgroundImage: proj.grad }} />
+                <div className="cab-masthead-dots" />
+                <div className="cab-masthead-lines" />
+                <span className="cab-glyph select-none">
+                  <span className="inline-block transition-transform duration-700 group-hover:rotate-[360deg] group-hover:scale-125">{proj.glyph}</span>
+                </span>
+                <h2 className="cab-cart-title">{proj.title}</h2>
               </div>
 
-              {/* Live Interactive Node Container (Downsized to fit desktop screens comfortably) */}
-              {proj.liveUrl ? (
-                loadedProjects[proj.id] ? (
-                  <div className="relative bg-[#010101] overflow-hidden aspect-[16/9] min-h-[280px] md:min-h-[420px] w-full max-w-4xl mx-auto border border-zinc-900 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.6)]">
-                    {crtFilter && (
-                       <div className="absolute inset-0 pointer-events-none z-30 bg-scanlines opacity-[0.14]" />
+              <div className="relative p-4 sm:p-5 space-y-4">
+                {/* Status chips row */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="cab-chip"><i className="cab-led" />{proj.tag}</span>
+                    {proj.aiPowered && (
+                      <span
+                        className="cab-chip"
+                        style={{
+                          '--mc': smartArmed ? '#39FF14' : '#EFFF04',
+                          '--mc-soft': smartArmed ? 'rgba(57,255,20,.5)' : 'rgba(239,255,4,.5)',
+                          '--mc-faint': smartArmed ? 'rgba(57,255,20,.12)' : 'rgba(239,255,4,.12)'
+                        } as React.CSSProperties}
+                      >
+                        {smartArmed ? '🧠 SMART_MODE: ARMED' : '🔑 KEY_REQ // SMART_MODE'}
+                      </span>
                     )}
+                  </div>
+                  <span className="cab-eq" aria-hidden="true"><i /><i /><i /><i /><i /></span>
+                </div>
+
+                {/* Subtitle + description */}
+                <div className="space-y-1.5">
+                  <div className="text-xs font-bold uppercase tracking-widest" style={{ color: proj.accentColor, fontFamily: "'Chakra Petch', sans-serif" }}>
+                    {proj.subtitle}
+                  </div>
+                  <p className="text-zinc-400 font-mono text-[11px] leading-relaxed">
+                    {proj.description}
+                  </p>
+                </div>
+
+                {/* Frame bay */}
+                {isLoaded ? (
+                  <div className={`relative bg-black border-2 overflow-hidden ${isMaxed ? 'aspect-[16/9] min-h-[420px]' : 'aspect-video'}`} style={{ borderColor: proj.soft }}>
+                    {crtFilter && <div className="cab-framebay-scan" />}
                     <iframe
-                      key={`${proj.id}-${iframeKey}`}
-                      src={proj.liveUrl}
+                      key={`${proj.id}-${iframeKey}-${smartArmed ? 'smart' : 'dumb'}`}
+                      src={buildUrl(proj)}
                       title={`${proj.title} Live Node`}
-                      className="w-full h-full border-0 bg-black z-10"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      className="w-full h-full border-0 bg-black relative z-10"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; microphone"
                       sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                     />
                   </div>
                 ) : (
-                  <div className="relative bg-black/95 overflow-hidden aspect-[16/9] min-h-[280px] md:min-h-[420px] w-full max-w-4xl mx-auto border border-zinc-900 rounded-xl flex flex-col items-center justify-center p-8 space-y-6 select-none group">
-                    <div className="absolute inset-0 bg-repeat bg-[radial-gradient(circle,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-                    <div className="crt-scanlines opacity-10" />
-                    
-                    <div className="z-10 text-center space-y-6 max-w-lg">
-                      <div className="inline-block border border-zinc-800 bg-zinc-950/80 px-4 py-2 font-mono text-[11px] tracking-[0.2em] text-zinc-500 uppercase rounded">
-                        [ NODE_STATUS: STANDBY // CONNECTION_IDLE ]
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <h3 className="text-2xl font-bold uppercase text-white tracking-widest font-sans" style={{ fontFamily: "'Chakra Petch', sans-serif" }}>
-                          Initialize {proj.title} Node
-                        </h3>
-                        <p className="text-zinc-500 text-xs font-mono uppercase tracking-wider leading-relaxed">
-                          Clicking below will boot this interactive iframe capsule, connect the Web Audio matrix, and run GLSL render passes.
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={() => {
-                          playChime('square', 1.2);
-                          setLoadedProjects(prev => ({ ...prev, [proj.id]: true }));
-                        }}
-                        className="px-8 py-4 bg-zinc-950 border font-mono text-xs font-black tracking-widest transition-all duration-300 shadow-[0_0_15px_rgba(255,255,255,0.05)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] rounded cursor-crosshair uppercase"
-                        style={{ borderColor: proj.accentColor, color: proj.accentColor }}
-                      >
-                        ⚡ BOOT INTERACTIVE TRANSMISSION
-                      </button>
+                  <div className="relative bg-black/80 border-2 border-dashed aspect-video overflow-hidden flex flex-col items-center justify-center gap-4 select-none p-4" style={{ borderColor: proj.soft }}>
+                    <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[size:22px_22px] pointer-events-none" />
+                    <div className="font-mono text-[9px] tracking-[0.25em] text-zinc-600 uppercase">
+                      [ NODE_STATUS: STANDBY // {smartArmed ? 'SMART_FUEL: LOADED' : proj.aiPowered ? 'RUNNING ON FUMES' : 'NO_KEY_NEEDED'} ]
+                    </div>
+                    <button onClick={() => handleBoot(proj.id)} className="cab-boot-btn">
+                      ⚡ INSERT COIN // BOOT
+                    </button>
+                    <div className="font-mono text-[9px] text-zinc-600 uppercase tracking-wider text-center">
+                      boots the live iframe + web audio + GLSL passes
                     </div>
                   </div>
-                )
-              ) : (
-                /* Glitch Cookbook Standalone Code Console */
-                <div className="bg-zinc-950/20 border border-zinc-900/60 rounded-2xl p-8 font-mono text-xs text-zinc-400 space-y-6">
-                  <div className="flex items-center justify-between border-b border-zinc-900 pb-4">
-                    <span className="text-white font-extrabold uppercase text-sm tracking-widest flex items-center gap-2">
-                      <Cpu className="w-4 h-4 text-[#00F0FF]" />
-                      GLITCH COOKBOOK REPOSITORY TERMINAL
-                    </span>
-                    <span className="text-[10px] bg-[#00F0FF]/10 text-[#00F0FF] px-2 py-0.5 rounded font-bold uppercase">
-                      STANDALONE REPO
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <p className="leading-relaxed uppercase">
-                      This package contains raw code setups, CRT shader pipelines, canvas dither loops, and modular glitch formulas. It runs as a standalone dev workspace.
-                    </p>
-                    
-                    <div className="space-y-2 bg-black/50 p-6 rounded-xl border border-zinc-900">
-                      <div className="flex items-center justify-between text-[10px] text-zinc-600 border-b border-zinc-950 pb-2 mb-2">
-                        <span>SHELL_TERMINAL</span>
-                        <span>BASH</span>
-                      </div>
-                      <pre className="text-[11px] text-[#00F0FF] font-mono leading-relaxed select-all overflow-x-auto whitespace-pre-wrap">
-                        {`# Clone the repository
-git clone https://github.com/merrypranxter/Glitch-Cookbook.git
- 
-# Navigate to workspace
-cd Glitch-Cookbook
- 
-# Install visual compiler packages
-npm install
- 
-# Start local server node
-npm run dev`}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
-              )}
+                )}
 
-              {/* Stage Controls: Launches and filters */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center pt-2">
-                {proj.liveUrl && (
+                {/* Per-cartridge controls */}
+                <div className="flex flex-wrap gap-2">
+                  {isLoaded && (
+                    <button onClick={() => handleRefreshIframe(proj.id)} className="cab-ctl" title="Re-initialize frame">
+                      <RotateCcw className="w-3.5 h-3.5" /> REBOOT
+                    </button>
+                  )}
+                  <button onClick={() => handleMaximize(proj.id)} className="cab-ctl hidden md:inline-flex" title={isMaxed ? 'Shrink cabinet' : 'Full-width cabinet'}>
+                    {isMaxed ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />} {isMaxed ? 'SHRINK' : 'MAXIMIZE'}
+                  </button>
                   <a
-                    href={proj.liveUrl}
+                    href={buildUrl(proj)}
                     target="_blank"
                     rel="noreferrer"
                     onClick={() => playChime('sine', 1.3)}
-                    className="flex-grow text-center bg-zinc-950 hover:bg-zinc-900 text-[#EFFF04] border border-zinc-800 hover:border-[#EFFF04]/50 font-bold font-mono text-xs py-3 px-6 flex items-center justify-center gap-2 transition-all cursor-crosshair uppercase tracking-widest rounded-lg"
+                    className="cab-ctl"
                   >
-                    <ExternalLink className="w-4 h-4" />
-                    <span>Launch Transmission in New Tab 🚀</span>
+                    <ExternalLink className="w-3.5 h-3.5" /> NEW TAB 🚀
                   </a>
-                )}
-
-                {proj.liveUrl && (
-                  <button
-                    onClick={() => {
-                      playChime('triangle', 1.1);
-                      setCrtFilter(!crtFilter);
-                    }}
-                    className={`px-6 py-3 font-mono text-xs font-bold border rounded-lg transition-all flex items-center justify-center gap-2 cursor-crosshair uppercase ${
-                      crtFilter 
-                        ? 'bg-zinc-950 text-[#EFFF04] border-[#EFFF04]/40 hover:border-[#EFFF04]' 
-                        : 'bg-black text-zinc-500 border-zinc-900 hover:text-white'
-                    }`}
-                  >
-                    <Terminal className="w-4 h-4" />
-                    <span>Scanline Grid: {crtFilter ? 'ON' : 'OFF'}</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Info Specs & Diagnostics Row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start border-t border-zinc-900/60 pt-10">
-                
-                {/* Specs */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-zinc-400 font-mono text-xs uppercase tracking-wider border-b border-zinc-900 pb-2">
-                    <Cpu className="w-4 h-4" style={{ color: proj.accentColor }} />
-                    <span>Technical Architecture Specs</span>
-                  </div>
-                  <div className="space-y-4 pt-2">
-                    {proj.specs.map((spec) => (
-                      <div key={spec.num} className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs font-mono font-bold" style={{ color: proj.accentColor }}>
-                          <span>{spec.num}</span>
-                          <span className="uppercase text-white text-xs">{spec.name}</span>
-                        </div>
-                        <p className="text-[11px] text-zinc-400 font-mono leading-relaxed pl-6 uppercase">
-                          {spec.desc}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                  {proj.repoUrl && (
+                    <a
+                      href={proj.repoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => playChime('square', 0.9)}
+                      className="cab-ctl"
+                    >
+                      <Github className="w-3.5 h-3.5" /> SOURCE
+                    </a>
+                  )}
                 </div>
 
-                {/* Coordinates & Diagnostics */}
-                <div className="space-y-6 font-mono text-xs text-zinc-500">
-                  <div className="bg-zinc-950/20 border border-zinc-900/60 p-5 rounded-xl space-y-3">
-                    <div className="flex items-center justify-between uppercase border-b border-zinc-900 pb-2 font-bold text-zinc-400">
-                      <span>Source Coord</span>
-                      <span className="text-white">RECEPTOR</span>
+                {/* Compact spec telemetry */}
+                <div className="cab-specs">
+                  {proj.specs.map((spec) => (
+                    <div key={spec.num} className="flex justify-between gap-3" title={spec.desc}>
+                      <span className="text-zinc-500 shrink-0">{spec.num}</span>
+                      <span className="text-right" style={{ color: 'var(--mc)' }}>{spec.name}</span>
                     </div>
-                    <p className="text-[11px] text-zinc-400 leading-relaxed uppercase">
-                      {proj.repoUrl 
-                        ? 'Inspect compiled sources, retro shader packages, and local web synthesizer hooks directly on the GitHub directory.'
-                        : 'This linguistic synthesizer works over cloud nodes and operates autonomously in full neural pipeline space.'
-                      }
-                    </p>
-                    {proj.repoUrl && (
-                      <a
-                        href={proj.repoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={() => playChime('square', 0.9)}
-                        className="w-full text-center border border-zinc-800 hover:border-white hover:bg-white/5 text-zinc-300 hover:text-white py-2 px-3 flex items-center justify-center gap-1.5 transition-all rounded cursor-crosshair uppercase font-bold"
-                      >
-                        <Github className="w-3.5 h-3.5" />
-                        <span>Open Source Repo</span>
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Tiny Audio Console per node */}
-                  <div className="bg-zinc-950/20 border border-zinc-900/60 p-5 rounded-xl space-y-3">
-                    <div className="flex items-center gap-2 text-zinc-400 font-bold uppercase border-b border-zinc-900 pb-2">
-                      <Volume2 className="w-4 h-4 text-[#39FF14]" />
-                      <span>Node Audio Signal Diagnostic</span>
-                    </div>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {([
-                        { label: 'SINE', t: 'sine', p: 1.0 },
-                        { label: 'TRI', t: 'triangle', p: 1.3 },
-                        { label: 'SAW', t: 'sawtooth', p: 0.8 },
-                        { label: 'SQR', t: 'square', p: 1.1 }
-                      ] as const).map((opt) => (
-                        <button
-                          key={opt.label}
-                          onClick={() => playChime(opt.t, opt.p * (idx * 0.2 + 0.8))}
-                          className="bg-black hover:bg-[#39FF14]/5 border border-zinc-900 hover:border-[#39FF14] text-[9px] font-bold py-1.5 text-zinc-500 hover:text-[#39FF14] transition-all uppercase rounded font-mono"
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
-              </div>
-
-              {/* Navigation Links Under the App */}
-              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-[11px] font-mono text-zinc-500 pt-6 border-t border-zinc-900/40">
-                <button 
-                  onClick={scrollToTop}
-                  className="hover:text-white hover:underline transition-colors py-1.5 px-3 uppercase tracking-widest font-bold"
-                >
-                  ▲ RETURN TO INDEX
-                </button>
-                {idx > 0 && (
-                  <button 
-                    onClick={() => scrollToSection(PROJECTS[idx - 1].id)}
-                    className="hover:text-white hover:underline transition-colors py-1.5 px-3 uppercase tracking-widest font-bold"
-                  >
-                    ◀ PREV CHANNEL
-                  </button>
-                )}
-                {idx < PROJECTS.length - 1 && (
-                  <button 
-                    onClick={() => scrollToSection(PROJECTS[idx + 1].id)}
-                    className="hover:text-white hover:underline transition-colors py-1.5 px-3 uppercase tracking-widest font-bold"
-                  >
-                    NEXT CHANNEL ▶
-                  </button>
-                )}
-              </div>
-
-              {/* Decorative Vibe Divider between stream entries */}
-              {idx < PROJECTS.length - 1 && (
-                <div className="w-full flex flex-col items-center justify-center py-36 lg:py-52 select-none">
-                  {/* Vertical coordinate ticks */}
-                  <div className="h-16 w-[1px] bg-gradient-to-b from-zinc-800/50 via-zinc-700/20 to-transparent mb-8" />
-                  
-                  {/* Glowing ASCII symbol ribbon */}
-                  <div 
-                    className="text-white text-xs sm:text-sm md:text-base tracking-[0.25em] opacity-80 max-w-5xl px-4 select-none leading-none uppercase font-extrabold text-center select-none"
-                    style={{
-                      fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
-                      textShadow: '0 0 12px rgba(255, 255, 255, 0.7), 0 0 35px rgba(255, 255, 255, 0.2)'
-                    }}
-                  >
-                    ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
-                  </div>
-                  
-                  <div className="flex items-center gap-6 my-5 font-mono text-[10px] text-zinc-500 tracking-[0.35em] uppercase">
-                    <span className="text-zinc-700 font-bold select-none">✦</span>
-                    <span className="animate-pulse">END TRANSMISSION_0{idx + 1} // LOADING NEXT NODE</span>
-                    <span className="text-zinc-700 font-bold select-none">✦</span>
-                  </div>
-
-                  <div 
-                    className="text-white text-xs sm:text-sm md:text-base tracking-[0.25em] opacity-80 max-w-5xl px-4 select-none leading-none uppercase font-extrabold text-center select-none"
-                    style={{
-                      fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
-                      textShadow: '0 0 12px rgba(255, 255, 255, 0.7), 0 0 35px rgba(255, 255, 255, 0.2)'
-                    }}
-                  >
-                    ※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※※
-                  </div>
-
-                  <div className="h-16 w-[1px] bg-gradient-to-t from-zinc-800/50 via-zinc-700/20 to-transparent mt-8" />
+                {/* Footer stream line */}
+                <div className="flex items-center justify-between border-t pt-3" style={{ borderColor: 'var(--mc-faint)' }}>
+                  <span className="font-mono text-[10px] tracking-wider" style={{ color: 'var(--mc)' }}>
+                    <span className="cab-blink">▮</span> MACHINE_0{idx + 1}
+                  </span>
+                  <span className="cab-pixlabel" style={{ color: 'var(--mc)' }}>
+                    {proj.aiPowered ? (smartArmed ? 'BRAIN: ONLINE' : 'BRAIN: BYOK') : 'BRAIN: NOT_REQUIRED'}
+                  </span>
                 </div>
-              )}
+              </div>
 
+              <span className="cab-sticker">{isLoaded ? 'PLAY ME!!' : 'BOOT ME!!'}</span>
+              <div className="cab-scan" />
             </div>
           );
         })}
       </div>
+
+      {/* ================= 5. FOOTER ================= */}
+      <div className="mt-12 text-center space-y-6 select-none">
+        <div className="cab-dings text-[#9D4DFF] opacity-80" aria-hidden="true">
+          KLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRST
+        </div>
+        <div className="font-mono text-[10px] tracking-[.3em] text-zinc-600 uppercase">
+          ── ✦ END_OF_CABINET // GO MAKE SOMETHING WEIRD ✦ ──
+        </div>
+      </div>
     </div>
-  </div>
   );
 }
-
-
