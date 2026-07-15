@@ -1,21 +1,34 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Film, 
-  Image as ImageIcon, 
-  Bot, 
-  Sparkles, 
-  RefreshCw, 
-  Play, 
-  Pause, 
-  ExternalLink, 
-  ChevronRight, 
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  Film,
+  Image as ImageIcon,
+  Bot,
+  Sparkles,
+  RefreshCw,
+  Play,
+  ExternalLink,
+  ChevronRight,
   ChevronLeft,
-  Maximize2, 
-  Monitor, 
-  Cpu, 
-  Trash2,
-  ListFilter
+  Cpu,
+  ListFilter,
+  Orbit,
+  Wand2
 } from 'lucide-react';
+
+type SlopCategory = 'ai' | 'non-ai';
+type MediaType = 'video' | 'image';
+type DisplayMode = 'auto' | 'portrait' | 'landscape' | 'square' | 'contain';
+type TreatmentMode = 'crt' | 'dither' | 'bloom' | 'raw';
+type GalleryMode = 'reel' | 'constellation';
+
+interface BucketSource {
+  id: SlopCategory;
+  label: string;
+  bucket: string;
+  prefix?: string;
+  tag: string;
+  accent: string;
+}
 
 interface BucketItem {
   id: string;
@@ -24,7 +37,12 @@ interface BucketItem {
   desc: string;
   size: string;
   tag: string;
-  type: 'video' | 'image';
+  type: MediaType;
+  bucket: string;
+  sourceCategory: SlopCategory;
+  sourceLabel: string;
+  contentType?: string;
+  updated?: string;
 }
 
 interface AiSlopProps {
@@ -39,32 +57,79 @@ interface AiSlopProps {
   aiLogs: string[];
 }
 
+const BUCKET_SOURCES: BucketSource[] = [
+  {
+    id: 'ai',
+    label: 'AI_SLOP',
+    bucket: 'astraltrash_aislop',
+    tag: 'AI_SLOP',
+    accent: '#00F0FF'
+  },
+  {
+    id: 'non-ai',
+    label: 'NON_AI ART',
+    bucket: 'astraltrash_other',
+    prefix: 'art/non_ai/',
+    tag: 'HAND_SIGNAL',
+    accent: '#FF2BD6'
+  }
+];
+
+const MEDIA_EXTENSIONS: Record<MediaType, RegExp> = {
+  video: /\.(mov|mp4|m4v|avi|mpeg|mpg|wmv|webm)$/i,
+  image: /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)$/i
+};
+
+const FALLBACK_ITEMS: BucketItem[] = [
+  {
+    id: 'fallback-ai-video',
+    title: 'Cybernetic Over Fitted Debris',
+    fileName: 'cybernetic_debris_916.mp4',
+    desc: 'Fallback hallucination tape. The cloud signal did not arrive, so the deck booted a synthetic ghost.',
+    size: '1.4 MB',
+    tag: 'AI_SLOP',
+    type: 'video',
+    bucket: 'astraltrash_aislop',
+    sourceCategory: 'ai',
+    sourceLabel: 'AI_SLOP'
+  },
+  {
+    id: 'fallback-non-ai-image',
+    title: 'Acrylic Texture Dither Scan',
+    fileName: 'art/non_ai/acrylic_scan_916.png',
+    desc: 'Fallback hand-signal placeholder for the physical/procedural side of the archive.',
+    size: '650 KB',
+    tag: 'HAND_SIGNAL',
+    type: 'image',
+    bucket: 'astraltrash_other',
+    sourceCategory: 'non-ai',
+    sourceLabel: 'NON_AI ART'
+  }
+];
+
 export default function AiSlop({
   playChime,
   rawPrompt,
   setRawPrompt,
   corruptedPrompt,
-  setCorruptedPrompt,
   isCorrupting,
   handleCorruptPrompt,
   slopMetric,
   aiLogs
 }: AiSlopProps) {
-  const bucketName = 'astraltrash_aislop';
   const [items, setItems] = useState<BucketItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<BucketItem | null>(null);
-  const [activeGroup, setActiveGroup] = useState<'video' | 'image'>('video');
-  const [categoryFilter, setCategoryFilter] = useState<'ai' | 'non-ai'>('ai');
+  const [activeGroup, setActiveGroup] = useState<MediaType>('image');
+  const [categoryFilter, setCategoryFilter] = useState<SlopCategory>('ai');
   const [isScanning, setIsScanning] = useState<boolean>(false);
-  
-  // Customization States
-  const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9' | '1:1' | '4:3'>('9:16');
-  const [resolution, setResolution] = useState<'480p' | '720p' | '1080p' | 'raw'>('720p');
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('auto');
+  const [treatmentMode, setTreatmentMode] = useState<TreatmentMode>('crt');
+  const [galleryMode, setGalleryMode] = useState<GalleryMode>('reel');
+  const [isPromptOpen, setIsPromptOpen] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-
-  // Terminal & Logs state
+  const [detectedAspect, setDetectedAspect] = useState<DisplayMode>('portrait');
   const [terminalLogs, setTerminalLogs] = useState<string[]>([
-    'TENSORTRANTRUM_V1 // KERNEL RUNTIME: ACTIVE',
+    'TENSORTRANTRUM_V2 // DUAL_BUCKET RUNTIME: ACTIVE',
     'SLOP_MONITOR: Listening for GCS cloud signal...',
     'READY FOR SYNAPSES TRANSFER'
   ]);
@@ -72,307 +137,174 @@ export default function AiSlop({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const carouselRef = useRef<HTMLDivElement | null>(null);
 
-  const isItemAi = (item: BucketItem): boolean => {
-    const lowerName = item.fileName.toLowerCase();
-    const lowerDesc = item.desc ? item.desc.toLowerCase() : '';
-    const lowerTitle = item.title ? item.title.toLowerCase() : '';
-    
-    if (
-      lowerName.includes('non-ai') || lowerName.includes('non_ai') || lowerName.includes('nonai') ||
-      lowerName.includes('analog') || lowerName.includes('human') || lowerName.includes('physical') ||
-      lowerName.includes('camera') || lowerName.includes('paint') || lowerName.includes('hand') ||
-      lowerName.includes('manual') || lowerName.includes('procedural') || lowerName.includes('glsl') ||
-      lowerDesc.includes('non-ai') || lowerDesc.includes('non_ai') || lowerDesc.includes('human') ||
-      lowerDesc.includes('analog') || lowerDesc.includes('physical') || lowerDesc.includes('camera') ||
-      lowerDesc.includes('paint') || lowerDesc.includes('hand') || lowerDesc.includes('manual') ||
-      lowerDesc.includes('procedural') || lowerTitle.includes('analog') || lowerTitle.includes('human') ||
-      lowerTitle.includes('paint') || lowerTitle.includes('hand') || lowerTitle.includes('non-ai')
-    ) {
-      return false;
-    }
-    return true;
-  };
-
-  const scrollCarousel = (direction: 'left' | 'right') => {
-    if (carouselRef.current) {
-      const scrollAmount = 400;
-      carouselRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  };
-
   const addLog = (msg: string) => {
     setTerminalLogs(prev => [...prev.slice(-12), `[${new Date().toLocaleTimeString()}] ${msg}`]);
   };
 
-  const getResolvedUrl = (fileName: string) => {
-    return `https://storage.googleapis.com/${bucketName}/${fileName}`;
+  const formatSize = (bytes: number) => {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
+    return bytes > 1024 * 1024
+      ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(bytes / 1024))} KB`;
   };
 
-  // Helper to extract clean titles from filenames
   const formatSlopTitle = (fileName: string): string => {
-    const withoutExt = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
+    const cleanName = decodeURIComponent(fileName.split('/').pop() || fileName);
+    const withoutExt = cleanName.substring(0, cleanName.lastIndexOf('.')) || cleanName;
     return withoutExt
-      .replace(/[\s_\(\)-]+/g, ' ')
+      .replace(/[\s_().-]+/g, ' ')
       .trim()
       .replace(/\b\w/g, c => c.toUpperCase());
   };
 
-  // Scan GCS bucket on mount
+  const getMediaType = (fileName: string, contentType = ''): MediaType | null => {
+    if (contentType.startsWith('video/')) return 'video';
+    if (contentType.startsWith('image/')) return 'image';
+    if (MEDIA_EXTENSIONS.video.test(fileName)) return 'video';
+    if (MEDIA_EXTENSIONS.image.test(fileName)) return 'image';
+    return null;
+  };
+
+  const getResolvedUrl = (item: BucketItem) => {
+    return `https://storage.googleapis.com/${item.bucket}/${encodeURI(item.fileName).replace(/#/g, '%23')}`;
+  };
+
+  const listSourceObjects = async (source: BucketSource, signal: AbortSignal) => {
+    const found: BucketItem[] = [];
+    let pageToken = '';
+    let page = 0;
+
+    do {
+      const params = new URLSearchParams({ maxResults: '1000' });
+      if (source.prefix) params.set('prefix', source.prefix);
+      if (pageToken) params.set('pageToken', pageToken);
+
+      const response = await fetch(`https://storage.googleapis.com/storage/v1/b/${source.bucket}/o?${params}`, { signal });
+      if (!response.ok) throw new Error(`${source.bucket} returned HTTP ${response.status}`);
+      const data = await response.json();
+      page += 1;
+
+      (data.items || []).forEach((object: any, idx: number) => {
+        const fileName = object.name;
+        if (!fileName || fileName.endsWith('/')) return;
+        const type = getMediaType(fileName, object.contentType || '');
+        if (!type) return;
+
+        const title = formatSlopTitle(fileName);
+        found.push({
+          id: `${source.id}-${page}-${idx}-${fileName}`,
+          title,
+          fileName,
+          desc: source.id === 'ai'
+            ? `Machine-dream residue pulled live from gs://${source.bucket}/${fileName}.`
+            : `Handmade/procedural artifact pulled live from gs://${source.bucket}/${fileName}.`,
+          size: formatSize(parseInt(object.size || '0', 10)),
+          tag: type === 'video' ? `${source.tag}_TAPE` : `${source.tag}_STILL`,
+          type,
+          bucket: source.bucket,
+          sourceCategory: source.id,
+          sourceLabel: source.label,
+          contentType: object.contentType,
+          updated: object.updated
+        });
+      });
+
+      pageToken = data.nextPageToken || '';
+    } while (pageToken && !signal.aborted);
+
+    return found;
+  };
+
   useEffect(() => {
-    let active = true;
-    const scanSlopBucket = async () => {
+    const controller = new AbortController();
+
+    const scanSlopBuckets = async () => {
       setIsScanning(true);
-      addLog(`RESOLVING_BUCKET: Fetching files from [gs://${bucketName}]...`);
+      addLog(`RESOLVING_BUCKETS: ${BUCKET_SOURCES.map(src => `gs://${src.bucket}/${src.prefix || ''}`).join(' + ')}`);
+
       try {
-        let foundItems: BucketItem[] = [];
-        let fetchedSuccess = false;
+        const results = await Promise.allSettled(
+          BUCKET_SOURCES.map(async source => {
+            const sourceItems = await listSourceObjects(source, controller.signal);
+            addLog(`SCAN_${source.id.toUpperCase()}: ${sourceItems.length} artifacts received from ${source.bucket}`);
+            return sourceItems;
+          })
+        );
 
-        try {
-          // Try standard XML API first
-          const response = await fetch(`https://storage.googleapis.com/${bucketName}`);
-          if (response.ok) {
-            const xmlText = await response.text();
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-            const contentsNodes = xmlDoc.getElementsByTagName('Contents');
-            
-            for (let i = 0; i < contentsNodes.length; i++) {
-              const keyNode = contentsNodes[i].getElementsByTagName('Key')[0];
-              const sizeNode = contentsNodes[i].getElementsByTagName('Size')[0];
-              
-              if (keyNode && keyNode.textContent) {
-                const key = keyNode.textContent;
-                const bytes = sizeNode && sizeNode.textContent ? parseInt(sizeNode.textContent) : 0;
-                const sizeString = bytes > 1024 * 1024 
-                  ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-                  : `${(bytes / 1024).toFixed(0)} KB`;
-                
-                let type: 'video' | 'image' | null = null;
-                let tag = 'RAW';
+        if (controller.signal.aborted) return;
 
-                if (key.match(/\.(mov|mp4|avi|mpeg|mpg|wmv|webm)$/i)) {
-                  type = 'video';
-                  tag = 'SLOP_CLIP';
-                } else if (key.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)) {
-                  type = 'image';
-                  tag = 'SLOP_IMG';
-                }
+        const foundItems = results.flatMap((result, index) => {
+          if (result.status === 'fulfilled') return result.value;
+          addLog(`SCAN_WARN: ${BUCKET_SOURCES[index].bucket} failed: ${result.reason?.message || 'unknown error'}`);
+          return [];
+        });
 
-                if (type) {
-                  const baseTitle = formatSlopTitle(key);
-                  foundItems.push({
-                    id: `slop-${i}-${key.substring(0, 6)}`,
-                    title: baseTitle,
-                    fileName: key,
-                    desc: `Artifact compiled under index: "${baseTitle}"`,
-                    size: sizeString,
-                    tag: tag,
-                    type: type
-                  });
-                }
-              }
-            }
-            fetchedSuccess = true;
-          } else {
-            throw new Error(`HTTP XML status ${response.status}`);
-          }
-        } catch (xmlErr) {
-          addLog(`RESOLVING_BUCKET: XML connection blocked/CORS error. Switching to JSON API proxy fallback...`);
-          try {
-            const response = await fetch(`https://storage.googleapis.com/storage/v1/b/${bucketName}/o`);
-            if (response.ok) {
-              const data = await response.json();
-              const itemsList = data.items || [];
-              itemsList.forEach((item: any, idx: number) => {
-                const key = item.name;
-                if (!key) return;
-                const bytes = parseInt(item.size) || 0;
-                const sizeString = bytes > 1024 * 1024 
-                  ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-                  : `${(bytes / 1024).toFixed(0)} KB`;
-                
-                let type: 'video' | 'image' | null = null;
-                let tag = 'RAW';
+        const curated = foundItems.sort((a, b) => {
+          if (a.sourceCategory !== b.sourceCategory) return a.sourceCategory === 'ai' ? -1 : 1;
+          if (a.type !== b.type) return a.type === 'image' ? -1 : 1;
+          return a.title.localeCompare(b.title);
+        });
 
-                if (key.match(/\.(mov|mp4|avi|mpeg|mpg|wmv|webm)$/i)) {
-                  type = 'video';
-                  tag = 'SLOP_CLIP';
-                } else if (key.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i)) {
-                  type = 'image';
-                  tag = 'SLOP_IMG';
-                }
+        const nextItems = curated.length > 0 ? curated : FALLBACK_ITEMS;
+        if (curated.length === 0) addLog('SCAN_WARN: No public media detected. Fallback ghosts loaded.');
 
-                if (type) {
-                  const baseTitle = formatSlopTitle(key);
-                  foundItems.push({
-                    id: `slop-${idx}-${key.substring(0, 6)}`,
-                    title: baseTitle,
-                    fileName: key,
-                    desc: `Artifact compiled under index: "${baseTitle}"`,
-                    size: sizeString,
-                    tag: tag,
-                    type: type
-                  });
-                }
-              });
-              fetchedSuccess = true;
-            } else {
-              throw new Error(`HTTP JSON status ${response.status}`);
-            }
-          } catch (jsonErr: any) {
-            throw new Error(`Both XML & JSON API listing fell back: ${jsonErr.message}`);
-          }
-        }
-
-        if (!active) return;
-
-        if (foundItems.length === 0) {
-          addLog(`SCAN_WARN: No matching images or videos found in bucket.`);
-          // Load cool fallback files so the app remains gorgeous and fully functional even if empty!
-          const mockFallbacks: BucketItem[] = [
-            {
-              id: 'mock-1',
-              title: 'cybernetic_over_fitted_debris',
-              fileName: 'cybernetic_debris_916.mp4',
-              desc: '9:16 portrait of floating motherboard ruins dithered live. AI neural feedback stream.',
-              size: '1.4 MB',
-              tag: 'AI_SLOP',
-              type: 'video'
-            },
-            {
-              id: 'mock-2',
-              title: 'analog_circuit_leak_hallucination',
-              fileName: 'analog_circuit_916.png',
-              desc: '9:16 high contrast sacred grid portrait leaked from stable matrices. AI generated canvas.',
-              size: '420 KB',
-              tag: 'AI_SLOP',
-              type: 'image'
-            },
-            {
-              id: 'mock-3',
-              title: 'analog_feedback_loop_vhs',
-              fileName: 'analog_feedback_916.mp4',
-              desc: '9:16 manual camera video feedback captured through physical VHS deck.',
-              size: '2.8 MB',
-              tag: 'NON_AI',
-              type: 'video'
-            },
-            {
-              id: 'mock-4',
-              title: 'acrylic_texture_dither_scan',
-              fileName: 'acrylic_scan_916.png',
-              desc: '9:16 high resolution scan of physical acrylic painting with digital dither overlay.',
-              size: '650 KB',
-              tag: 'NON_AI',
-              type: 'image'
-            }
-          ];
-          setItems(mockFallbacks);
-          setSelectedItem(mockFallbacks[0]);
-          return;
-        }
-
-        addLog(`SCAN_SUCCESS: Discovered ${foundItems.length} orbital artifacts. Curating feeds...`);
-        setItems(foundItems);
-
-        // Sort out default selected items
-        const defaultVideo = foundItems.find(item => item.type === 'video');
-        const defaultImage = foundItems.find(item => item.type === 'image');
-        setSelectedItem(defaultVideo || defaultImage || foundItems[0]);
-
-        if (defaultVideo) {
-          setActiveGroup('video');
-        } else if (defaultImage) {
-          setActiveGroup('image');
-        }
-
+        setItems(nextItems);
+        const defaultItem = nextItems.find(item => item.sourceCategory === categoryFilter && item.type === activeGroup)
+          || nextItems.find(item => item.sourceCategory === categoryFilter)
+          || nextItems[0];
+        setSelectedItem(defaultItem);
+        setActiveGroup(defaultItem.type);
+        addLog(`SCAN_SUCCESS: ${nextItems.length} total artifacts wired into the deck.`);
       } catch (err: any) {
-        addLog(`SCAN_ERROR: Could not query public storage index (${err.message})`);
-        // Use beautiful default fallback items
-        const mockFallbacks: BucketItem[] = [
-          {
-            id: 'mock-1',
-            title: 'cybernetic_over_fitted_debris',
-            fileName: 'cybernetic_debris_916.mp4',
-            desc: '9:16 portrait of floating motherboard ruins dithered live. AI neural feedback stream.',
-            size: '1.4 MB',
-            tag: 'AI_SLOP',
-            type: 'video'
-          },
-          {
-            id: 'mock-2',
-            title: 'analog_circuit_leak_hallucination',
-            fileName: 'analog_circuit_916.png',
-            desc: '9:16 high contrast sacred grid portrait leaked from stable matrices. AI generated canvas.',
-            size: '420 KB',
-            tag: 'AI_SLOP',
-            type: 'image'
-            },
-            {
-              id: 'mock-3',
-              title: 'analog_feedback_loop_vhs',
-              fileName: 'analog_feedback_916.mp4',
-              desc: '9:16 manual camera video feedback captured through physical VHS deck.',
-              size: '2.8 MB',
-              tag: 'NON_AI',
-              type: 'video'
-            },
-            {
-              id: 'mock-4',
-              title: 'acrylic_texture_dither_scan',
-              fileName: 'acrylic_scan_916.png',
-              desc: '9:16 high resolution scan of physical acrylic painting with digital dither overlay.',
-              size: '650 KB',
-              tag: 'NON_AI',
-              type: 'image'
-            }
-        ];
-        if (active) {
-          setItems(mockFallbacks);
-          setSelectedItem(mockFallbacks[0]);
+        if (!controller.signal.aborted) {
+          addLog(`SCAN_ERROR: ${err.message}`);
+          setItems(FALLBACK_ITEMS);
+          setSelectedItem(FALLBACK_ITEMS[0]);
         }
       } finally {
-        if (active) {
-          setIsScanning(false);
-        }
+        if (!controller.signal.aborted) setIsScanning(false);
       }
     };
 
-    scanSlopBucket();
-    return () => {
-      active = false;
-    };
-  }, [bucketName]);
+    scanSlopBuckets();
+    return () => controller.abort();
+  }, []);
 
-  // Category Sync: Update active selections based on AI vs non-AI category change
+  const categoryItems = useMemo(
+    () => items.filter(item => item.sourceCategory === categoryFilter),
+    [items, categoryFilter]
+  );
+
+  const filteredItems = useMemo(
+    () => categoryItems.filter(item => item.type === activeGroup),
+    [categoryItems, activeGroup]
+  );
+
+  const sourceCounts = useMemo(() => ({
+    ai: items.filter(item => item.sourceCategory === 'ai').length,
+    nonAi: items.filter(item => item.sourceCategory === 'non-ai').length,
+    videos: categoryItems.filter(item => item.type === 'video').length,
+    images: categoryItems.filter(item => item.type === 'image').length
+  }), [items, categoryItems]);
+
   useEffect(() => {
     if (items.length === 0) return;
-    const isCurrentAi = selectedItem ? isItemAi(selectedItem) : true;
-    const expectedAi = categoryFilter === 'ai';
-    
-    // If current item does not match selected category, select a new matching item
-    if (isCurrentAi !== expectedAi) {
-      const candidates = items.filter(item => {
-        const isAi = isItemAi(item);
-        return expectedAi ? isAi : !isAi;
-      });
-      
-      if (candidates.length > 0) {
-        // Find matching activeGroup first (video vs image)
-        const matchGroup = candidates.find(c => c.type === activeGroup);
-        const nextItem = matchGroup || candidates[0];
-        setSelectedItem(nextItem);
-        setIsPlaying(nextItem.type === 'video'); // autoplay matches if appropriate
-      } else {
-        setSelectedItem(null);
-      }
-    }
-  }, [categoryFilter, items]);
+    const candidates = items.filter(item => item.sourceCategory === categoryFilter);
+    const nextItem = candidates.find(item => item.type === activeGroup) || candidates[0] || null;
+    setSelectedItem(nextItem);
+    if (nextItem && nextItem.type !== activeGroup) setActiveGroup(nextItem.type);
+    setIsPlaying(nextItem?.type === 'video');
+  }, [categoryFilter]);
 
-  // Video play state sync
+  useEffect(() => {
+    if (filteredItems.length > 0) return;
+    const alternate = categoryItems[0];
+    if (alternate) {
+      setActiveGroup(alternate.type);
+      setSelectedItem(alternate);
+    }
+  }, [filteredItems.length, categoryItems]);
+
   useEffect(() => {
     if (selectedItem?.type !== 'video' || !videoRef.current) return;
     if (isPlaying) {
@@ -382,51 +314,56 @@ export default function AiSlop({
     }
   }, [isPlaying, selectedItem]);
 
-  // Handle items click
+  const scrollCarousel = (direction: 'left' | 'right') => {
+    carouselRef.current?.scrollBy({
+      left: direction === 'left' ? -430 : 430,
+      behavior: 'smooth'
+    });
+  };
+
   const handleItemSelect = (item: BucketItem) => {
-    playChime('triangle', 1.3);
+    playChime('triangle', item.sourceCategory === 'ai' ? 1.25 : 1.45);
     setSelectedItem(item);
-    setIsPlaying(item.type === 'video'); // autoplay videos on click
-    addLog(`LOAD_TAPE: Loaded [${item.fileName}] into CRT matrix slot.`);
+    setIsPlaying(item.type === 'video');
+    addLog(`LOAD_SIGNAL: ${item.sourceLabel} // ${item.fileName}`);
   };
 
-  const getAspectClass = () => {
-    switch (aspectRatio) {
-      case '9:16': return 'aspect-[9/16] max-w-[340px]';
-      case '16:9': return 'aspect-[16/9] max-w-[600px]';
-      case '1:1': return 'aspect-square max-w-[450px]';
-      case '4:3': return 'aspect-[4/3] max-w-[480px]';
-    }
+  const inferAspect = (width: number, height: number) => {
+    if (!width || !height) return;
+    const ratio = width / height;
+    if (ratio > 1.25) setDetectedAspect('landscape');
+    else if (ratio < 0.8) setDetectedAspect('portrait');
+    else setDetectedAspect('square');
   };
 
-  const getResolutionWidth = () => {
-    if (resolution === 'raw') return undefined;
-    if (resolution === '480p') return 480;
-    if (resolution === '720p') return 720;
-    if (resolution === '1080p') return 1080;
-    return undefined;
-  };
+  const activeDisplay = displayMode === 'auto' ? detectedAspect : displayMode;
+  const viewerAspectClass = {
+    portrait: 'aspect-[9/14] max-w-[430px]',
+    landscape: 'aspect-[16/10] max-w-[760px]',
+    square: 'aspect-square max-w-[560px]',
+    contain: 'aspect-[4/3] max-w-[680px]',
+    auto: 'aspect-[9/14] max-w-[430px]'
+  }[activeDisplay];
 
-  const filteredItems = items.filter(item => {
-    const isAi = isItemAi(item);
-    const matchesCategory = categoryFilter === 'ai' ? isAi : !isAi;
-    return item.type === activeGroup && matchesCategory;
-  });
+  const treatmentClass = {
+    crt: 'contrast-110 saturate-125 drop-shadow-[0_0_24px_rgba(0,240,255,0.24)]',
+    dither: 'contrast-150 saturate-150 grayscale-[20%] [image-rendering:pixelated]',
+    bloom: 'contrast-125 saturate-200 brightness-110 drop-shadow-[0_0_34px_rgba(255,43,214,0.35)]',
+    raw: ''
+  }[treatmentMode];
 
   return (
     <div className="frame py-8 animate-fade-in space-y-8" id="aislop-mainframe">
-      {/* Title Banner */}
       <div className="border-b border-[#00F0FF]/40 pb-6 mb-2 space-y-4">
-        {/* Top Status Row */}
         <div className="flex justify-between items-center text-xs">
           <div className="flex items-center gap-1.5 font-mono text-[10px] text-[#39FF14]">
             {isScanning ? (
               <>
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>GCS LIST SCANNING...</span>
+                <span>DUAL GCS LIST SCANNING...</span>
               </>
             ) : (
-              <span className="text-zinc-600">NEURAL FEED STANDBY</span>
+              <span className="text-zinc-600">NEURAL FEED STANDBY // {items.length} ARTIFACTS</span>
             )}
           </div>
           <div className="bg-black/60 border border-[#00F0FF]/40 px-3 py-1 font-mono text-[10px] text-[#00F0FF] uppercase tracking-widest">
@@ -434,96 +371,82 @@ export default function AiSlop({
           </div>
         </div>
 
-        {/* Centered Main Header */}
         <div className="text-center space-y-3">
-          <h1 
-            className="text-center uppercase select-none"
+          <h1
+            className="text-center uppercase select-none text-5xl sm:text-7xl md:text-8xl leading-none"
             style={{
-              fontFamily: "'Bitcount Prop Double', 'Chakra Petch', sans-serif",
+              fontFamily: "'DARKAB', 'Bitcount Prop Double', 'Chakra Petch', sans-serif",
               textShadow: '0 0 8px #00F0FF, 0 0 30px rgba(0,240,255,0.4), 3px 0 0 rgba(255,43,214,0.8), -3px 0 0 rgba(57,255,20,0.8)'
             }}
           >
             ☣ ART SLOP DECK ☣
           </h1>
           <p className="text-[11px] sm:text-xs md:text-sm text-[#00F0FF] font-mono mx-auto max-w-4xl tracking-tight leading-relaxed font-bold uppercase select-all">
-            In art, the hallucination is the point. Choose between raw AI hallucinations and dynamic procedural or physical artifacts.
+            BOX: fast bucket gallery. ESCAPE HATCH: signal-deck contact sheets. MUTATION: constellation mode for art that refuses to line up politely.
           </p>
 
-          {/* Tab Selector: Choose between AI_SLOP & Non-AI_Slop */}
-          <div className="flex justify-center items-center pt-3">
+          <div className="flex flex-wrap justify-center items-center gap-3 pt-3">
             <div className="inline-flex rounded-md border border-[#00F0FF]/30 p-1 bg-black/60 shadow-[0_0_12px_rgba(0,240,255,0.15)]">
               <button
-                onClick={() => {
-                  playChime('triangle', 1.0);
-                  setCategoryFilter('ai');
-                }}
-                className={`px-6 py-2 font-mono text-xs sm:text-sm font-bold uppercase transition-all tracking-wider flex items-center gap-2 rounded ${
-                  categoryFilter === 'ai'
-                    ? 'bg-[#00F0FF] text-black shadow-[0_0_10px_rgba(0,240,255,0.5)]'
-                    : 'text-zinc-500 hover:text-[#00F0FF]/80'
-                }`}
+                onClick={() => { playChime('triangle', 1.0); setCategoryFilter('ai'); }}
+                className={`px-5 py-2 font-mono text-xs sm:text-sm font-bold uppercase transition-all tracking-wider flex items-center gap-2 rounded ${categoryFilter === 'ai' ? 'bg-[#00F0FF] text-black shadow-[0_0_10px_rgba(0,240,255,0.5)]' : 'text-zinc-500 hover:text-[#00F0FF]/80'}`}
               >
-                <Bot className="w-4.5 h-4.5" />
-                <span>AI_SLOP</span>
+                <Bot className="w-4 h-4" />
+                <span>AI_SLOP ({sourceCounts.ai})</span>
               </button>
               <button
-                onClick={() => {
-                  playChime('triangle', 1.3);
-                  setCategoryFilter('non-ai');
-                }}
-                className={`px-6 py-2 font-mono text-xs sm:text-sm font-bold uppercase transition-all tracking-wider flex items-center gap-2 rounded ${
-                  categoryFilter === 'non-ai'
-                    ? 'bg-[#FF2BD6] text-black shadow-[0_0_10px_rgba(255,43,214,0.5)]'
-                    : 'text-zinc-500 hover:text-[#FF2BD6]/80'
-                }`}
+                onClick={() => { playChime('triangle', 1.3); setCategoryFilter('non-ai'); }}
+                className={`px-5 py-2 font-mono text-xs sm:text-sm font-bold uppercase transition-all tracking-wider flex items-center gap-2 rounded ${categoryFilter === 'non-ai' ? 'bg-[#FF2BD6] text-black shadow-[0_0_10px_rgba(255,43,214,0.5)]' : 'text-zinc-500 hover:text-[#FF2BD6]/80'}`}
               >
-                <Sparkles className="w-4.5 h-4.5" />
-                <span>Non-AI_Slop</span>
+                <Sparkles className="w-4 h-4" />
+                <span>Non-AI ({sourceCounts.nonAi})</span>
               </button>
             </div>
+
+            <button
+              onClick={() => { playChime('square', 1.2); setGalleryMode(galleryMode === 'reel' ? 'constellation' : 'reel'); }}
+              className="border border-[#39FF14]/50 bg-black/70 px-4 py-2 text-[#39FF14] hover:bg-[#39FF14] hover:text-black font-mono text-xs font-black uppercase tracking-widest transition-all rounded cursor-crosshair flex items-center gap-2"
+            >
+              <Orbit className="w-4 h-4" /> {galleryMode === 'reel' ? 'Constellation Mode' : 'Reel Mode'}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Grid: Player Area (Left) & Current Case Details (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-        
-        {/* Left Area: TV CRT Screen Box with customization controls */}
-        <div className="lg:col-span-6 flex flex-col justify-center">
-          <div className={`relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(0,240,255,0.15)] p-2 rounded-2xl overflow-hidden mx-auto flex flex-col justify-between transition-all duration-300 w-full ${getAspectClass()}`}>
-            
-            {/* Ambient Scanline Filter */}
+        <div className="lg:col-span-7 flex flex-col justify-center">
+          <div className={`relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(0,240,255,0.15)] p-2 rounded-2xl overflow-hidden mx-auto flex flex-col justify-between transition-all duration-300 w-full ${viewerAspectClass}`}>
             <div className="absolute inset-0 pointer-events-none z-10 bg-scanlines opacity-10" />
-            
-            {/* TV Screen Heading HUD */}
-            <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 p-2 border-b border-zinc-950 bg-[#050505]/80 z-20">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[#00F0FF] animate-pulse">● SLOP_STREAM</span>
-              </div>
-              <div className="text-right text-[#39FF14]">
-                {selectedItem ? selectedItem.tag : 'VOID'} // {aspectRatio}
-              </div>
+            <div className="absolute -inset-10 pointer-events-none opacity-30 blur-3xl bg-[conic-gradient(from_180deg,#00F0FF,#FF2BD6,#39FF14,#FFE900,#00F0FF)] animate-pulse" />
+
+            <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 p-2 border-b border-zinc-950 bg-[#050505]/85 z-20">
+              <span className="text-[#00F0FF] animate-pulse">● {selectedItem?.sourceLabel || 'SLOP'}_STREAM</span>
+              <span className="text-[#39FF14]">{selectedItem ? selectedItem.tag : 'VOID'} // {activeDisplay.toUpperCase()} // {treatmentMode.toUpperCase()}</span>
             </div>
 
-            {/* Main Content Element (Plays Video or shows Image) */}
-            <div className="flex-grow bg-[#020202] relative flex items-center justify-center overflow-hidden min-h-[300px] max-h-[380px] md:max-h-[440px]">
+            <div className="flex-grow bg-[#020202] relative flex items-center justify-center overflow-hidden min-h-[330px]">
               {selectedItem ? (
                 selectedItem.type === 'video' ? (
                   <video
                     ref={videoRef}
-                    src={getResolvedUrl(selectedItem.fileName)}
+                    key={selectedItem.id}
+                    src={getResolvedUrl(selectedItem)}
                     controls
-                    width={getResolutionWidth()}
-                    className="w-full h-full object-contain bg-black z-10"
+                    className={`w-full h-full object-contain bg-black z-10 ${treatmentClass}`}
+                    onLoadedMetadata={(e) => inferAspect(e.currentTarget.videoWidth, e.currentTarget.videoHeight)}
                     onPlay={() => setIsPlaying(true)}
                     onPause={() => setIsPlaying(false)}
                   />
                 ) : (
                   <img
-                    src={getResolvedUrl(selectedItem.fileName)}
+                    key={selectedItem.id}
+                    src={getResolvedUrl(selectedItem)}
                     alt={selectedItem.title}
-                    className="w-full h-full object-contain bg-black z-10 transition-all duration-300"
+                    loading="eager"
+                    decoding="async"
+                    className={`w-full h-full object-contain bg-black z-10 transition-all duration-300 ${treatmentClass}`}
                     referrerPolicy="no-referrer"
+                    onLoad={(e) => inferAspect(e.currentTarget.naturalWidth, e.currentTarget.naturalHeight)}
                   />
                 )
               ) : (
@@ -532,346 +455,140 @@ export default function AiSlop({
                   <p className="text-[10px] uppercase">GCS SIGNAL OFFLINE</p>
                 </div>
               )}
-
-              {/* Scanlines layer for authentic CRT warmth */}
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent pointer-events-none z-20 mix-blend-overlay" />
+              <div className="absolute inset-0 pointer-events-none z-20 opacity-30 mix-blend-screen bg-[radial-gradient(circle_at_30%_20%,rgba(255,43,214,.28),transparent_32%),radial-gradient(circle_at_70%_70%,rgba(0,240,255,.22),transparent_38%)]" />
             </div>
 
-            {/* TV Screen Bottom HUD Details */}
-            <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 p-2 border-t border-zinc-950 bg-[#050505]/80 z-20">
-              <div className="truncate max-w-[200px]" title={selectedItem?.fileName}>
-                FILE: {selectedItem ? selectedItem.fileName : 'NULL'}
-              </div>
-              <div className="text-right text-[#00F0FF] font-bold">
-                SIZE: {selectedItem ? selectedItem.size : '0.0 KB'}
-              </div>
+            <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 p-2 border-t border-zinc-950 bg-[#050505]/85 z-20">
+              <div className="truncate max-w-[70%]" title={selectedItem?.fileName}>FILE: {selectedItem ? selectedItem.fileName : 'NULL'}</div>
+              <div className="text-right text-[#00F0FF] font-bold">SIZE: {selectedItem ? selectedItem.size : '0.0 KB'}</div>
             </div>
           </div>
         </div>
 
-        {/* Right Area: Active Asset Specs + Controls + Prompt Purifier */}
-        <div className="lg:col-span-6 flex flex-col justify-between py-2 space-y-6">
-          
-          {/* Active Asset Specs */}
+        <div className="lg:col-span-5 flex flex-col justify-between py-2 space-y-5">
           {selectedItem ? (
-            <div className="space-y-6 md:pt-4">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono font-bold text-[#00F0FF] bg-[#00F0FF]/10 px-2.5 py-1 rounded border border-[#00F0FF]/30 tracking-widest uppercase">
-                  {selectedItem.tag || 'DEBRIS'}
-                </span>
-                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                  // CRITICAL ORBITAL SIGNAL
-                </span>
+            <div className="space-y-5 md:pt-2">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded border tracking-widest uppercase ${selectedItem.sourceCategory === 'ai' ? 'text-[#00F0FF] bg-[#00F0FF]/10 border-[#00F0FF]/30' : 'text-[#FF2BD6] bg-[#FF2BD6]/10 border-[#FF2BD6]/30'}`}>{selectedItem.tag}</span>
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">// {selectedItem.bucket}</span>
               </div>
 
-              <div className="space-y-4">
-                {/* Large Title in Header Font (Jersey 10) */}
-                <h2 
-                  className="jersey-10-regular text-5xl sm:text-6xl md:text-7xl text-white font-normal uppercase tracking-wider leading-none select-all animate-pulse-subtle"
-                  style={{
-                    textShadow: '0 0 15px rgba(0,240,255,0.5), 0 0 30px rgba(0,240,255,0.25)',
-                  }}
-                >
-                  {selectedItem.title}
-                </h2>
+              <h2
+                className="text-5xl sm:text-6xl md:text-7xl text-white font-normal uppercase tracking-wider leading-none select-all"
+                style={{ fontFamily: "'Canistel', 'Jersey 10', sans-serif", textShadow: '0 0 15px rgba(0,240,255,0.5), 0 0 30px rgba(255,43,214,0.25)' }}
+              >
+                {selectedItem.title}
+              </h2>
 
-                {/* Styled Meta Label under Title */}
-                <div className="font-mono text-xs text-[#FF2BD6]/90 tracking-[0.25em] uppercase font-bold">
-                  ░ Neural Hallucination ░
-                </div>
-
-                {/* Sleeve Description (Spaced out, stylized) */}
-                {selectedItem.desc && (
-                  <div className="pt-4 border-t border-zinc-900/40">
-                    <p className="text-zinc-400 text-sm leading-relaxed font-mono italic border-l-2 border-[#00F0FF] pl-4 max-w-xl">
-                      "{selectedItem.desc}"
-                    </p>
-                  </div>
-                )}
+              <div className="font-mono text-xs text-[#FF2BD6]/90 tracking-[0.25em] uppercase font-bold">
+                ░ {selectedItem.sourceCategory === 'ai' ? 'Machine hallucination channel' : 'Human / physical signal channel'} ░
               </div>
+
+              <p className="text-zinc-400 text-sm leading-relaxed font-mono italic border-l-2 border-[#00F0FF] pl-4 max-w-xl">“{selectedItem.desc}”</p>
             </div>
           ) : (
-            <div className="py-12 text-center text-zinc-600 font-mono text-[11px] uppercase tracking-wider border border-dashed border-zinc-900">
-              [ STANDBY: SELECT AN ASSET IN THE REEL BELOW ]
-            </div>
+            <div className="py-12 text-center text-zinc-600 font-mono text-[11px] uppercase tracking-wider border border-dashed border-zinc-900">[ STANDBY: SELECT AN ASSET IN THE REEL BELOW ]</div>
           )}
 
-          {/* Aspect Ratio and Resolution Selector Panel */}
           <div className="space-y-4 bg-zinc-950/40 border border-zinc-900/50 p-4 rounded-xl">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              {/* Aspect Ratio dial */}
               <div className="space-y-2">
-                <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
-                  <span>📏 Aspect Ratio</span>
-                  <span className="text-[#00F0FF] font-bold">{aspectRatio}</span>
-                </div>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {(['9:16', '16:9', '1:1', '4:3'] as const).map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => {
-                        playChime('square', 1.0);
-                        setAspectRatio(r);
-                      }}
-                      className={`font-mono text-[9px] font-bold py-1 px-1 text-center border uppercase transition-all ${
-                        aspectRatio === r 
-                          ? 'bg-[#00F0FF] text-black border-[#00F0FF] shadow-[0_0_8px_rgba(0,240,255,0.3)]' 
-                          : 'bg-black text-[#00F0FF] border-[#00F0FF]/30 hover:border-[#00F0FF]'
-                      }`}
-                    >
-                      {r}
-                    </button>
+                <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest"><span>📐 Display Geometry</span><span className="text-[#00F0FF] font-bold">{displayMode}</span></div>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {(['auto', 'portrait', 'landscape', 'square', 'contain'] as const).map(mode => (
+                    <button key={mode} onClick={() => { playChime('square', 1.0); setDisplayMode(mode); }} className={`font-mono text-[8px] font-bold py-1 px-1 text-center border uppercase transition-all ${displayMode === mode ? 'bg-[#00F0FF] text-black border-[#00F0FF]' : 'bg-black text-[#00F0FF] border-[#00F0FF]/30 hover:border-[#00F0FF]'}`}>{mode}</button>
                   ))}
                 </div>
               </div>
 
-              {/* Resolution Selector dial */}
               <div className="space-y-2">
-                <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
-                  <span>🖥 CRT Resolution Mode</span>
-                  <span className="text-[#39FF14] font-bold uppercase">{resolution}</span>
-                </div>
+                <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest"><span>🧪 Signal Treatment</span><span className="text-[#39FF14] font-bold">{treatmentMode}</span></div>
                 <div className="grid grid-cols-4 gap-1.5">
-                  {(['480p', '720p', '1080p', 'raw'] as const).map((res) => (
-                    <button
-                      key={res}
-                      onClick={() => {
-                        playChime('square', 1.1);
-                        setResolution(res);
-                      }}
-                      className={`font-mono text-[9px] font-bold py-1 px-1 text-center border uppercase transition-all ${
-                        resolution === res 
-                          ? 'bg-[#39FF14] text-black border-[#39FF14] shadow-[0_0_8px_rgba(57,255,20,0.3)]' 
-                          : 'bg-black text-[#39FF14] border-[#39FF14]/30 hover:border-[#39FF14]'
-                      }`}
-                    >
-                      {res === 'raw' ? 'RAW' : res}
-                    </button>
+                  {(['crt', 'dither', 'bloom', 'raw'] as const).map(mode => (
+                    <button key={mode} onClick={() => { playChime('square', 1.1); setTreatmentMode(mode); }} className={`font-mono text-[9px] font-bold py-1 px-1 text-center border uppercase transition-all ${treatmentMode === mode ? 'bg-[#39FF14] text-black border-[#39FF14]' : 'bg-black text-[#39FF14] border-[#39FF14]/30 hover:border-[#39FF14]'}`}>{mode}</button>
                   ))}
                 </div>
               </div>
-
             </div>
 
-            {/* Open Raw GCS Link */}
             {selectedItem && (
-              <a
-                href={getResolvedUrl(selectedItem.fileName)}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => playChime('sine', 1.2)}
-                className="w-full text-center border border-zinc-850 hover:border-[#00F0FF] hover:bg-[#00F0FF]/5 text-zinc-500 hover:text-white font-mono text-[10px] py-1.5 px-3 flex items-center justify-center gap-1.5 transition-all cursor-crosshair uppercase rounded"
-              >
-                <ExternalLink className="w-3 h-3" />
-                <span>Open Raw GCS Asset</span>
+              <a href={getResolvedUrl(selectedItem)} target="_blank" rel="noreferrer" onClick={() => playChime('sine', 1.2)} className="w-full text-center border border-zinc-850 hover:border-[#00F0FF] hover:bg-[#00F0FF]/5 text-zinc-500 hover:text-white font-mono text-[10px] py-1.5 px-3 flex items-center justify-center gap-1.5 transition-all cursor-crosshair uppercase rounded">
+                <ExternalLink className="w-3 h-3" /> Open Raw GCS Asset
               </a>
             )}
           </div>
 
-          {/* Prompt Purifier Engine */}
-          <div className="border border-zinc-900 bg-black/40 p-4 rounded-xl space-y-3">
-            <div className="flex items-center gap-2 text-zinc-400 font-bold font-sans uppercase text-[11px] border-b border-zinc-900/60 pb-1.5 tracking-wider">
-              <Bot className="w-3.5 h-3.5 text-[#00F0FF]" />
-              <span>Prompt Purifier Engine</span>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <input 
-                  type="text"
-                  value={rawPrompt}
-                  onChange={(e) => setRawPrompt(e.target.value)}
-                  placeholder="glowing digital junk..."
-                  className="flex-grow bg-black border border-zinc-800 focus:border-[#00F0FF] text-white px-3 py-1.5 font-mono text-[11px] outline-none rounded"
-                />
-                <button
-                  onClick={handleCorruptPrompt}
-                  disabled={isCorrupting}
-                  className="bg-[#00F0FF] hover:bg-[#00F0FF]/80 text-black font-bold py-1.5 px-4 font-sans uppercase text-[11px] tracking-widest cursor-crosshair transition-all disabled:opacity-50 shrink-0 rounded"
-                >
-                  {isCorrupting ? 'CORRUPTING...' : 'SYNTHESIZE ▸'}
-                </button>
-              </div>
-
-              {corruptedPrompt && (
-                <div className="bg-black/80 p-2.5 border border-[#00F0FF]/20 font-mono text-[11px] text-[#39FF14] text-center tracking-wide break-all leading-relaxed rounded">
-                  {corruptedPrompt}
+          <div className="border border-zinc-900 bg-black/40 rounded-xl overflow-hidden">
+            <button onClick={() => { playChime('sine', 0.9); setIsPromptOpen(!isPromptOpen); }} className="w-full p-4 flex items-center justify-between text-zinc-400 font-bold font-sans uppercase text-[11px] tracking-wider hover:text-[#00F0FF] transition-colors">
+              <span className="flex items-center gap-2"><Wand2 className="w-3.5 h-3.5 text-[#00F0FF]" /> Prompt Mutagen</span>
+              <span className="font-mono text-[9px]">{isPromptOpen ? 'CLOSE' : 'OPEN'}</span>
+            </button>
+            {isPromptOpen && (
+              <div className="px-4 pb-4 space-y-2">
+                <div className="flex gap-2">
+                  <input type="text" value={rawPrompt} onChange={(e) => setRawPrompt(e.target.value)} placeholder="glowing digital junk..." className="flex-grow bg-black border border-zinc-800 focus:border-[#00F0FF] text-white px-3 py-1.5 font-mono text-[11px] outline-none rounded" />
+                  <button onClick={handleCorruptPrompt} disabled={isCorrupting} className="bg-[#00F0FF] hover:bg-[#00F0FF]/80 text-black font-bold py-1.5 px-4 font-sans uppercase text-[11px] tracking-widest cursor-crosshair transition-all disabled:opacity-50 shrink-0 rounded">{isCorrupting ? 'CORRUPTING...' : 'SYNTHESIZE ▸'}</button>
                 </div>
-              )}
-            </div>
-          </div>
-          
-        </div>
-      </div>
-
-      {/* Group Selector and Horizontal Carousel Section */}
-      <div className="border border-zinc-900 bg-[#050505] p-5 rounded-xl space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-900 pb-2 gap-3">
-          <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1.5 tracking-wider">
-            <ListFilter className="w-3.5 h-3.5 text-[#00F0FF]" />
-            <span>ARCHIVE FEED MEDIA CAROUSEL</span>
-          </span>
-          
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => {
-                playChime('sine', 1.0);
-                setActiveGroup('video');
-              }}
-              className={`px-3 py-1 font-mono text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-crosshair uppercase ${
-                activeGroup === 'video'
-                  ? categoryFilter === 'ai' ? 'bg-[#00F0FF] text-black border-[#00F0FF]' : 'bg-[#FF2BD6] text-black border-[#FF2BD6]'
-                  : 'bg-black text-gray-400 border-zinc-900 hover:text-white'
-              }`}
-            >
-              <Film className="w-3.5 h-3.5" />
-              <span>Videos ({items.filter(i => i.type === 'video' && (categoryFilter === 'ai' ? isItemAi(i) : !isItemAi(i))).length})</span>
-            </button>
-
-            <button
-              onClick={() => {
-                playChime('sine', 1.2);
-                setActiveGroup('image');
-              }}
-              className={`px-3 py-1 font-mono text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-crosshair uppercase ${
-                activeGroup === 'image'
-                  ? categoryFilter === 'ai' ? 'bg-[#00F0FF] text-black border-[#00F0FF]' : 'bg-[#FF2BD6] text-black border-[#FF2BD6]'
-                  : 'bg-black text-gray-400 border-zinc-900 hover:text-white'
-              }`}
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span>Images ({items.filter(i => i.type === 'image' && (categoryFilter === 'ai' ? isItemAi(i) : !isItemAi(i))).length})</span>
-            </button>
-          </div>
-        </div>
-
-        {/* The Horizontal Carousel Track */}
-        <div className="relative flex items-center group/carousel">
-          {/* Scroll Left Button */}
-          <button
-            onClick={() => { playChime('sine', 0.9); scrollCarousel('left'); }}
-            className="absolute left-1 z-30 p-1.5 rounded-full border border-zinc-850 bg-black/80 hover:bg-[#00F0FF]/15 hover:border-[#00F0FF] text-zinc-400 hover:text-[#00F0FF] transition-all cursor-crosshair shadow-lg opacity-0 group-hover/carousel:opacity-100"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          {/* Carousel Viewport */}
-          <div
-            ref={carouselRef}
-            className="flex gap-4 overflow-x-auto py-2 px-2 w-full scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-zinc-800"
-            style={{ scrollbarWidth: 'thin' }}
-          >
-            {filteredItems.length > 0 ? (
-              filteredItems.map((item, index) => {
-                const isSelected = selectedItem?.id === item.id;
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => handleItemSelect(item)}
-                    className={`shrink-0 cursor-crosshair relative w-[160px] sm:w-[180px] transition-all duration-300 rounded-lg overflow-hidden border ${
-                      isSelected
-                        ? 'bg-[#00F0FF]/10 border-[#00F0FF] scale-[1.03] shadow-[0_0_15px_rgba(0,240,255,0.25)]'
-                        : 'bg-black/40 border-zinc-900 hover:border-zinc-700 hover:bg-black/60'
-                    }`}
-                  >
-                    {/* Thumbnail Frame Container */}
-                    <div className="aspect-[16/10] bg-[#020202] relative overflow-hidden flex items-center justify-center border-b border-zinc-950">
-                      {item.type === 'video' ? (
-                        <div className="w-full h-full relative group/video-thumb">
-                          {/* We render the video tag directly with preload="metadata" to let browser fetch posters naturally */}
-                          <video
-                            src={getResolvedUrl(item.fileName)}
-                            className="w-full h-full object-cover pointer-events-none"
-                            preload="metadata"
-                            muted
-                            playsInline
-                            onMouseEnter={(e) => {
-                              const v = e.currentTarget;
-                              v.play().catch(() => {});
-                            }}
-                            onMouseLeave={(e) => {
-                              const v = e.currentTarget;
-                              v.pause();
-                              v.currentTime = 0;
-                            }}
-                          />
-                          {/* Film Roll Sprockets decoration */}
-                          <div className="absolute inset-x-0 top-0 h-1.5 bg-black/80 flex justify-between px-1 pointer-events-none">
-                            {[...Array(6)].map((_, i) => (
-                              <span key={i} className="w-0.5 h-0.5 bg-zinc-800 rounded-sm" />
-                            ))}
-                          </div>
-                          <div className="absolute inset-x-0 bottom-0 h-1.5 bg-black/80 flex justify-between px-1 pointer-events-none">
-                            {[...Array(6)].map((_, i) => (
-                              <span key={i} className="w-0.5 h-0.5 bg-zinc-800 rounded-sm" />
-                            ))}
-                          </div>
-                          {/* Play Badge Icon overlay */}
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover/video-thumb:bg-black/10 transition-colors pointer-events-none">
-                            <div className="p-1 rounded-full bg-black/60 border border-zinc-850 text-zinc-300">
-                              <Play className="w-3 h-3 text-[#00F0FF]" />
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="w-full h-full relative">
-                          <img
-                            src={getResolvedUrl(item.fileName)}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                          {/* Polaroid frame border decoration */}
-                          <div className="absolute inset-x-0 top-0 h-1 bg-black/20 pointer-events-none" />
-                        </div>
-                      )}
-                      {/* Size Badge in top corner */}
-                      <span className="absolute top-1 right-1 text-[7px] font-mono font-black bg-black/75 text-zinc-400 px-1 py-0.5 rounded border border-zinc-800/40 tracking-widest z-10">
-                        {item.size}
-                      </span>
-                    </div>
-
-                    {/* Meta info bottom area */}
-                    <div className="p-1.5 space-y-0.5">
-                      <div className="flex justify-between items-center text-[7px] font-mono text-zinc-500">
-                        <span>SLIDE #{index + 1}</span>
-                        <span className={isSelected ? 'text-[#00F0FF]' : 'text-zinc-500'}>
-                          {item.type.toUpperCase()}
-                        </span>
-                      </div>
-                      <h4 className="text-[10px] font-sans font-black text-white truncate uppercase tracking-wide group-hover:text-[#00F0FF] transition-colors" title={item.title}>
-                        {item.title}
-                      </h4>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="py-12 text-center text-zinc-600 font-mono text-[11px] uppercase tracking-wider border border-dashed border-zinc-900 w-full">
-                [ NO MEDIA DETECTED IN THIS CHANNEL ]
+                {corruptedPrompt && <div className="bg-black/80 p-2.5 border border-[#00F0FF]/20 font-mono text-[11px] text-[#39FF14] text-center tracking-wide break-all leading-relaxed rounded">{corruptedPrompt}</div>}
               </div>
             )}
           </div>
-
-          {/* Scroll Right Button */}
-          <button
-            onClick={() => { playChime('sine', 1.1); scrollCarousel('right'); }}
-            className="absolute right-1 z-30 p-1.5 rounded-full border border-zinc-850 bg-black/80 hover:bg-[#00F0FF]/15 hover:border-[#00F0FF] text-zinc-400 hover:text-[#00F0FF] transition-all cursor-crosshair shadow-lg opacity-0 group-hover/carousel:opacity-100"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
-      {/* Cloud bucket diagnostic log terminal */}
-      <div className="bg-[#020202] border border-zinc-900 p-4 font-mono text-[10px] text-gray-500 max-h-[140px] overflow-y-auto space-y-1">
-        <span className="text-[9px] uppercase tracking-wider block text-zinc-700 border-b border-zinc-950 pb-1 mb-2">
-          GCS_LOG_STREAM: astraltrash_aislop_diagnostic_v1
-        </span>
-        {terminalLogs.map((log, index) => (
-          <div key={index} className="truncate">{log}</div>
-        ))}
+      <div className={`border border-zinc-900 bg-[#050505] p-5 rounded-xl space-y-4 ${galleryMode === 'constellation' ? 'overflow-hidden' : ''}`}>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-900 pb-2 gap-3">
+          <span className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1.5 tracking-wider"><ListFilter className="w-3.5 h-3.5 text-[#00F0FF]" /> ARCHIVE FEED MEDIA {galleryMode === 'constellation' ? 'CONSTELLATION' : 'REEL'}</span>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => { playChime('sine', 1.0); setActiveGroup('video'); }} className={`px-3 py-1 font-mono text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-crosshair uppercase ${activeGroup === 'video' ? categoryFilter === 'ai' ? 'bg-[#00F0FF] text-black border-[#00F0FF]' : 'bg-[#FF2BD6] text-black border-[#FF2BD6]' : 'bg-black text-gray-400 border-zinc-900 hover:text-white'}`}><Film className="w-3.5 h-3.5" /> Videos ({sourceCounts.videos})</button>
+            <button onClick={() => { playChime('sine', 1.2); setActiveGroup('image'); }} className={`px-3 py-1 font-mono text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-crosshair uppercase ${activeGroup === 'image' ? categoryFilter === 'ai' ? 'bg-[#00F0FF] text-black border-[#00F0FF]' : 'bg-[#FF2BD6] text-black border-[#FF2BD6]' : 'bg-black text-gray-400 border-zinc-900 hover:text-white'}`}><ImageIcon className="w-3.5 h-3.5" /> Images ({sourceCounts.images})</button>
+          </div>
+        </div>
+
+        <div className="relative flex items-center group/carousel">
+          {galleryMode === 'reel' && <button onClick={() => { playChime('sine', 0.9); scrollCarousel('left'); }} className="absolute left-1 z-30 p-1.5 rounded-full border border-zinc-850 bg-black/80 hover:bg-[#00F0FF]/15 hover:border-[#00F0FF] text-zinc-400 hover:text-[#00F0FF] transition-all cursor-crosshair shadow-lg opacity-0 group-hover/carousel:opacity-100"><ChevronLeft className="w-4 h-4" /></button>}
+
+          <div ref={carouselRef} className={`${galleryMode === 'constellation' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 min-h-[330px]' : 'flex gap-4 overflow-x-auto py-2 px-2 w-full scroll-smooth custom-scrollbar'}`} style={{ scrollbarWidth: 'thin' }}>
+            {filteredItems.length > 0 ? filteredItems.map((item, index) => {
+              const isSelected = selectedItem?.id === item.id;
+              const rotate = galleryMode === 'constellation' ? ((index % 7) - 3) * 2.4 : 0;
+              return (
+                <button
+                  type="button"
+                  key={item.id}
+                  onClick={() => handleItemSelect(item)}
+                  className={`text-left cursor-crosshair relative transition-all duration-300 rounded-lg overflow-hidden border group/card ${galleryMode === 'reel' ? 'shrink-0 w-[170px] sm:w-[200px]' : 'w-full hover:z-20'} ${isSelected ? 'bg-[#00F0FF]/10 border-[#00F0FF] scale-[1.03] shadow-[0_0_22px_rgba(0,240,255,0.35)]' : 'bg-black/40 border-zinc-900 hover:border-zinc-700 hover:bg-black/60'}`}
+                  style={{ transform: galleryMode === 'constellation' ? `rotate(${rotate}deg) translateY(${(index % 3) * 8}px)` : undefined }}
+                >
+                  <div className="aspect-[16/10] bg-[#020202] relative overflow-hidden flex items-center justify-center border-b border-zinc-950">
+                    {item.type === 'video' ? (
+                      <div className="w-full h-full relative group/video-thumb">
+                        <video src={getResolvedUrl(item)} className="w-full h-full object-cover pointer-events-none opacity-80 group-hover/card:opacity-100" preload="none" muted playsInline onMouseEnter={(e) => e.currentTarget.play().catch(() => {})} onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }} />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover/video-thumb:bg-black/10 transition-colors pointer-events-none"><div className="p-1 rounded-full bg-black/60 border border-zinc-850 text-zinc-300"><Play className="w-3 h-3 text-[#00F0FF]" /></div></div>
+                      </div>
+                    ) : (
+                      <img src={getResolvedUrl(item)} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover saturate-125 contrast-110 group-hover/card:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                    )}
+                    <div className="absolute inset-0 pointer-events-none opacity-0 group-hover/card:opacity-100 transition-opacity bg-[linear-gradient(90deg,rgba(255,43,214,.2),transparent,rgba(0,240,255,.2))] mix-blend-screen" />
+                    <span className="absolute top-1 right-1 text-[7px] font-mono font-black bg-black/75 text-zinc-400 px-1 py-0.5 rounded border border-zinc-800/40 tracking-widest z-10">{item.size}</span>
+                  </div>
+                  <div className="p-2 space-y-0.5">
+                    <div className="flex justify-between items-center text-[7px] font-mono text-zinc-500"><span>SIGNAL #{index + 1}</span><span className={isSelected ? 'text-[#00F0FF]' : 'text-zinc-500'}>{item.type.toUpperCase()}</span></div>
+                    <h4 className="text-[10px] font-sans font-black text-white truncate uppercase tracking-wide group-hover/card:text-[#00F0FF] transition-colors" title={item.title}>{item.title}</h4>
+                  </div>
+                </button>
+              );
+            }) : <div className="py-12 text-center text-zinc-600 font-mono text-[11px] uppercase tracking-wider border border-dashed border-zinc-900 w-full col-span-full">[ NO MEDIA DETECTED IN THIS CHANNEL ]</div>}
+          </div>
+
+          {galleryMode === 'reel' && <button onClick={() => { playChime('sine', 1.1); scrollCarousel('right'); }} className="absolute right-1 z-30 p-1.5 rounded-full border border-zinc-850 bg-black/80 hover:bg-[#00F0FF]/15 hover:border-[#00F0FF] text-zinc-400 hover:text-[#00F0FF] transition-all cursor-crosshair shadow-lg opacity-0 group-hover/carousel:opacity-100"><ChevronRight className="w-4 h-4" /></button>}
+        </div>
+      </div>
+
+      <div className="bg-[#020202] border border-zinc-900 p-4 font-mono text-[10px] text-gray-500 max-h-[160px] overflow-y-auto space-y-1 custom-scrollbar">
+        <span className="text-[9px] uppercase tracking-wider block text-zinc-700 border-b border-zinc-950 pb-1 mb-2">GCS_LOG_STREAM: astraltrash_dual_bucket_diagnostic_v2</span>
+        {[...terminalLogs, ...aiLogs.slice(-3).map(log => `AI_LOG: ${log}`)].map((log, index) => <div key={index} className="truncate">{log}</div>)}
       </div>
     </div>
   );
