@@ -15,7 +15,7 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;border-radius:0 !important}
 ::selection{background:var(--magenta);color:var(--void)}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth; background:var(--void); overscroll-behavior-y: none;}
 body{
   background:var(--void);
   color:var(--phosphor);
@@ -328,6 +328,7 @@ body.light-theme .bg-zinc-950\/40 {
 @font-face { font-family: 'StarThings'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/StarThings-DLZx.woff2') format('woff2'); }
 @font-face { font-family: 'CircleThings2'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/CircleThings2-ap6J.woff2') format('woff2'); }
 @font-face { font-family: 'Slsquiggles'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Slsquiggles-RJ96.woff2') format('woff2'); }
+
 
 
 body.psy-trip-active {

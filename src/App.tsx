@@ -7,6 +7,7 @@ import {
   Code, 
   Terminal, 
   Volume2, 
+  VolumeX,
   Bot, 
   Sparkles, 
   Trash2, 
@@ -254,7 +255,7 @@ export default function App() {
   const [moreSubTab, setMoreSubTab] = useState<'landing' | 'psychedelic' | 'opinions' | 'blog' | 'about-profile'>('landing');
   const [activeTripReport, setActiveTripReport] = useState<number>(0);
   const [activeOpinion, setActiveOpinion] = useState<number>(0);
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => localStorage.getItem('astraltrash_sound_enabled') !== 'false');
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => localStorage.getItem('astraltrash_sound_enabled') === 'true');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => localStorage.getItem('astraltrash_theme') !== 'light');
 
   // Core App states
@@ -1545,7 +1546,7 @@ export default function App() {
           
           const dynamicShaders = htmlFiles.map((file: any) => {
             const fileName = file.name;
-            const id = fileName.replace('.html', '').replace(/[\s\(\)-]+/g, '_').toLowerCase();
+            const id = file.sha || fileName;
             const title = fileName.replace('.html', '');
             
             // Deduplicate against already hardcoded static list
@@ -2344,8 +2345,22 @@ export default function App() {
                     
                     {/* Hero Section (placed inside the grid so it aligns perfectly next to the right column on desktop) */}
                     <section className="hero pt-6 pb-2 border-b border-zinc-900/30">
-                      <div className="online">
-                        <span className="dot" /> ONLINE NOW · BROADCASTING FROM LOW VOID ORBIT
+                      <div className="flex flex-wrap items-center gap-3 mb-6">
+                        <div className="online !mb-0">
+                          <span className="dot" /> ONLINE NOW · BROADCASTING FROM LOW VOID ORBIT
+                        </div>
+                        <button 
+                          onClick={() => setSoundEnabled(!soundEnabled)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase font-mono tracking-widest border transition-all cursor-crosshair"
+                          style={{
+                            borderColor: soundEnabled ? '#FF2BD6' : '#666',
+                            color: soundEnabled ? '#FF2BD6' : '#888',
+                            backgroundColor: soundEnabled ? 'rgba(255,43,214,0.1)' : 'rgba(0,0,0,0.6)'
+                          }}
+                        >
+                          {soundEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+                          <span>SFX {soundEnabled ? 'ON' : 'OFF'}</span>
+                        </button>
                       </div>
                       <h1>AstralTrash</h1>
                       <div className="sub">
