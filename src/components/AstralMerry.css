@@ -1,0 +1,119 @@
+.astral-merry-sticker {
+  position: fixed;
+  z-index: 10020;
+  right: clamp(10px, 2.2vw, 30px);
+  bottom: max(10px, env(safe-area-inset-bottom));
+  width: clamp(82px, 8.5vw, 116px);
+  aspect-ratio: 420 / 735;
+  pointer-events: none;
+  isolation: isolate;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, .38));
+}
+
+.astral-merry-sticker__stage,
+.astral-merry-sticker__body,
+.astral-merry-sticker__ghost {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.astral-merry-sticker__stage {
+  transform-origin: 50% 100%;
+  animation: astral-merry-wiggle 4.2s cubic-bezier(.45, .05, .55, .95) infinite;
+}
+
+.astral-merry-sticker__body,
+.astral-merry-sticker__ghost {
+  object-fit: contain;
+  object-position: center bottom;
+  user-select: none;
+  -webkit-user-drag: none;
+  transform-origin: 50% 100%;
+}
+
+.astral-merry-sticker__body {
+  animation: astral-merry-breathe 3.1s ease-in-out infinite;
+}
+
+.astral-merry-sticker__ghost {
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+.astral-merry-sticker__ghost--cyan {
+  filter: sepia(1) saturate(8) hue-rotate(125deg);
+  animation: astral-merry-cyan-ghost 9s steps(1, end) infinite;
+}
+
+.astral-merry-sticker__ghost--pink {
+  filter: sepia(1) saturate(10) hue-rotate(265deg);
+  animation: astral-merry-pink-ghost 9s steps(1, end) infinite;
+}
+
+.astral-merry-sticker__aura {
+  position: absolute;
+  z-index: -1;
+  left: 10%;
+  right: 10%;
+  bottom: 2%;
+  height: 18%;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse, rgba(0, 246, 255, .34), transparent 56%),
+    radial-gradient(ellipse, rgba(255, 35, 190, .32), transparent 72%);
+  filter: blur(10px);
+  animation: astral-merry-aura 3.1s ease-in-out infinite;
+}
+
+@keyframes astral-merry-wiggle {
+  0%, 100% { transform: translateY(0) rotate(-1.1deg); }
+  25% { transform: translateY(-2px) rotate(.5deg); }
+  50% { transform: translateY(-4px) rotate(1.2deg); }
+  75% { transform: translateY(-1px) rotate(-.4deg); }
+}
+
+@keyframes astral-merry-breathe {
+  0%, 100% { transform: scaleX(1) scaleY(1); }
+  50% { transform: scaleX(1.012) scaleY(1.008); }
+}
+
+@keyframes astral-merry-aura {
+  0%, 100% { opacity: .5; transform: scale(.88); }
+  50% { opacity: .92; transform: scale(1.08); }
+}
+
+@keyframes astral-merry-cyan-ghost {
+  0%, 91%, 100% { opacity: 0; transform: translateX(0); clip-path: inset(0); }
+  92% { opacity: .38; transform: translateX(-3px); clip-path: inset(0 0 62% 0); }
+  93% { opacity: .22; transform: translateX(2px); clip-path: inset(45% 0 16% 0); }
+  94% { opacity: 0; transform: translateX(0); clip-path: inset(0); }
+}
+
+@keyframes astral-merry-pink-ghost {
+  0%, 91%, 100% { opacity: 0; transform: translateX(0); clip-path: inset(0); }
+  92% { opacity: .34; transform: translateX(3px); clip-path: inset(58% 0 0 0); }
+  93% { opacity: .2; transform: translateX(-2px); clip-path: inset(18% 0 51% 0); }
+  94% { opacity: 0; transform: translateX(0); clip-path: inset(0); }
+}
+
+@media (max-width: 640px) {
+  .astral-merry-sticker {
+    right: 8px;
+    bottom: max(6px, env(safe-area-inset-bottom));
+    width: 74px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .astral-merry-sticker,
+  .astral-merry-sticker * {
+    animation: none !important;
+  }
+
+  .astral-merry-sticker__ghost {
+    display: none;
+  }
+}
