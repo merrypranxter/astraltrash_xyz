@@ -1210,7 +1210,7 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
                       disabled={index === 0}
                       aria-label={`Move ${item.title} left`}
                       onClick={(e) => { e.stopPropagation(); moveTape(index, 'left'); }}
-                      className="cab-ctl flex-1 disabled:opacity-20 disabled:pointer-events-none"
+                      className="cab-ctl flex-1 disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:shadow-none"
                       style={{ '--mc': '#00F0FF', '--mc-soft': 'rgba(0,240,255,.35)' } as any}
                     >
                       ◀
@@ -1219,7 +1219,7 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
                       disabled={index === videos.length - 1}
                       aria-label={`Move ${item.title} right`}
                       onClick={(e) => { e.stopPropagation(); moveTape(index, 'right'); }}
-                      className="cab-ctl flex-1 disabled:opacity-20 disabled:pointer-events-none"
+                      className="cab-ctl flex-1 disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:shadow-none"
                       style={{ '--mc': '#00F0FF', '--mc-soft': 'rgba(0,240,255,.35)' } as any}
                     >
                       ▶
