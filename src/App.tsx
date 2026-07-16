@@ -2262,7 +2262,7 @@ export default function App() {
         <div className="sticky top-0 w-full bg-black border-b border-[#39FF14] z-50 px-4 py-2 font-mono">
           {/* Quick-Access Aesthetic Tabs */}
           <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-            <button 
+            <button data-tensor-action="teleport"
               onClick={() => { setActiveTab('hub'); playChime('triangle', 0.8); }}
               className={`w-full text-center flex items-center justify-center px-4 py-3 sm:py-4 text-xl sm:text-2xl md:text-3xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
                 activeTab === 'hub' 
@@ -2272,7 +2272,7 @@ export default function App() {
             >
               HOME
             </button>
-            <button 
+            <button data-tensor-action="flip"
               onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }}
               className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
                 activeTab === 'shaderslop' 
@@ -2282,7 +2282,7 @@ export default function App() {
             >
               SHADERSLOP
             </button>
-            <button 
+            <button data-tensor-action="hack"
               onClick={() => { setActiveTab('aislop'); playChime('triangle', 1.2); }}
               className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
                 activeTab === 'aislop' 
@@ -2292,7 +2292,7 @@ export default function App() {
             >
               ART_SLOP
             </button>
-            <button 
+            <button data-tensor-action="tantrum"
               onClick={() => { setActiveTab('karaoke'); playChime('square', 1.8); }}
               className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
                 activeTab === 'karaoke' 
@@ -2302,7 +2302,7 @@ export default function App() {
             >
               SHITTY_KARAOKE
             </button>
-            <button 
+            <button data-tensor-action="surf"
               onClick={() => { setActiveTab('projects'); playChime('triangle', 1.9); }}
               className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
                 activeTab === 'projects' 
@@ -2312,7 +2312,7 @@ export default function App() {
             >
               PROJECTS
             </button>
-            <button 
+            <button data-tensor-action="celebrate"
               onClick={() => { setActiveTab('about'); setMoreSubTab('landing'); playChime('triangle', 1.6); }}
               className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
                 activeTab === 'about' 
@@ -2384,7 +2384,7 @@ export default function App() {
                         >
                           SHOP TEZOS NFTs ⟡ OBJKT
                         </a>
-                        <a className="btn alt2 speak" href="#manifesto" data-say="The manifesto">
+                        <a className="btn alt2 speak" href="#manifesto" data-say="The manifesto" data-tensor-action="jump">
                           MANIFESTO
                         </a>
                       </div>
@@ -2559,6 +2559,24 @@ export default function App() {
                               <p className="text-zinc-400 text-[14px] mt-1 text-right" style={{ fontFamily: "'VT323', monospace" }}>
                                 — Hunter S. Thompson
                               </p>
+                            </div>
+
+                            {/* Autism Documentation link */}
+                            <div className="border border-[#00F0FF]/40 bg-black/40 p-3 mt-4 hover:bg-[#00F0FF]/10 transition-colors cursor-crosshair group">
+                              <a 
+                                href="https://merrys-autism.merrypranxter.chatgpt.site/" data-tensor-action="celebrate"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block"
+                              >
+                                <div className="text-[10px] text-[#00F0FF] uppercase tracking-widest mb-1 font-mono flex justify-between">
+                                  <span>EXTERNAL_ARCHIVE // MEDICAL_LOGS</span>
+                                  <span className="text-[#00F0FF] group-hover:animate-pulse">▶ ACCESS</span>
+                                </div>
+                                <div className="text-white font-medium text-[16px]" style={{ fontFamily: "'VT323', monospace" }}>
+                                  Autism Documentation & Field Notes
+                                </div>
+                              </a>
                             </div>
 
                             {/* Footer Status Stamp */}
@@ -4400,6 +4418,21 @@ export default function App() {
                             <div className="text-[9px] text-gray-500 uppercase">@merrypranxter (100+ repos)</div>
                           </div>
                           <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#39FF14] transition-all" />
+                        </a>
+
+                        {/* Autism Documentation */}
+                        <a 
+                          href="https://merrys-autism.merrypranxter.chatgpt.site/" data-tensor-action="celebrate" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          onClick={() => playChime('sine', 1.7)}
+                          className="group border border-zinc-800 hover:border-[#00F0FF] p-3 hover:bg-[#00F0FF]/5 flex justify-between items-center transition-all cursor-crosshair rounded"
+                        >
+                          <div className="space-y-0.5">
+                            <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#00F0FF]">Autism Documentation</div>
+                            <div className="text-[9px] text-gray-500 uppercase">EXTERNAL_ARCHIVE</div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#00F0FF] transition-all" />
                         </a>
                       </div>
 
