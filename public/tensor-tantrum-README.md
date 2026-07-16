@@ -9,7 +9,7 @@ This is **not** a filtered copy of the pet artwork. The runtime loads no image. 
 - `tensor-tantrum.js` — drop-in production widget.
 - `index.html` — standalone interaction lab and visual test page.
 
-Open `index.html` to test direct clicks, near clicks, pointer hover, scroll pressure, scroll-over, button reactions, wandering, explicit actions, and motion controls.
+Open `index.html` to test direct clicks, near clicks, pointer hover, scroll pressure, cursor attacks, artwork exclusions, wandering, explicit actions, and motion controls.
 
 ## Put him on AstralTrash
 
@@ -35,11 +35,13 @@ The script creates a fixed transparent Canvas and stays outside React's managed 
 | Click within the near radius | `startle`: jumps and recoils away from the click |
 | Fast page scroll | `surf`: scroll direction supplies spin and horizontal impulse |
 | Wheel/trackpad scroll while pointer is over him | Stronger `scroll-over` surf reaction |
-| Any button, link, or `[role="button"]` click | Deterministic action derived from its label |
-| Element with `data-tensor-action` | Runs the named action exactly |
+| Any eligible button, link, or `[role="button"]` click | Zips to the cursor, glitch-mauls it for about a second, then retreats to his exact previous position |
+| Element with `data-tensor-action` | Uses the named action as the attack's glitch flavor |
+| SHADERSLOP page or SHADERSLOP destination | No cursor attack and no click-startle; interactive shaders stay unobscured |
+| Artwork, artwork controls, or marked art containers | No cursor attack and no click-startle |
 | No interaction | Wanders along the viewport floor, blinks, watches, and continuously aberrates |
 
-## Give a control an exact reaction
+## Flavor a control's cursor attack
 
 ```html
 <button data-tensor-action="flip">Flip his shit</button>
@@ -55,6 +57,28 @@ Named actions are:
 
 Aliases also work: `dance` → `celebrate`, `glitch` → `hack`, `spin` → `flip`, `pop` → `teleport`, and `surprise` → `startle`.
 
+Button and link clicks now use those values as attack flavors rather than replacing the cursor hunt. Direct API calls still run the original standalone action.
+
+## Protect art from the little bastard
+
+Tensor automatically refuses to attack on the visible **ShaderSlop Gallery**, on controls leading to SHADERSLOP or ART_SLOP, and around common art surfaces such as Canvas, iframes, images, video, figures, shader viewers, thumbnails, galleries, and artwork cards.
+
+For anything custom, mark either the control or any ancestor:
+
+```html
+<div data-tensor-art>
+  <!-- Clicking controls anywhere in here will not summon him. -->
+</div>
+
+<button data-no-tensor-attack>Quiet button</button>
+
+<section data-tensor-attack="off">
+  <!-- Entire protected interaction zone. -->
+</section>
+```
+
+Disable cursor hunting for an entire loader instance with `data-attack-controls="false"`.
+
 ## Tiny control API
 
 ```js
@@ -62,6 +86,7 @@ TensorTantrum.jump();
 TensorTantrum.flip();
 TensorTantrum.tantrum();
 TensorTantrum.teleport(120);       // optional viewport x-coordinate
+TensorTantrum.attackCursor(640, 360); // zip, maul, and retreat
 TensorTantrum.act("hack");
 TensorTantrum.setMotion(false);    // parks locomotion; static glitch identity remains
 TensorTantrum.setMotion(true);
@@ -77,7 +102,15 @@ window.addEventListener("tensor-tantrum:state", (event) => {
 });
 
 window.addEventListener("tensor-tantrum:button", (event) => {
-  console.log(event.detail.action, event.detail.element);
+  console.log(event.detail.action, event.detail.flavor, event.detail.element);
+});
+
+window.addEventListener("tensor-tantrum:attack", (event) => {
+  console.log(event.detail.phase); // dash → maul → retreat → home
+});
+
+window.addEventListener("tensor-tantrum:attack-skipped", (event) => {
+  console.log(event.detail.reason); // shaderslop-page, artwork-context, etc.
 });
 ```
 
@@ -90,6 +123,7 @@ window.addEventListener("tensor-tantrum:button", (event) => {
 | `data-side` | `right` | Initial side: `left` or `right` |
 | `data-edge` | `14` | Minimum distance from viewport edges |
 | `data-near-radius` | `260` | Radius in CSS pixels for near-click startle |
+| `data-attack-controls` | `true` | Enable cursor attacks for eligible buttons and links |
 | `data-z-index` | `2147483000` | Overlay stacking level |
 | `data-remember` | `true` | Remember ecology populations for this browser tab |
 

@@ -23,6 +23,9 @@ interface ProjectItem {
   title: string;
   subtitle: string;
   liveUrl: string;
+  liveUrl2?: string;
+  liveTitle1?: string;
+  liveTitle2?: string;
   repoUrl?: string;
   description: string;
   tag: string;
@@ -103,7 +106,10 @@ const PROJECTS: ProjectItem[] = [
     title: 'GHOST NODE',
     subtitle: 'Autonomous Poetic Presence',
     liveUrl: 'https://melodious-zabaione-c5fb66.netlify.app/',
-    description: 'A sensory poetic stream environment designed with haunting text fragments, feedback noise, and interactive frequency generators.',
+    liveUrl2: 'https://ghost-771-archive.merrypranxter.chatgpt.site/',
+    liveTitle1: 'GHOST_INTERACTIVE',
+    liveTitle2: 'GHOST_ARCHIVE',
+    description: 'A sensory poetic stream environment designed with haunting text fragments, feedback noise, and interactive frequency generators, split alongside its full conceptual archive.',
     tag: 'GHOST_NODE_PORT_80',
     accentColor: '#FF007F',
     soft: 'rgba(255,0,127,.4)',
@@ -223,12 +229,13 @@ export function SubProjects({ playChime }: SubProjectsProps) {
   };
 
   // Smart cartridges get the visitor's key riding along as ?apiKey=...
-  const buildUrl = (proj: ProjectItem) => {
+  const buildUrl = (proj: ProjectItem, urlOverride?: string) => {
+    const targetUrl = urlOverride || proj.liveUrl;
     if (proj.aiPowered && geminiKey) {
-      const sep = proj.liveUrl.includes('?') ? '&' : '?';
-      return `${proj.liveUrl}${sep}apiKey=${encodeURIComponent(geminiKey)}`;
+      const sep = targetUrl.includes('?') ? '&' : '?';
+      return `${targetUrl}${sep}apiKey=${encodeURIComponent(geminiKey)}`;
     }
-    return proj.liveUrl;
+    return targetUrl;
   };
 
   const handleRefreshIframe = (id: string) => {
@@ -534,16 +541,43 @@ export function SubProjects({ playChime }: SubProjectsProps) {
 
                 {/* Frame bay */}
                 {isLoaded ? (
-                  <div className={`relative bg-black border-2 overflow-hidden ${isMaxed ? 'aspect-[16/9] min-h-[420px]' : 'aspect-video'}`} style={{ borderColor: proj.soft }}>
+                  <div className={`relative bg-black border-2 overflow-hidden ${isMaxed ? 'aspect-[16/9] min-h-[420px]' : 'aspect-video'} ${proj.liveUrl2 ? 'flex flex-col md:flex-row' : ''}`} style={{ borderColor: proj.soft }}>
                     {crtFilter && <div className="cab-framebay-scan" />}
-                    <iframe
-                      key={`${proj.id}-${iframeKey}-${smartArmed ? 'smart' : 'dumb'}`}
-                      src={buildUrl(proj)}
-                      title={`${proj.title} Live Node`}
-                      className="w-full h-full border-0 bg-black relative z-10"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; microphone"
-                      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                    />
+                    {proj.liveUrl2 ? (
+                      <>
+                        <div className="flex-1 relative border-b md:border-b-0 md:border-r border-zinc-900/50 flex flex-col">
+                          <div className="text-[9px] font-mono font-bold text-center bg-zinc-900/40 text-zinc-400 py-1 uppercase">{proj.liveTitle1}</div>
+                          <iframe
+                            key={`${proj.id}-1-${iframeKey}-${smartArmed ? 'smart' : 'dumb'}`}
+                            src={buildUrl(proj)}
+                            title={`${proj.title} Live Node 1`}
+                            className="w-full flex-1 border-0 bg-black relative z-10"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; microphone"
+                            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                          />
+                        </div>
+                        <div className="flex-1 relative flex flex-col">
+                          <div className="text-[9px] font-mono font-bold text-center bg-zinc-900/40 text-zinc-400 py-1 uppercase">{proj.liveTitle2}</div>
+                          <iframe
+                            key={`${proj.id}-2-${iframeKey}-${smartArmed ? 'smart' : 'dumb'}`}
+                            src={buildUrl(proj, proj.liveUrl2)}
+                            title={`${proj.title} Live Node 2`}
+                            className="w-full flex-1 border-0 bg-black relative z-10"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; microphone"
+                            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <iframe
+                        key={`${proj.id}-${iframeKey}-${smartArmed ? 'smart' : 'dumb'}`}
+                        src={buildUrl(proj)}
+                        title={`${proj.title} Live Node`}
+                        className="w-full h-full border-0 bg-black relative z-10"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; microphone"
+                        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                      />
+                    )}
                   </div>
                 ) : (
                   <div className="relative bg-black/80 border-2 border-dashed aspect-video overflow-hidden flex flex-col items-center justify-center gap-4 select-none p-4" style={{ borderColor: proj.soft }}>
@@ -570,15 +604,38 @@ export function SubProjects({ playChime }: SubProjectsProps) {
                   <button onClick={() => handleMaximize(proj.id)} className="cab-ctl hidden md:inline-flex" title={isMaxed ? 'Shrink cabinet' : 'Full-width cabinet'}>
                     {isMaxed ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />} {isMaxed ? 'SHRINK' : 'MAXIMIZE'}
                   </button>
-                  <a
-                    href={buildUrl(proj)}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => playChime('sine', 1.3)}
-                    className="cab-ctl"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" /> NEW TAB 🚀
-                  </a>
+                  {proj.liveUrl2 ? (
+                    <>
+                      <a
+                        href={buildUrl(proj)}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => playChime('sine', 1.3)}
+                        className="cab-ctl"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" /> {proj.liveTitle1} 🚀
+                      </a>
+                      <a
+                        href={buildUrl(proj, proj.liveUrl2)}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => playChime('sine', 1.3)}
+                        className="cab-ctl"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" /> {proj.liveTitle2} 🚀
+                      </a>
+                    </>
+                  ) : (
+                    <a
+                      href={buildUrl(proj)}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => playChime('sine', 1.3)}
+                      className="cab-ctl"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> NEW TAB 🚀
+                    </a>
+                  )}
                   {proj.repoUrl && (
                     <a
                       href={proj.repoUrl}

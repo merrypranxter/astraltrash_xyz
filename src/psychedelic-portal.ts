@@ -1,3 +1,11 @@
+
+import {
+  renderPsychedelicArchiveBody,
+  initPsychedelicArchiveBody,
+} from "./psychedelic-archive-body.js";
+import "./psychedelic-archive-body.css";
+
+let destroyPsychedelicArchiveBody = null;
 const PSY_INTRO = [
   `This is not a doctrine, a diagnosis, or a tidy little theory of the universe. It is the running index of what keeps returning: impossible architecture, recursive rooms, geometric intelligence, emotional surgery, comedy at the edge of language, and the occasional complete demolition of whatever I thought “me” was.`,
   `The interesting part is not that psychedelics make things weird. Of course they do. The interesting part is that the weirdness has structure. Certain visual grammars, spatial behaviors, entities, moods, and symbolic systems recur across years, doses, substances, and entirely different circumstances.`,
@@ -261,19 +269,7 @@ function portalMarkup() {
         <p class="psy-deck">A Psychonaut's Notes: Twenty+ Years Of Psychedelic Exploration & My Attempts To Integrate It, Understand It, & Art it.</p>
       </section>
 
-      ${renderIntro()}
-
-      <section class="psy-stage">
-        <nav class="psy-fragments" aria-label="Trip report fragments">
-          ${renderNav()}
-        </nav>
-        <div class="psy-report-host">${renderReport()}</div>
-      </section>
-
-      <footer class="psy-bottom">
-        <span>THIS ARCHIVE IS A PERSONAL RECORD, NOT A RECOMMENDATION.</span>
-        <span>REALITY RESTORES POORLY. SAVE OFTEN.</span>
-      </footer>
+      ${renderPsychedelicArchiveBody({ intro: PSY_INTRO, reports: PSY_REPORTS })}
     </main>
   `;
 }
@@ -296,6 +292,12 @@ function mountPortal() {
   lastCanvasFrame = 0;
   drawField(performance.now());
   requestAnimationFrame(() => portal?.classList.add('is-visible'));
+  const archiveRoot = portal.querySelector("[data-psy-salvage-archive]");
+  destroyPsychedelicArchiveBody?.();
+  destroyPsychedelicArchiveBody = archiveRoot
+    ? initPsychedelicArchiveBody(archiveRoot)
+    : null;
+
   (portal.querySelector('.psy-exit') as HTMLElement | null)?.focus({ preventScroll: true });
 }
 
@@ -307,6 +309,8 @@ function unmountPortal() {
   lastCanvasFrame = 0;
   window.removeEventListener('resize', resizeCanvas);
   window.removeEventListener('keydown', handleKeys);
+  destroyPsychedelicArchiveBody?.();
+  destroyPsychedelicArchiveBody = null;
   const doomed = portal;
   portal = null;
   window.setTimeout(() => doomed.remove(), 350);

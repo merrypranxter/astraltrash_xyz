@@ -1,5 +1,5 @@
 /*
- * TENSOR TANTRUM v1.0.0
+ * TENSOR TANTRUM v1.1.0
  * A code-generated, pixelated page creature made from Canvas pixels, glyphs,
  * chromatic ghosts, and a small finite-state nervous system.
  *
@@ -10,7 +10,7 @@
 
   if (window.TensorTantrum && window.TensorTantrum.version) return;
 
-  const VERSION = "1.0.0";
+  const VERSION = "1.1.0";
   const loader = document.currentScript;
   const data = loader ? loader.dataset : {};
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
@@ -28,6 +28,7 @@
     edge: clamp(Number.parseInt(data.edge || "14", 10) || 14, 0, 80),
     zIndex: Number.parseInt(data.zIndex || "2147483000", 10) || 2147483000,
     nearRadius: clamp(Number.parseInt(data.nearRadius || "260", 10) || 260, 120, 600),
+    attackControls: data.attackControls !== "false",
     remember: data.remember !== "false"
   };
 
@@ -64,6 +65,25 @@
     PALETTE.orange
   ];
   const GLYPHS = ["0", "1", "#", "%", "@", "<", ">", "[", "]", "{", "}", "*", "+", "×", "∴", "⌁"];
+  const CONTROL_SELECTOR = "button, a, [role='button'], input[type='button'], input[type='submit'], [data-tensor-action]";
+  const ART_SELECTOR = [
+    "canvas",
+    "iframe",
+    "img",
+    "video",
+    "picture",
+    "figure",
+    ".shader-iframe-clean",
+    ".clean-container",
+    ".thumb",
+    ".artwork",
+    ".art-card",
+    ".gallery-item",
+    "[data-art]",
+    "[data-artwork]",
+    "[data-shader]",
+    "[data-tensor-art]"
+  ].join(", ");
 
   function hash(x, y, seed) {
     let n = Math.imul((x | 0) ^ 0x45d9f3b, 0x45d9f3b);
@@ -234,6 +254,25 @@
     visible: true
   };
 
+  const cursorAttack = {
+    active: false,
+    phase: "idle",
+    phaseStartedAt: 0,
+    x: 0,
+    y: 0,
+    fromX: 0,
+    fromY: 0,
+    homeX: 0,
+    homeY: 0,
+    homeTargetX: 0,
+    homeFacing: 1,
+    cursorX: 0,
+    cursorY: 0,
+    nextBurstAt: 0,
+    flavor: "hack",
+    source: "control"
+  };
+
   const PRIORITY = {
     idle: 0,
     wander: 0,
@@ -245,7 +284,8 @@
     startle: 4,
     flip: 5,
     teleport: 5,
-    tantrum: 6
+    tantrum: 6,
+    attack: 7
   };
 
   function emit(name, detail) {
@@ -294,6 +334,7 @@
 
   function act(name, options = {}) {
     const action = normalizedAction(name);
+    if (cursorAttack.active && action !== "attack" && !options.interruptAttack) return false;
     const currentPriority = PRIORITY[state.action] || 0;
     const nextPriority = PRIORITY[action] || 0;
     const time = now();
@@ -377,9 +418,21 @@
       state.x = clamp(state.x, minX, maxX);
       state.targetX = clamp(state.targetX, minX, maxX);
     }
+    if (cursorAttack.active) {
+      cursorAttack.homeX = clamp(cursorAttack.homeX, minX, maxX);
+      cursorAttack.homeY = state.groundY;
+      cursorAttack.x = clamp(cursorAttack.x, minX, maxX);
+      cursorAttack.y = clamp(cursorAttack.y, config.edge, Math.max(config.edge, window.innerHeight - config.size - config.edge));
+    }
   }
 
   function creatureCenter() {
+    if (cursorAttack.active) {
+      return {
+        x: cursorAttack.x + config.size * 0.5,
+        y: cursorAttack.y + config.size * 0.53
+      };
+    }
     return {
       x: state.x + config.size * 0.5,
       y: state.groundY + state.jumpY + config.size * 0.53
@@ -402,6 +455,182 @@
     return ["flip", "celebrate", "jump", "hack", "teleport"][sum % 5];
   }
 
+  function isVisibleElement(element) {
+    if (!(element instanceof Element)) return false;
+    const style = window.getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+  }
+
+  function isShaderslopPage() {
+    const route = `${window.location.pathname} ${window.location.search} ${window.location.hash}`;
+    if (/shaderslop/i.test(route)) return true;
+    if (document.body?.matches("[data-page='shaderslop'], [data-active-tab='shaderslop'], .shaderslop-page")) return true;
+    if (document.querySelector("[id^='gallery-iframe-']")) return true;
+    return Array.from(document.querySelectorAll("h1, h2, h3, [data-page-title]"))
+      .some((heading) => isVisibleElement(heading) && /shaderslop\s+gallery/i.test(heading.textContent || ""));
+  }
+
+  function targetLeadsToProtectedArt(target) {
+    if (!(target instanceof Element)) return false;
+    const label = `${target.getAttribute("aria-label") || ""} ${target.textContent || ""}`;
+    const href = target instanceof HTMLAnchorElement ? target.href : target.getAttribute("href") || "";
+    return /\b(?:shaderslop|art[_\s-]?slop)\b/i.test(`${label} ${href}`)
+      || /(?:shaderslop_designs|raw\.githack\.com|objkt\.com|\.(?:png|jpe?g|gif|webp|avif|svg|mp4|webm)(?:[?#]|$))/i.test(href);
+  }
+
+  function elementLivesInArt(element) {
+    if (!(element instanceof Element)) return false;
+    if (element.closest("[data-no-tensor-attack], [data-tensor-attack='off']")) return true;
+    if (element.matches(ART_SELECTOR) || element.querySelector(ART_SELECTOR)) return true;
+
+    let ancestor = element.parentElement;
+    let depth = 0;
+    while (ancestor && depth < 6 && ancestor !== document.body && ancestor.tagName !== "MAIN") {
+      const className = typeof ancestor.className === "string" ? ancestor.className : "";
+      if (ancestor.matches(ART_SELECTOR)) return true;
+      if (/(?:^|\s)(?:artwork|art-card|art-grid|gallery|gallery-item|shader|shader-viewer|thumb|media|nft|token)(?:\s|[-_:]|$)/i.test(className)) return true;
+      if (ancestor.querySelector(ART_SELECTOR)) return true;
+      ancestor = ancestor.parentElement;
+      depth += 1;
+    }
+    return false;
+  }
+
+  function attackPermission(target, clickedElement) {
+    if (!config.attackControls) return { allowed: false, reason: "loader-disabled" };
+    if (isShaderslopPage()) return { allowed: false, reason: "shaderslop-page" };
+    if (target?.matches(":disabled, [aria-disabled='true']")) return { allowed: false, reason: "disabled-control" };
+    if (target?.closest("[data-no-tensor-attack], [data-tensor-attack='off']")) return { allowed: false, reason: "explicit-exclusion" };
+    if (targetLeadsToProtectedArt(target)) return { allowed: false, reason: "art-destination" };
+    if (elementLivesInArt(clickedElement || target)) return { allowed: false, reason: "artwork-context" };
+    return { allowed: true, reason: "control" };
+  }
+
+  function setCursorAttackPhase(phase, time) {
+    cursorAttack.phase = phase;
+    cursorAttack.phaseStartedAt = time;
+    cursorAttack.fromX = cursorAttack.x;
+    cursorAttack.fromY = cursorAttack.y;
+    emit("attack", {
+      phase,
+      source: cursorAttack.source,
+      flavor: cursorAttack.flavor,
+      target: { x: Math.round(cursorAttack.cursorX), y: Math.round(cursorAttack.cursorY) }
+    });
+  }
+
+  function beginCursorAttack(target, x, y, source) {
+    const time = now();
+    const flavor = target instanceof Element ? buttonAction(target) : "hack";
+    const wasActive = cursorAttack.active;
+
+    if (!motionEnabled) {
+      burst(flavor === "celebrate" ? "stars" : "syntax", 12, 0.75);
+      act("hack", { source: `${source || "control"}:reduced-motion`, duration: 520, force: true, power: 0.65 });
+      emit("attack", { phase: "reduced-motion", source: source || "control", flavor, target: { x, y } });
+      return false;
+    }
+
+    if (!wasActive) {
+      cursorAttack.homeX = state.x;
+      cursorAttack.homeY = state.groundY + state.jumpY;
+      cursorAttack.homeTargetX = state.targetX;
+      cursorAttack.homeFacing = state.facing;
+      cursorAttack.x = state.x;
+      cursorAttack.y = state.groundY + state.jumpY;
+    }
+
+    cursorAttack.active = true;
+    const attackX = Number(x);
+    const attackY = Number(y);
+    cursorAttack.cursorX = clamp(Number.isFinite(attackX) ? attackX : state.pointerX, 0, window.innerWidth);
+    cursorAttack.cursorY = clamp(Number.isFinite(attackY) ? attackY : state.pointerY, 0, window.innerHeight);
+    cursorAttack.flavor = flavor;
+    cursorAttack.source = source || "control";
+    cursorAttack.nextBurstAt = time;
+
+    state.action = "attack";
+    state.actionUntil = Number.POSITIVE_INFINITY;
+    state.velocityX = 0;
+    state.jumpVelocity = 0;
+    state.spinVelocity = 0;
+    state.hover = false;
+    state.energy = 1;
+
+    if (flavor === "celebrate") feed("chroma", 0.13);
+    else if (flavor === "flip" || flavor === "jump") feed("bits", 0.15);
+    else feed("syntax", 0.16);
+    burst(flavor === "celebrate" ? "stars" : "syntax", 30, 1.3);
+    setCursorAttackPhase("dash", time);
+    noticeState(cursorAttack.source);
+    return true;
+  }
+
+  function finishCursorAttack(time) {
+    state.x = clamp(cursorAttack.homeX, config.edge, Math.max(config.edge, window.innerWidth - config.size - config.edge));
+    state.targetX = clamp(cursorAttack.homeTargetX, config.edge, Math.max(config.edge, window.innerWidth - config.size - config.edge));
+    state.jumpY = clamp(cursorAttack.homeY - state.groundY, -config.size * 0.65, 0);
+    state.facing = cursorAttack.homeFacing;
+    state.velocityX = 0;
+    state.jumpVelocity = 0;
+    state.spinVelocity = 0;
+    state.angle = Math.round(state.angle / 360) * 360;
+    // Hold the recovered coordinate for a beat before normal wandering resumes.
+    state.action = "hack";
+    state.actionUntil = time + 520;
+    state.nextWander = time + 1400;
+    cursorAttack.active = false;
+    cursorAttack.phase = "idle";
+    burst("bits", 18, 0.8);
+    emit("attack", { phase: "home", source: cursorAttack.source, flavor: cursorAttack.flavor });
+    noticeState("attack-complete");
+  }
+
+  function updateCursorAttack(time, dt) {
+    const minX = config.edge;
+    const maxX = Math.max(minX, window.innerWidth - config.size - config.edge);
+    const minY = config.edge;
+    const maxY = Math.max(minY, window.innerHeight - config.size - config.edge);
+    const targetX = clamp(cursorAttack.cursorX - config.size * 0.5, minX, maxX);
+    const targetY = clamp(cursorAttack.cursorY - config.size * 0.52, minY, maxY);
+    const elapsed = time - cursorAttack.phaseStartedAt;
+    const direction = targetX + config.size * 0.5 >= cursorAttack.x + config.size * 0.5 ? 1 : -1;
+    state.facing = direction;
+
+    if (cursorAttack.phase === "dash") {
+      const t = clamp(elapsed / 240, 0, 1);
+      const ease = 1 - (1 - t) ** 4;
+      cursorAttack.x = lerp(cursorAttack.fromX, targetX, ease);
+      cursorAttack.y = lerp(cursorAttack.fromY, targetY, ease);
+      state.angle += direction * (760 + ecology.bits * 420) * dt;
+      state.squish = Math.sin(t * Math.PI) * 0.32;
+      if (t >= 1) setCursorAttackPhase("maul", time);
+    } else if (cursorAttack.phase === "maul") {
+      const tick = Math.floor(time / 38);
+      const jitterX = (hash(tick, ecology.buttonClicks, 701) - 0.5) * config.size * 0.24;
+      const jitterY = (hash(tick, ecology.directClicks, 702) - 0.5) * config.size * 0.2;
+      const response = 1 - Math.exp(-25 * dt);
+      cursorAttack.x = lerp(cursorAttack.x, clamp(targetX + jitterX, minX, maxX), response);
+      cursorAttack.y = lerp(cursorAttack.y, clamp(targetY + jitterY, minY, maxY), response);
+      state.angle += direction * (940 + Math.sin(time * 0.04) * 520) * dt;
+      state.squish = 0.18 + Math.abs(Math.sin(time * 0.065)) * 0.28;
+      if (time >= cursorAttack.nextBurstAt) {
+        burst(cursorAttack.flavor === "celebrate" ? "stars" : "syntax", 10, 1.05);
+        cursorAttack.nextBurstAt = time + 115;
+      }
+      if (elapsed >= 820) setCursorAttackPhase("retreat", time);
+    } else if (cursorAttack.phase === "retreat") {
+      const t = clamp(elapsed / 360, 0, 1);
+      const ease = t * t * (3 - 2 * t);
+      cursorAttack.x = lerp(cursorAttack.fromX, cursorAttack.homeX, ease);
+      cursorAttack.y = lerp(cursorAttack.fromY, cursorAttack.homeY, ease);
+      state.angle += cursorAttack.homeFacing * (1 - ease) * 480 * dt;
+      state.squish = (1 - ease) * 0.22;
+      if (t >= 1) finishCursorAttack(time);
+    }
+  }
+
   function addListener(target, type, handler, options) {
     target.addEventListener(type, handler, options);
     listeners.push(() => target.removeEventListener(type, handler, options));
@@ -410,6 +639,10 @@
   function onPointerMove(event) {
     state.pointerX = event.clientX;
     state.pointerY = event.clientY;
+    if (cursorAttack.active && cursorAttack.phase !== "retreat") {
+      cursorAttack.cursorX = event.clientX;
+      cursorAttack.cursorY = event.clientY;
+    }
     const wasHovering = state.hover;
     state.hover = pointHitsCreature(event.clientX, event.clientY);
     if (state.hover && !wasHovering) {
@@ -419,12 +652,44 @@
   }
 
   function onPointerDown(event) {
+    if (event.button !== 0 || event.isPrimary === false) return;
     if (pointHitsCreature(event.clientX, event.clientY)) {
       ecology.directClicks += 1;
+      if (cursorAttack.active) {
+        cursorAttack.cursorX = event.clientX;
+        cursorAttack.cursorY = event.clientY;
+        setCursorAttackPhase("maul", now());
+        burst("syntax", 36, 1.5);
+        feed("syntax", 0.14);
+        saveEcology();
+        return;
+      }
       const center = creatureCenter();
       const direction = event.clientX < center.x ? 1 : -1;
       act("tantrum", { source: "direct-click", direction, power: 1.1, force: true });
       saveEcology();
+      return;
+    }
+
+    const clickedElement = event.target instanceof Element ? event.target : null;
+    const target = clickedElement ? clickedElement.closest(CONTROL_SELECTOR) : null;
+    if (target) {
+      const permission = attackPermission(target, clickedElement);
+      if (!permission.allowed) {
+        emit("attack-skipped", { reason: permission.reason, element: target });
+        return;
+      }
+      ecology.buttonClicks += 1;
+      const source = `control:${target.getAttribute("aria-label") || target.textContent?.trim().slice(0, 32) || target.tagName.toLowerCase()}`;
+      const flavor = buttonAction(target);
+      beginCursorAttack(target, event.clientX, event.clientY, source);
+      emit("button", { action: "attack", flavor, element: target });
+      saveEcology();
+      return;
+    }
+
+    if (isShaderslopPage() || elementLivesInArt(clickedElement)) {
+      emit("attack-skipped", { reason: isShaderslopPage() ? "shaderslop-page" : "artwork-context", element: clickedElement });
       return;
     }
 
@@ -437,27 +702,10 @@
       act("startle", { source: "near-click", direction, power: 0.7 + proximity * 0.65 });
       saveEcology();
     }
-
-    const target = event.target instanceof Element
-      ? event.target.closest("button, a, [role='button'], input[type='button'], input[type='submit'], [data-tensor-action]")
-      : null;
-    if (target) {
-      ecology.buttonClicks += 1;
-      const targetRect = target.getBoundingClientRect();
-      const action = buttonAction(target);
-      const direction = targetRect.left + targetRect.width * 0.5 < center.x ? -1 : 1;
-      act(action, {
-        source: `button:${target.getAttribute("aria-label") || target.textContent?.trim().slice(0, 32) || target.tagName.toLowerCase()}`,
-        direction,
-        x: targetRect.left - config.size * 0.3,
-        force: true
-      });
-      emit("button", { action, element: target });
-      saveEcology();
-    }
   }
 
   function onScroll() {
+    if (cursorAttack.active) return;
     const time = now();
     const delta = window.scrollY - state.lastScrollY;
     // Cap the idle gap so the first scroll after a long pause still has physical force.
@@ -478,6 +726,7 @@
   }
 
   function onWheel(event) {
+    if (cursorAttack.active) return;
     if (!pointHitsCreature(event.clientX, event.clientY)) return;
     act("surf", {
       source: "scroll-over",
@@ -514,6 +763,12 @@
     state.energy = lerp(state.energy, 0.22, 1.2 * dt);
     state.scrollEnergy = Math.max(0, state.scrollEnergy - 0.55 * dt);
     state.teleportFlash = Math.max(0, state.teleportFlash - 3.2 * dt);
+
+    if (cursorAttack.active) {
+      updateCursorAttack(time, dt);
+      updateParticles(dt);
+      return;
+    }
 
     if (state.teleportAt && time >= state.teleportAt) {
       state.x = clamp(state.teleportTargetX, minX, maxX);
@@ -666,7 +921,7 @@
 
   function drawLimbs(ctx, tick, action) {
     const gait = state.action === "wander" ? Math.sin(tick * 0.7) : Math.sin(tick * 0.24) * 0.45;
-    const raised = action === "celebrate" || action === "hack" || action === "tantrum";
+    const raised = action === "celebrate" || action === "hack" || action === "tantrum" || action === "attack";
     const leftY = raised ? 14 + Math.round(Math.sin(tick * 0.55) * 2) : 29 + Math.round(gait);
     const rightY = raised ? 13 + Math.round(Math.cos(tick * 0.48) * 2) : 29 - Math.round(gait);
 
@@ -689,7 +944,7 @@
     const blink = now() < state.blinkUntil;
     const mood = action === "tantrum" || action === "flip"
       ? "dizzy"
-      : action === "startle"
+      : action === "startle" || action === "attack"
         ? "squint"
         : "watch";
     drawEye(ctx, 17.2, 22.5, tick, blink, mood);
@@ -780,7 +1035,7 @@
     ctx.scale(pixelScale, pixelScale);
 
     const active = PRIORITY[action] || 0;
-    const shakeAmount = action === "tantrum" ? 1.8 : action === "hack" ? 1.15 : state.scrollEnergy * 0.8;
+    const shakeAmount = action === "attack" ? 2.6 : action === "tantrum" ? 1.8 : action === "hack" ? 1.15 : state.scrollEnergy * 0.8;
     const shakeX = motionEnabled ? Math.round((hash(tick, 1, 5) - 0.5) * shakeAmount * 2) : 0;
     const shakeY = motionEnabled ? Math.round((hash(tick, 2, 7) - 0.5) * shakeAmount * 2) : 0;
     ctx.translate(24 + shakeX, 24 + shakeY);
@@ -804,7 +1059,7 @@
     ctx.restore();
 
     // Compression-damage species: copied scan strips whose frequency is ecological state.
-    const sliceCount = Math.min(5, Math.floor(ecology.bits * 4 + (action === "hack" || action === "tantrum" ? 2 : 0)));
+    const sliceCount = Math.min(6, Math.floor(ecology.bits * 4 + (action === "attack" ? 3 : action === "hack" || action === "tantrum" ? 2 : 0)));
     for (let i = 0; i < sliceCount; i += 1) {
       if (hash(i, tick, 501) > ecology.bits + (active > 2 ? 0.22 : 0)) continue;
       const sy = Math.floor(hash(i, tick, 502) * (canvasSize - 8));
@@ -822,8 +1077,10 @@
     const scaleX = 1 + state.squish * 0.24 - stretch * 0.4;
     const scaleY = 1 - state.squish * 0.22 + stretch;
     const fade = state.teleportAt ? clamp((state.teleportAt - now()) / 135, 0.12, 1) : 1;
+    const renderX = cursorAttack.active ? cursorAttack.x : state.x;
+    const renderY = cursorAttack.active ? cursorAttack.y : state.groundY + state.jumpY;
     dom.root.style.opacity = String(fade);
-    dom.root.style.transform = `translate3d(${Math.round(state.x)}px, ${Math.round(state.groundY + state.jumpY)}px, 0) rotate(${state.angle.toFixed(2)}deg) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)})`;
+    dom.root.style.transform = `translate3d(${Math.round(renderX)}px, ${Math.round(renderY)}px, 0) rotate(${state.angle.toFixed(2)}deg) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)})`;
   }
 
   function frame(time) {
@@ -846,6 +1103,7 @@
   function setMotion(enabled) {
     motionEnabled = Boolean(enabled) && !reducedQuery.matches;
     if (!motionEnabled) {
+      if (cursorAttack.active) finishCursorAttack(now());
       state.jumpY = 0;
       state.jumpVelocity = 0;
       state.velocityX = 0;
@@ -857,6 +1115,11 @@
 
   function teleport(x) {
     return act("teleport", { x: Number(x), source: "api", force: true });
+  }
+
+  function attackCursor(x = state.pointerX, y = state.pointerY) {
+    if (!config.attackControls || isShaderslopPage()) return false;
+    return beginCursorAttack(null, Number(x), Number(y), "api");
   }
 
   function destroy() {
@@ -874,7 +1137,21 @@
       version: VERSION,
       action: state.action,
       motionEnabled,
-      position: { x: Math.round(state.x), y: Math.round(state.groundY + state.jumpY) },
+      position: {
+        x: Math.round(cursorAttack.active ? cursorAttack.x : state.x),
+        y: Math.round(cursorAttack.active ? cursorAttack.y : state.groundY + state.jumpY)
+      },
+      cursorAttack: {
+        active: cursorAttack.active,
+        phase: cursorAttack.phase,
+        allowedOnPage: config.attackControls && !isShaderslopPage(),
+        home: cursorAttack.active
+          ? { x: Math.round(cursorAttack.homeX), y: Math.round(cursorAttack.homeY) }
+          : null,
+        target: cursorAttack.active
+          ? { x: Math.round(cursorAttack.cursorX), y: Math.round(cursorAttack.cursorY) }
+          : null
+      },
       ecology: {
         chroma: ecology.chroma,
         bits: ecology.bits,
@@ -912,6 +1189,7 @@
     flip: () => act("flip", { source: "api", force: true }),
     tantrum: () => act("tantrum", { source: "api", force: true }),
     teleport,
+    attackCursor,
     setMotion,
     status,
     destroy,
