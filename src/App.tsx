@@ -36,6 +36,7 @@ import { ShittyKaraoke } from './components/ShittyKaraoke';
 import { SubProjects } from './components/SubProjects';
 import AiSlop from './components/AiSlop';
 import localExplanations from './explanations.json';
+import AstralAbout from "./components/AstralAbout";
 
 // Define structure for our shader items
 interface ShaderItem {
@@ -2372,7 +2373,7 @@ export default function App() {
                         Cosmic debris, lovingly rendered. <em>GLSL shaders</em>, generative math, and twenty years of documented psychedelic phenomenology — salvaged, glitched, and left glowing in orbit by <em>astraltrash</em>. One artist's trash is the same artist's treasure.
                       </div>
                       <div className="btn-row">
-                        <button onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }} className="btn alt speak cursor-crosshair" data-say="Entering the shaderslop gallery">
+                        <button onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }} className="btn alt speak cursor-crosshair" data-say="Entering the shaderslop gallery" data-tensor-action="surf">
                           SHADERSLOP ▸
                         </button>
                         <a
@@ -2380,7 +2381,7 @@ export default function App() {
                           href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9"
                           target="_blank"
                           rel="noopener noreferrer"
-                          data-say="Collect original AstralTrash NFT artworks on Tezos"
+                          data-say="Collect original AstralTrash NFT artworks on Tezos" data-tensor-action="celebrate"
                         >
                           SHOP TEZOS NFTs ⟡ OBJKT
                         </a>
@@ -4259,190 +4260,8 @@ export default function App() {
               {/* SUB-VIEW 5: ABOUT_ME (Original Portfolio dossier layout)       */}
               {/* ------------------------------------------------------------- */}
               {moreSubTab === 'about-profile' && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fade-in text-left">
-                  
-                  {/* Left Column: Interactive Portrait Dossier */}
-                  <div className="lg:col-span-5 bg-black/95 border-2 border-[#9D4DFF] p-4 shadow-[0_0_20px_rgba(157,77,255,0.2)] space-y-4 font-mono">
-                    <div className="bg-[#9D4DFF] text-black text-[12px] font-bold p-1 px-2 tracking-widest flex justify-between items-center">
-                      <span>👾 PORTRAIT_DOSSIER</span>
-                      <span className="text-[8px] bg-black text-[#9D4DFF] px-1.5 py-0.5">TRK_STREAM</span>
-                    </div>
-
-                    <div 
-                      className="relative cursor-crosshair overflow-hidden group transition-all"
-                      onClick={advanceDossierPhoto}
-                      title="Click to advance photo"
-                    >
-                      {/* Target Corner brackets instead of bounding box */}
-                      <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-[#9D4DFF] z-10" />
-                      <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#9D4DFF] z-10" />
-                      <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#9D4DFF] z-10" />
-                      <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-[#9D4DFF] z-10" />
-
-                      {/* CRT scanline overlay */}
-                      <div className="absolute inset-0 pointer-events-none opacity-20" style={{
-                        backgroundImage: 'linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 50%)',
-                        backgroundSize: '100% 4px',
-                        zIndex: 5
-                      }} />
-
-                      {/* Aspect-ratio 9:16 container */}
-                      <div className="aspect-[9/16] relative overflow-hidden bg-zinc-950/50 flex items-center justify-center p-0.5">
-                        {!dossierBroken.has(dossierIdx) ? (
-                          <img
-                            src={getDossierPhotoUrl(dossierIdx)}
-                            key={`dossier-about-${dossierIdx}-${dossierAttempts[dossierIdx] || 0}`}
-                            alt="Subject: Merry"
-                            onError={() => handleDossierError(dossierIdx)}
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover block transition-all duration-500 group-hover:scale-105"
-                            style={{ animation: 'dzflicker 7s steps(50) infinite' }}
-                          />
-                        ) : (
-                          <div className="absolute inset-0 p-4 flex flex-col justify-center items-center text-center text-[#9D4DFF] space-y-2 select-none">
-                            <span className="text-[20px] animate-pulse">⚠</span>
-                            <span className="text-[11px] font-bold tracking-wider uppercase">NO PHOTO RETRIEVED</span>
-                            <span className="text-[9px] text-zinc-500 leading-normal max-w-[140px] font-mono normal-case">
-                              drop photos in public/dossier/ and update code to active
-                            </span>
-                            <div className="text-[8px] text-zinc-600 font-mono scale-90 mt-1">
-                              [IMG_0{dossierIdx + 1}_PLACEHOLDER]
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Photo footer details */}
-                      <div className="flex justify-between items-center text-[11px] text-[#9D4DFF] p-2 pt-3 font-mono">
-                        <span className="text-[#39FF14] animate-pulse font-bold flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#39FF14] inline-block" /> ● TRK_ACTIVE
-                        </span>
-                        <span>IMG_0{dossierIdx + 1}/0{DOSSIER_PHOTOS.length}</span>
-                        <span className="font-bold">MERRY_ID</span>
-                      </div>
-                    </div>
-
-                    <div className="text-[9px] text-zinc-600 text-center uppercase tracking-wider font-mono">
-                      ✦ Click photo to manually cycle index ✦
-                    </div>
-                  </div>
-
-                  {/* Right Column: Bio, Statements & Links */}
-                  <div className="lg:col-span-7 space-y-6">
-                    
-                    {/* Biography Box */}
-                    <div className="border border-zinc-800 bg-black/80 p-5 space-y-3 font-sans">
-                      <h3 className="text-xl font-bold font-sans text-white tracking-tight border-b border-zinc-900 pb-2 flex items-center gap-2">
-                        <Atom className="w-5 h-5 text-[#9D4DFF]" />
-                        <span>THE ENTITY: MERRY</span>
-                      </h3>
-                      <div className="text-[14px] text-gray-300 leading-relaxed space-y-3.5">
-                        <p>
-                          I am Merry (known across web networks as <strong>astraltrash</strong>), a visual artist and shader wizard exploring the intersections of geometry, visual phenomenology, and retro computing.
-                        </p>
-                        <p>
-                          For two decades, I have compiled, dithered, and documented recurring mathematical constants found during psychedelic states. Rather than letting these ideas rest in obscure offline notebooks, I construct responsive, live WebGL2 systems so that anyone with a browser can look directly into the field of low void orbit.
-                        </p>
-                        <p className="text-zinc-400 italic text-[13px] border-l-2 border-[#9D4DFF] pl-3 py-0.5">
-                          "One artist's accumulated digital debris is another's glowing spacecraft."
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Aesthetic Social Gateways Terminal */}
-                    <div className="border border-[#9D4DFF]/40 bg-black/95 p-5 space-y-4 font-mono">
-                      <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
-                        <span className="text-[12px] font-bold text-[#9D4DFF] uppercase tracking-wider flex items-center gap-1.5">
-                          <Terminal className="w-4 h-4 text-[#9D4DFF]" />
-                          <span>VERIFIED_COMMUNICATION_CHANNELS</span>
-                        </span>
-                        <span className="text-[9px] bg-[#9D4DFF]/20 text-[#9D4DFF] px-1.5 py-0.5">SECURE</span>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Twitter (X) */}
-                        <a 
-                          href="https://x.com/astraltrash_" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          onClick={() => playChime('sine', 1.0)}
-                          className="group border border-zinc-800 hover:border-[#9D4DFF] p-3 hover:bg-[#9D4DFF]/5 flex justify-between items-center transition-all cursor-crosshair rounded"
-                        >
-                          <div className="space-y-0.5">
-                            <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#9D4DFF]">X Account Profile</div>
-                            <div className="text-[9px] text-gray-500 uppercase">@astraltrash_</div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#9D4DFF] transition-all" />
-                        </a>
-
-                        {/* TikTok */}
-                        <a 
-                          href="https://www.tiktok.com/@astraltrash" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          onClick={() => playChime('sine', 1.0)}
-                          className="group border border-zinc-800 hover:border-[#FF2BD6] p-3 hover:bg-[#FF2BD6]/5 flex justify-between items-center transition-all cursor-crosshair rounded"
-                        >
-                          <div className="space-y-0.5">
-                            <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#FF2BD6]">TikTok Profile</div>
-                            <div className="text-[9px] text-gray-500 uppercase">@astraltrash</div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#FF2BD6] transition-all" />
-                        </a>
-
-                        {/* Tezos Objkt.com */}
-                        <a 
-                          href="https://objkt.com/users/tz29m7GScDQn8eE1m8n4h96MAxq279cSsYg9" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          onClick={() => playChime('sine', 1.3)}
-                          className="group border border-zinc-800 hover:border-[#EFFF04] p-3 hover:bg-[#EFFF04]/5 flex justify-between items-center transition-all cursor-crosshair rounded"
-                        >
-                          <div className="space-y-0.5">
-                            <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#EFFF04]">Objkt Tezos Marketplace</div>
-                            <div className="text-[9px] text-gray-500 uppercase">Collect Active NFTs</div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#EFFF04] transition-all" />
-                        </a>
-
-                        {/* GitHub */}
-                        <a 
-                          href="https://github.com/merrypranxter" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          onClick={() => playChime('sine', 1.5)}
-                          className="group border border-zinc-800 hover:border-[#39FF14] p-3 hover:bg-[#39FF14]/5 flex justify-between items-center transition-all cursor-crosshair rounded"
-                        >
-                          <div className="space-y-0.5">
-                            <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#39FF14]">GitHub Repositories</div>
-                            <div className="text-[9px] text-gray-500 uppercase">@merrypranxter (100+ repos)</div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#39FF14] transition-all" />
-                        </a>
-
-                        {/* Autism Documentation */}
-                        <a 
-                          href="https://merrys-autism.merrypranxter.chatgpt.site/" data-tensor-action="celebrate" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          onClick={() => playChime('sine', 1.7)}
-                          className="group border border-zinc-800 hover:border-[#00F0FF] p-3 hover:bg-[#00F0FF]/5 flex justify-between items-center transition-all cursor-crosshair rounded"
-                        >
-                          <div className="space-y-0.5">
-                            <div className="text-[13px] font-sans font-bold text-white group-hover:text-[#00F0FF]">Autism Documentation</div>
-                            <div className="text-[9px] text-gray-500 uppercase">EXTERNAL_ARCHIVE</div>
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-[#00F0FF] transition-all" />
-                        </a>
-                      </div>
-
-                      <p className="text-[10px] text-zinc-500 text-center leading-normal max-w-sm mx-auto pt-2 font-mono">
-                        * NO COMMISSIONS · NO INQUIRIES · TRANSMISSION ONLY
-                      </p>
-                    </div>
-
-                  </div>
-
+                <div className="animate-fade-in text-left">
+                  <AstralAbout />
                 </div>
               )}
 
