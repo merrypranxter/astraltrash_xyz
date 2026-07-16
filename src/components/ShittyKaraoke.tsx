@@ -890,23 +890,12 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
           </div>
         </div>
 
-        {/* NOW PLAYING marquee */}
-        <div
-          className="lg:col-span-7 cab-panel p-5 flex flex-col justify-center"
-          style={{
-            '--mc': '#FF2BD6',
-            '--mc-soft': 'rgba(255,43,214,.4)',
-            '--mc-faint': 'rgba(255,43,214,.13)',
-            '--cab-panel-bg': 'rgba(20,0,17,.92)'
-          } as any}
-        >
-          <div className="cab-dither" />
-          <span className="cab-corner" style={{ top: 3, left: 6 }}>╔</span>
-          <span className="cab-corner" style={{ top: 3, right: 6 }}>╗</span>
-          <span className="cab-corner" style={{ bottom: 4, left: 6 }}>╚</span>
-          <span className="cab-corner" style={{ bottom: 4, right: 6 }}>╝</span>
-
-          <div className="relative text-center space-y-6 py-6">
+        {/* NOW PLAYING — floats directly on the page background, no box */}
+        <div className="lg:col-span-7 flex flex-col justify-center">
+          <div
+            className="text-center space-y-6 py-6"
+            style={{ '--mc': '#FF2BD6', '--mc-soft': 'rgba(255,43,214,.4)', '--mc-faint': 'rgba(255,43,214,.13)' } as any}
+          >
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <span className="cab-chip"><i className="cab-led" />NOW_PLAYING</span>
               <span
@@ -920,44 +909,44 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
 
             <h2
               className="jersey-10-regular text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white font-normal uppercase tracking-wider leading-none select-all"
-              style={{ textShadow: '3px 0 0 rgba(255,43,214,.8), -3px 0 0 rgba(0,240,255,.8), 0 0 25px rgba(255,107,0,.35)' }}
+              style={{ textShadow: '3px 0 0 rgba(255,43,214,.95), -3px 0 0 rgba(0,240,255,.95), 0 4px 16px rgba(0,0,0,.98), 0 0 32px rgba(255,107,0,.45)' }}
             >
               {selectedVideo.title}
             </h2>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               {selectedVideo.artist && (
-                <h3 className="font-mono text-xl sm:text-2xl md:text-3xl text-[#39FF14] font-bold tracking-widest uppercase">
+                <h3
+                  className="jersey-10-regular text-3xl sm:text-4xl md:text-5xl text-[#39FF14] font-normal tracking-wider uppercase leading-none"
+                  style={{ textShadow: '0 3px 12px rgba(0,0,0,.98), 0 0 18px rgba(57,255,20,.55)' }}
+                >
                   by {selectedVideo.artist}
                 </h3>
               )}
               <div
-                className="text-xs sm:text-sm text-[#FF2BD6]/90 tracking-[0.3em] uppercase font-bold"
-                style={{ fontFamily: "'Silkscreen', monospace" }}
+                className="text-base sm:text-lg text-[#00F0FF] tracking-[0.3em] uppercase font-bold"
+                style={{ fontFamily: "'Silkscreen', monospace", textShadow: '0 2px 10px rgba(0,0,0,.98), 0 0 14px rgba(0,240,255,.55)' }}
               >
                 ░ KARAOKE COVER ░
               </div>
             </div>
 
             {selectedVideo.desc && (
-              <p className="text-zinc-400 text-sm leading-relaxed font-mono italic max-w-xl mx-auto px-4">
+              <p
+                className="text-white text-lg sm:text-xl leading-relaxed max-w-xl mx-auto px-4 italic"
+                style={{ fontFamily: "'Jersey 10', sans-serif", letterSpacing: '.03em', textShadow: '0 2px 10px rgba(0,0,0,.98), 0 0 6px rgba(0,0,0,.95)' }}
+              >
                 "{selectedVideo.desc}"
               </p>
             )}
 
-            <div className="cab-specs max-w-md mx-auto text-left" style={{ textTransform: 'none' }}>
-              <div className="flex justify-between gap-3">
-                <span className="text-zinc-500">FILE</span>
-                <span className="text-right break-all" style={{ color: 'var(--mc)' }}>{selectedVideo.fileName}</span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span className="text-zinc-500">RUNTIME</span>
-                <span style={{ color: 'var(--mc)' }}>{selectedVideo.duration || '3:30'}</span>
-              </div>
-              <div className="flex justify-between gap-3">
-                <span className="text-zinc-500">DECODER</span>
-                <span style={{ color: 'var(--mc)' }}>{resolution}</span>
-              </div>
+            <div
+              className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-lg sm:text-xl uppercase pt-1"
+              style={{ fontFamily: "'Jersey 10', sans-serif", letterSpacing: '.06em', textShadow: '0 2px 10px rgba(0,0,0,.98), 0 0 6px rgba(0,0,0,.95)' }}
+            >
+              <span className="text-white/70">FILE <span className="text-[#FF2BD6] break-all">{selectedVideo.fileName}</span></span>
+              <span className="text-white/70">RUNTIME <span className="text-[#FF2BD6]">{selectedVideo.duration || '3:30'}</span></span>
+              <span className="text-white/70">DECODER <span className="text-[#FF2BD6]">{resolution}</span></span>
             </div>
           </div>
         </div>
