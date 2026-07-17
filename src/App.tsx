@@ -705,6 +705,46 @@ export default function App() {
     window.scrollTo(0, 0);
   }, [activeTab]);
 
+  // 3f. AstralTrash Pixel-Deco Initialization
+  useEffect(() => {
+    const initDeco = () => {
+      const AD = (window as any).AstralDeco;
+      if (!AD || !AD.modules) return;
+
+      // Reset and destroy previous instances before re-initializing
+      try { AD.modules.comet?.destroy(); } catch (_) {}
+      try { AD.modules.debris?.destroy(); } catch (_) {}
+      try { AD.modules.dividers?.destroy(); } catch (_) {}
+      try { AD.modules.bloom?.destroy(); } catch (_) {}
+
+      // Start debris (Z-index 1, behind page content)
+      try { AD.modules.debris?.init({ density: 18, zIndex: 1 }); } catch (_) {}
+      
+      // Start dividers to replace <hr> and .deco-divider elements on the current page
+      try { AD.modules.dividers?.init(); } catch (_) {}
+
+      // Start comet trail
+      try { AD.modules.comet?.init(); } catch (_) {}
+
+      // Start bloom for hover elements (targets class .deco-bloom)
+      try { AD.modules.bloom?.init({ selector: '.deco-bloom' }); } catch (_) {}
+    };
+
+    // Delay initialization slightly to ensure React has fully rendered the new DOM elements
+    const timer = setTimeout(initDeco, 80);
+
+    return () => {
+      clearTimeout(timer);
+      const AD = (window as any).AstralDeco;
+      if (AD && AD.modules) {
+        try { AD.modules.comet?.destroy(); } catch (_) {}
+        try { AD.modules.debris?.destroy(); } catch (_) {}
+        try { AD.modules.dividers?.destroy(); } catch (_) {}
+        try { AD.modules.bloom?.destroy(); } catch (_) {}
+      }
+    };
+  }, [activeTab]);
+
   // 3d. Persistent config states
   useEffect(() => {
     localStorage.setItem('astraltrash_sound_enabled', String(soundEnabled));
@@ -2254,7 +2294,7 @@ export default function App() {
           <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
             <button data-tensor-action="teleport"
               onClick={() => { setActiveTab('hub'); playChime('triangle', 0.8); }}
-              className={`w-full text-center flex items-center justify-center px-4 py-3 sm:py-4 text-xl sm:text-2xl md:text-3xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
+              className={`w-full text-center flex items-center justify-center px-4 py-3 sm:py-4 text-xl sm:text-2xl md:text-3xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular deco-bloom ${
                 activeTab === 'hub' 
                   ? 'bg-[#39FF14] text-black border-[#39FF14] shadow-[0_0_12px_rgba(57,255,20,0.5)]' 
                   : 'bg-black text-[#39FF14] border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
@@ -2264,7 +2304,7 @@ export default function App() {
             </button>
             <button data-tensor-action="flip"
               onClick={() => { setActiveTab('shaderslop'); playChime('triangle', 1.0); }}
-              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
+              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular deco-bloom ${
                 activeTab === 'shaderslop' 
                   ? 'bg-[#FF2BD6] text-black border-[#FF2BD6] shadow-[0_0_12px_rgba(255,43,214,0.5)]' 
                   : 'bg-black text-[#FF2BD6] border-[#FF2BD6]/40 hover:border-[#FF2BD6] hover:bg-[#FF2BD6]/10'
@@ -2274,7 +2314,7 @@ export default function App() {
             </button>
             <button data-tensor-action="hack"
               onClick={() => { setActiveTab('aislop'); playChime('triangle', 1.2); }}
-              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
+              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular deco-bloom ${
                 activeTab === 'aislop' 
                   ? 'bg-[#00F0FF] text-black border-[#00F0FF] shadow-[0_0_12px_rgba(0,240,255,0.5)]' 
                   : 'bg-black text-[#00F0FF] border-[#00F0FF]/40 hover:border-[#00F0FF] hover:bg-[#00F0FF]/10'
@@ -2284,7 +2324,7 @@ export default function App() {
             </button>
             <button data-tensor-action="tantrum"
               onClick={() => { setActiveTab('karaoke'); playChime('square', 1.8); }}
-              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
+              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular deco-bloom ${
                 activeTab === 'karaoke' 
                   ? 'bg-[#9D4DFF] text-black border-[#9D4DFF] shadow-[0_0_12px_rgba(157,77,255,0.5)]' 
                   : 'bg-black text-[#9D4DFF] border-[#9D4DFF]/40 hover:border-[#9D4DFF] hover:bg-[#9D4DFF]/10'
@@ -2294,7 +2334,7 @@ export default function App() {
             </button>
             <button data-tensor-action="surf"
               onClick={() => { setActiveTab('projects'); playChime('triangle', 1.9); }}
-              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
+              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular deco-bloom ${
                 activeTab === 'projects' 
                   ? 'bg-[#FF6B00] text-black border-[#FF6B00] shadow-[0_0_12px_rgba(255,107,0,0.5)]' 
                   : 'bg-black text-[#FF6B00] border-[#FF6B00]/40 hover:border-[#FF6B00] hover:bg-[#FF6B00]/10'
@@ -2304,7 +2344,7 @@ export default function App() {
             </button>
             <button data-tensor-action="celebrate"
               onClick={() => { setActiveTab('about'); setMoreSubTab('landing'); playChime('triangle', 1.6); }}
-              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular ${
+              className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular deco-bloom ${
                 activeTab === 'about' 
                   ? 'bg-[#EFFF04] text-black border-[#EFFF04] shadow-[0_0_12px_rgba(239,255,4,0.5)]' 
                   : 'bg-black text-[#EFFF04] border-[#EFFF04]/40 hover:border-[#EFFF04] hover:bg-[#EFFF04]/10'
@@ -3217,7 +3257,7 @@ export default function App() {
                     </div>
 
                     {selectedShader ? (
-                      <div className="flex justify-center w-full bg-black relative overflow-hidden select-none clean-container border-2" style={{ borderColor: 'var(--mc-faint)' }}>
+                      <div className="flex justify-center w-full bg-black relative overflow-hidden select-none clean-container border-2 no-comet-zone" style={{ borderColor: 'var(--mc-faint)' }}>
                         <div className={`relative ${
                           selectedAspect === '1:1' ? 'aspect-square w-full max-w-[580px]' :
                           selectedAspect === '16:9' ? 'aspect-video w-full' :

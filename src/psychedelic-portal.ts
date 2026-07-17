@@ -1,3 +1,7 @@
+import React from "react";
+import { createRoot, Root } from "react-dom/client";
+import { TetragrammatonNode } from "./components/TetragrammatonNode";
+
 
 import {
   renderPsychedelicArchiveBody,
@@ -5,7 +9,8 @@ import {
 } from "./psychedelic-archive-body.js";
 import "./psychedelic-archive-body.css";
 
-let destroyPsychedelicArchiveBody = null;
+let destroyPsychedelicArchiveBody: any = null;
+let tetraReactRoot: Root | null = null;
 const PSY_INTRO = [
   `This is not a doctrine, a diagnosis, or a tidy little theory of the universe. It is the running index of what keeps returning: impossible architecture, recursive rooms, geometric intelligence, emotional surgery, comedy at the edge of language, and the occasional complete demolition of whatever I thought “me” was.`,
   `The interesting part is not that psychedelics make things weird. Of course they do. The interesting part is that the weirdness has structure. Certain visual grammars, spatial behaviors, entities, moods, and symbolic systems recur across years, doses, substances, and entirely different circumstances.`,
@@ -36,27 +41,7 @@ const PSY_REPORTS = [
       `“Tetragrammaton” is the nearest available word, not a claim that I decoded God’s password. The word arrived because the thing felt simultaneously linguistic, mathematical, sacred, mechanical, and wildly beyond my pay grade.`
     ],
     customBlock: `
-    <div style="margin: 60px 0; border: 2px solid var(--channel-accent); background: #000; padding: 2px; position: relative;">
-      <div style="position: absolute; top: -14px; left: 20px; background: #000; padding: 0 10px; color: var(--channel-accent); font-weight: bold; letter-spacing: 0.1em; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-        <span style="display:inline-block; width:8px; height:8px; background:var(--channel-accent); animation: psyPulse 2s infinite;"></span>
-        LIVE NODE // TETRAGRAMMATON
-      </div>
-      <div style="aspect-ratio: 16 / 9; width: 100%; position: relative; overflow: hidden; background: #050505;">
-        <iframe 
-          src="https://merrys-tetragrammaton.merrypranxter.chatgpt.site/"
-          title="Tetragrammaton Live Node"
-          style="width: 100%; height: 100%; border: none;"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; microphone"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-        ></iframe>
-      </div>
-      <div style="padding: 16px; border-top: 1px dashed rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-        <span style="font-size: 12px; color: #888; letter-spacing: 0.05em;">FULL INTERACTIVE EXPERIENCE INITIATED</span>
-        <a href="https://merrys-tetragrammaton.merrypranxter.chatgpt.site/" target="_blank" rel="noreferrer" style="padding: 8px 16px; background: var(--channel-accent); color: #000; text-decoration: none; font-weight: bold; font-size: 13px; text-transform: uppercase;">
-          OPEN IN NEW TAB 🚀
-        </a>
-      </div>
-    </div>
+    <div id="tetra-react-root" style="width: 100%; min-height: 800px; position: relative;"></div>
     `
   },
   {
@@ -321,6 +306,14 @@ function mountPortal() {
     ? initPsychedelicArchiveBody(archiveRoot)
     : null;
 
+  const tetraContainer = portal.querySelector("#tetra-react-root");
+  if (tetraContainer) {
+    if (!tetraReactRoot) {
+      tetraReactRoot = createRoot(tetraContainer);
+    }
+    tetraReactRoot.render(React.createElement(TetragrammatonNode));
+  }
+
   (portal.querySelector('.psy-exit') as HTMLElement | null)?.focus({ preventScroll: true });
 }
 
@@ -334,6 +327,12 @@ function unmountPortal() {
   window.removeEventListener('keydown', handleKeys);
   destroyPsychedelicArchiveBody?.();
   destroyPsychedelicArchiveBody = null;
+  
+  if (tetraReactRoot) {
+    tetraReactRoot.unmount();
+    tetraReactRoot = null;
+  }
+
   const doomed = portal;
   portal = null;
   window.setTimeout(() => doomed.remove(), 350);

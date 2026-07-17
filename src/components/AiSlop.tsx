@@ -409,7 +409,7 @@ export default function AiSlop({
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         <div className="lg:col-span-7 flex flex-col justify-start">
-          <div className={`relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(0,240,255,0.15)] p-2 rounded-2xl overflow-hidden mx-auto flex flex-col transition-all duration-300 w-full ${viewerAspectClass}`}>
+          <div className={`relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(0,240,255,0.15)] p-2 rounded-2xl overflow-hidden mx-auto flex flex-col transition-all duration-300 w-full no-comet-zone ${viewerAspectClass}`}>
             
             <div className="flex-grow bg-black relative flex items-center justify-center overflow-hidden min-h-[330px]">
               {selectedItem ? (
