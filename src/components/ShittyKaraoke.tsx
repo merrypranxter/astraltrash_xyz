@@ -680,7 +680,7 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
                 id="karaoke-media"
                 ref={videoRef}
                 src={activeUrl}
-                crossOrigin="anonymous"
+                playsInline
                 controls
                 width={resolution === '480p' ? 480 : resolution === '720p' ? 720 : undefined}
                 className="w-full h-full object-contain bg-black z-10"
