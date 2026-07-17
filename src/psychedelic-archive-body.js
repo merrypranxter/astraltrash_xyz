@@ -248,6 +248,7 @@ function renderReport(report, index) {
         `).join("")}
       </div>
 
+      ${report.customBlock || ''}
       ${renderResearch(resources)}
     </article>
   `;

@@ -34,7 +34,30 @@ const PSY_REPORTS = [
       `There are experiences that feel like seeing an object, and there are experiences that feel like being shown the rendering engine underneath objects. This belonged to the second category.`,
       `The structure was fourfold, rotating, electrically precise, too dimensional to fit inside ordinary perspective. It did not behave like a picture or even an entity. It behaved like a process: a self-revising architecture that generated symbols faster than I could recognize them, then folded those symbols back into the space producing them.`,
       `“Tetragrammaton” is the nearest available word, not a claim that I decoded God’s password. The word arrived because the thing felt simultaneously linguistic, mathematical, sacred, mechanical, and wildly beyond my pay grade.`
-    ]
+    ],
+    customBlock: `
+    <div style="margin: 60px 0; border: 2px solid var(--channel-accent); background: #000; padding: 2px; position: relative;">
+      <div style="position: absolute; top: -14px; left: 20px; background: #000; padding: 0 10px; color: var(--channel-accent); font-weight: bold; letter-spacing: 0.1em; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+        <span style="display:inline-block; width:8px; height:8px; background:var(--channel-accent); animation: psyPulse 2s infinite;"></span>
+        LIVE NODE // TETRAGRAMMATON
+      </div>
+      <div style="aspect-ratio: 16 / 9; width: 100%; position: relative; overflow: hidden; background: #050505;">
+        <iframe 
+          src="https://merrys-tetragrammaton.merrypranxter.chatgpt.site/"
+          title="Tetragrammaton Live Node"
+          style="width: 100%; height: 100%; border: none;"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; microphone"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        ></iframe>
+      </div>
+      <div style="padding: 16px; border-top: 1px dashed rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <span style="font-size: 12px; color: #888; letter-spacing: 0.05em;">FULL INTERACTIVE EXPERIENCE INITIATED</span>
+        <a href="https://merrys-tetragrammaton.merrypranxter.chatgpt.site/" target="_blank" rel="noreferrer" style="padding: 8px 16px; background: var(--channel-accent); color: #000; text-decoration: none; font-weight: bold; font-size: 13px; text-transform: uppercase;">
+          OPEN IN NEW TAB 🚀
+        </a>
+      </div>
+    </div>
+    `
   },
   {
     number: '02',

@@ -1539,7 +1539,7 @@ export default function App() {
           
           const dynamicShaders = htmlFiles.map((file: any) => {
             const fileName = file.name;
-            const id = file.sha || fileName;
+            const id = (file.sha || '') + '-' + fileName;
             const title = fileName.replace('.html', '');
             
             // Deduplicate against already hardcoded static list
