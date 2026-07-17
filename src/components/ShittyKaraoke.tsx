@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Settings, Plus, Trash2, Sliders, RefreshCw } from 'lucide-react';
 
 interface BucketVideo {
@@ -258,6 +258,31 @@ function formatVideoMetadata(fileName: string) {
     return { title, artist };
   }
   return { title: base, artist: '' };
+}
+
+// Mounts children only once the wrapper scrolls near the viewport, so the
+// cassette shelf doesn't fire two dozen GCS video fetches on page load.
+function LazyMount({ children, placeholder }: { children: React.ReactNode; placeholder?: React.ReactNode }) {
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    // Graceful fallback for environments without IntersectionObserver.
+    if (typeof IntersectionObserver === 'undefined') {
+      setVisible(true);
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setVisible(true);
+        obs.disconnect();
+      }
+    }, { rootMargin: '200px' });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return <div ref={ref} className="absolute inset-0">{visible ? children : placeholder || null}</div>;
 }
 
 interface ShittyKaraokeProps {
@@ -624,220 +649,322 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
   };
 
   return (
-    <div className="frame py-8 animate-fade-in space-y-8" id="karaoke-mainframe">
-      {/* Title Banner */}
-      <div className="border-b border-[#FF6B00]/40 pb-6 mb-2 space-y-4">
-        {/* Top Status Row */}
-        <div className="flex justify-between items-center text-xs">
-          <div className="flex items-center gap-1.5 font-mono text-[10px] text-[#39FF14]">
-            {isScanning ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>GCS LIST SCANNING...</span>
-              </>
-            ) : (
-              <span className="text-zinc-600">VCR STANDBY</span>
-            )}
-          </div>
-          <div className="bg-black/60 border border-[#FF6B00]/40 px-3 py-1 font-mono text-[10px] text-[#FF6B00] uppercase tracking-widest">
-            VCR MODEM: ACTIVE
-          </div>
-        </div>
+    <div
+      className="frame py-8 animate-fade-in"
+      id="karaoke-mainframe"
+      style={{ '--cab-tick': 'rgba(255,107,0,.35)' } as any}
+    >
+      {/* Cabinet design-system CSS, kept local to this page so it works on
+          its own (the shared cab-* rules live inline in the Projects tab too). */}
+      <style>{`
+/* ============ CABINET DESIGN SYSTEM (shared by PROJECTS + SHADERSLOP tabs) ============ */
+/* Per-element accents come from --mc / --mc-soft / --mc-faint CSS vars set inline. */
+.cab-title{font-family:'Pixelmania','Bitcount Prop Double','Chakra Petch',sans-serif;font-size:clamp(1.15rem,3.4vw,2.3rem);color:#fff;line-height:1.4;letter-spacing:.05em;text-transform:uppercase;padding:.35em 0;text-shadow:3px 0 0 rgba(255,43,214,.8),-3px 0 0 rgba(0,240,255,.8)}
+.cab-title:hover{animation:jitter 4s infinite}
+.cab-dings{font-family:'StarThings','CircleThings2',sans-serif;font-size:22px;letter-spacing:.35em;line-height:1;user-select:none;white-space:nowrap;overflow:hidden}
+.cab-dings-circle{font-family:'CircleThings2','StarThings',sans-serif}
+.cab-squigs{font-family:'Slsquiggles',sans-serif;font-size:20px;letter-spacing:.3em;line-height:1;user-select:none;white-space:nowrap;overflow:hidden}
+.cab-pixlabel{font-family:'Dogica Pixel','Silkscreen',monospace;font-size:8px;letter-spacing:.16em;text-transform:uppercase}
+.cab-blink{animation:cab-blink 1.1s steps(2,start) infinite}
+@keyframes cab-blink{0%,55%{opacity:1}56%,100%{opacity:0}}
+.cab-rainbow{height:4px;background:repeating-linear-gradient(90deg,#FF2BD6 0 44px,#EFFF04 44px 88px,#39FF14 88px 132px,#00F0FF 132px 176px,#9D4DFF 176px 220px);animation:cab-slide 5s linear infinite}
+@keyframes cab-slide{to{background-position:220px 0}}
+.cab-ticker{overflow:hidden;white-space:nowrap;border-top:1px dashed var(--cab-tick,rgba(255,107,0,.35));border-bottom:1px dashed var(--cab-tick,rgba(255,107,0,.35));padding:5px 0;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.16em;background:rgba(0,0,0,.5)}
+.cab-ticker-inner{display:inline-block;animation:cab-tickmove 32s linear infinite}
+@keyframes cab-tickmove{to{transform:translateX(-50%)}}
+.cab-cart{position:relative;cursor:crosshair;border:2px solid var(--mc-soft);overflow:hidden;transition:transform .3s ease,box-shadow .3s ease,border-color .3s ease}
+.cab-cart:hover{border-color:var(--mc);box-shadow:0 0 34px var(--mc-soft),inset 0 0 26px var(--mc-faint)}
+.cab-tilt-l{transform:rotate(-.5deg)}
+.cab-tilt-r{transform:rotate(.4deg)}
+.cab-tilt-l:hover,.cab-tilt-r:hover,.cab-maxed{transform:rotate(0deg)}
+.cab-dither{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,var(--mc-faint) 1px,transparent 1px);background-size:7px 7px;opacity:.55}
+.cab-corner{position:absolute;font-family:'Share Tech Mono',monospace;font-size:15px;line-height:1;color:var(--mc);z-index:3;pointer-events:none;text-shadow:0 0 8px var(--mc-soft)}
+.cab-masthead{position:relative;height:84px;overflow:hidden;border-bottom:2px solid var(--mc-soft)}
+.cab-masthead-fx{position:absolute;inset:0;background-size:320% 320%;animation:cab-drift 17s ease-in-out infinite alternate,cab-hue 8s ease-in-out infinite alternate}
+@keyframes cab-drift{from{background-position:0% 0%}to{background-position:100% 100%}}
+@keyframes cab-hue{from{filter:hue-rotate(-24deg) saturate(1.15)}to{filter:hue-rotate(24deg) saturate(1.3)}}
+.cab-masthead-dots{position:absolute;inset:0;background-image:radial-gradient(circle,rgba(0,0,0,.5) 1.2px,transparent 1.2px);background-size:5px 5px}
+.cab-masthead-lines{position:absolute;inset:0;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.35) 0 2px,transparent 2px 4px)}
+.cab-cart-title{position:absolute;left:14px;right:66px;bottom:8px;z-index:2;font-family:'Jersey 10',sans-serif;font-size:26px;line-height:1;letter-spacing:.05em;text-transform:uppercase;color:#fff;text-shadow:2px 0 0 rgba(255,43,214,.9),-2px 0 0 rgba(0,240,255,.9),0 2px 12px rgba(0,0,0,.95)}
+.cab-cart:hover .cab-cart-title{animation:jitter 4s infinite}
+.cab-glyph{position:absolute;right:12px;top:50%;margin-top:-24px;z-index:2;font-size:40px;animation:cab-bob 3.6s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(0,0,0,.85))}
+@keyframes cab-bob{0%,100%{transform:translateY(-4px) rotate(-6deg)}50%{transform:translateY(5px) rotate(7deg)}}
+.cab-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--mc-soft);background:var(--mc-faint);color:var(--mc);font-family:'Silkscreen',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px}
+.cab-led{width:6px;height:6px;background:var(--mc);animation:pulse 1.2s infinite;box-shadow:0 0 6px var(--mc)}
+.cab-eq{display:inline-flex;align-items:flex-end;gap:2px;height:13px}
+.cab-eq i{width:3px;background:var(--mc);animation:cab-eqb .85s ease-in-out infinite alternate;box-shadow:0 0 5px var(--mc-soft)}
+.cab-eq i:nth-child(2){animation-delay:.14s}
+.cab-eq i:nth-child(3){animation-delay:.28s}
+.cab-eq i:nth-child(4){animation-delay:.42s}
+.cab-eq i:nth-child(5){animation-delay:.56s}
+@keyframes cab-eqb{from{height:3px}to{height:13px}}
+.cab-specs{border:1px dashed var(--mc-soft);background:rgba(0,0,0,.45);padding:9px 11px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;display:flex;flex-direction:column;gap:5px}
+.cab-boot-btn{display:inline-flex;align-items:center;gap:8px;font-family:'Jersey 10',sans-serif;font-size:19px;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--mc);color:var(--mc);background:rgba(0,0,0,.55);padding:8px 20px;transition:all .15s;cursor:crosshair}
+.cab-boot-btn:hover{background:var(--mc);color:#000;box-shadow:0 0 24px var(--mc)}
+.cab-ctl{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--mc-soft);color:var(--mc);background:rgba(0,0,0,.55);font-family:'Silkscreen',monospace;font-size:8px;letter-spacing:.12em;text-transform:uppercase;padding:6px 10px;transition:all .15s;cursor:crosshair}
+.cab-ctl:hover{background:var(--mc);color:#000;box-shadow:0 0 14px var(--mc)}
+.cab-ctl.is-active{background:var(--mc);color:#000;box-shadow:0 0 14px var(--mc)}
+.cab-sticker{position:absolute;top:10px;right:12px;z-index:4;font-family:'Silkscreen',monospace;font-size:9px;letter-spacing:.1em;background:var(--acid);color:#000;padding:3px 8px;transform:rotate(8deg) scale(.4);opacity:0;transition:all .25s cubic-bezier(.2,1.6,.4,1);pointer-events:none;box-shadow:0 0 14px rgba(239,255,4,.6)}
+.cab-cart:hover .cab-sticker{opacity:1;transform:rotate(8deg) scale(1)}
+.cab-scan{position:absolute;left:0;right:0;top:-70px;height:52px;pointer-events:none;background:linear-gradient(to bottom,transparent,var(--mc-soft),transparent);opacity:0;mix-blend-mode:screen;z-index:2}
+.cab-cart:hover .cab-scan{opacity:.8;animation:cab-sweep 2s linear infinite}
+@keyframes cab-sweep{to{transform:translateY(900px)}}
+.cab-framebay-scan{position:absolute;inset:0;pointer-events:none;z-index:30;background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.22) 3px,rgba(0,0,0,.22) 4px);mix-blend-mode:multiply}
+.cab-console{position:relative;border:2px dashed rgba(239,255,4,.45);background:rgba(10,10,0,.72);overflow:hidden}
+.cab-console-dither{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,rgba(239,255,4,.07) 1px,transparent 1px);background-size:7px 7px}
+.cab-key-input{background:rgba(0,0,0,.75);border:1px solid rgba(239,255,4,.4);color:#EFFF04;font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.06em;padding:9px 12px;width:100%;outline:none;transition:all .2s}
+.cab-key-input:focus{border-color:#EFFF04;box-shadow:0 0 16px rgba(239,255,4,.3)}
+.cab-key-input::placeholder{color:rgba(239,255,4,.35)}
+.cab-select{background:rgba(0,0,0,.75);border:1px solid var(--mc-soft);color:var(--mc);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.06em;padding:7px 8px;width:100%;outline:none;cursor:crosshair;transition:all .2s}
+.cab-select:hover,.cab-select:focus{border-color:var(--mc);box-shadow:0 0 12px var(--mc-faint)}
+.cab-panel{position:relative;border:2px solid var(--mc-soft);background:var(--cab-panel-bg,rgba(20,0,17,.92));overflow:hidden}
+      `}</style>
 
-        {/* Centered Main Header */}
-        <div className="text-center space-y-3">
-          <h1 className="text-center uppercase select-none">
-            SHITTY KARAOKE TIME
-          </h1>
-          <p className="text-[10px] sm:text-xs md:text-sm lg:text-base text-[#FF6B00] font-sans font-black tracking-tighter md:tracking-tight mx-auto max-w-full whitespace-nowrap overflow-x-auto py-1 uppercase scrollbar-thin select-all">
-            I'm not THE BEST singer but, this is MY site &amp; i can put ANYTHING I WANT to here, so.... IT'S SHITTY KARAOKE TIME!
-          </p>
+      {/* ================= 1. HEADER ================= */}
+      <div className="text-center space-y-5 pt-4 pb-2">
+        <div className="cab-dings text-[#FF6B00] opacity-90" aria-hidden="true">
+          QRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ
+        </div>
+        <h1 className="cab-title select-none">
+          Shitty Karaoke Time
+        </h1>
+        <p
+          className="text-[11px] sm:text-xs text-[#FF6B00] max-w-3xl mx-auto uppercase tracking-[0.15em] font-bold leading-relaxed"
+          style={{ fontFamily: "'Silkscreen', monospace" }}
+        >
+          🎤 I'm not THE BEST singer but, this is MY site &amp; i can put ANYTHING I WANT to here, so.... IT'S SHITTY KARAOKE TIME! 🎤
+        </p>
+        <div className="cab-squigs text-[#39FF14] opacity-80" aria-hidden="true">
+          mnopqrstuvwxyzabcdefghijklmnopqrstuv
+        </div>
+        <div className="flex justify-center items-center flex-wrap gap-x-3 gap-y-1 text-[10px] text-zinc-500 font-mono uppercase tracking-widest pt-1">
+          <span>VCR_MODEM: ACTIVE</span>
+          <span>•</span>
+          <span>{videos.length} CASSETTES ON SHELF</span>
+          {isScanning && (
+            <span className="text-[#39FF14] animate-pulse font-bold flex items-center gap-1">
+              <RefreshCw className="w-3 h-3 animate-spin" /> [SCANNING GCS RACK...]
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Grid: Player Area (Left) & Current Case Details (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* TV CRT Screen Box (Vertical 9:16 aspect ratio) */}
-        <div className="lg:col-span-6 md:col-span-6 space-y-4">
-          <div className="relative border-4 border-zinc-900 bg-black shadow-[0_0_35px_rgba(255,107,0,0.15)] p-2 rounded-2xl overflow-hidden aspect-[9/16] w-full max-w-[340px] mx-auto flex flex-col justify-between">
-            {/* Ambient Scanline Filter */}
-            <div className="absolute inset-0 pointer-events-none z-10 bg-scanlines opacity-10" />
-            
-            {/* TV Screen Heading HUD */}
-            <div className="flex justify-between items-center text-[10px] font-mono text-zinc-400 p-2 border-b border-zinc-950 bg-[#050505]/80 z-20">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[#FF6B00] animate-pulse">● PLAY_MONITOR</span>
-              </div>
-              <div className="text-right text-[#39FF14]">
+      {/* Rainbow strip + prompt row */}
+      <div className="flex flex-col gap-2 mt-4 mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div
+            className="select-none uppercase text-[#FF6B00]"
+            style={{
+              fontFamily: "'Jersey 10', sans-serif",
+              fontSize: 24,
+              letterSpacing: '.1em',
+              textShadow: '0 0 16px rgba(255,107,0,.55), 2px 0 0 rgba(255,43,214,.5), -2px 0 0 rgba(0,240,255,.5)'
+            }}
+          >
+            ▚▚ Insert Tape To Sing <span className="cab-blink">█</span>
+          </div>
+          <div className="hidden md:flex items-center gap-2 font-mono text-[9px] text-zinc-500 uppercase tracking-widest">
+            <span className="cab-blink text-[#39FF14]">●</span> DECK_B READY // MIC IS HOT
+          </div>
+        </div>
+        <div className="cab-rainbow" />
+      </div>
+
+      {/* Scrolling system chatter */}
+      <div className="cab-ticker text-[#ffc59e] mb-8 select-none" aria-hidden="true">
+        <div className="cab-ticker-inner">
+          <span>✦ {videos.length} CASSETTES LOADED ✦ SINGING: MANDATORY ✦ TALENT: OPTIONAL ✦ ALL TAPES SLIGHTLY CHEWED ✦ REWIND BEFORE RETURNING ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE SLOP ✦ BE KIND TO YOUR NEIGHBORS' EARS&nbsp;</span>
+          <span>✦ {videos.length} CASSETTES LOADED ✦ SINGING: MANDATORY ✦ TALENT: OPTIONAL ✦ ALL TAPES SLIGHTLY CHEWED ✦ REWIND BEFORE RETURNING ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE SLOP ✦ BE KIND TO YOUR NEIGHBORS' EARS&nbsp;</span>
+        </div>
+      </div>
+
+      {/* ================= 2. VCR STATION: TV (left) + Now Playing marquee (right) ================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-stretch mb-12">
+
+        {/* TV CRT cabinet */}
+        <div
+          className="lg:col-span-5 cab-panel p-4"
+          style={{
+            '--mc': '#FF6B00',
+            '--mc-soft': 'rgba(255,107,0,.4)',
+            '--mc-faint': 'rgba(255,107,0,.13)',
+            '--cab-panel-bg': 'rgba(26,10,0,.92)'
+          } as any}
+        >
+          <div className="cab-dither" />
+          <span className="cab-corner" style={{ top: 3, left: 6 }}>╔</span>
+          <span className="cab-corner" style={{ top: 3, right: 6 }}>╗</span>
+          <span className="cab-corner" style={{ bottom: 4, left: 6 }}>╚</span>
+          <span className="cab-corner" style={{ bottom: 4, right: 6 }}>╝</span>
+
+          <div className="relative space-y-3">
+            <div className="flex justify-between items-center gap-2 border-b pb-2.5" style={{ borderColor: 'var(--mc-faint)' }}>
+              <span className="cab-chip"><i className="cab-led" />PLAY_MONITOR</span>
+              <span className="cab-pixlabel" style={{ color: isPlaying ? '#39FF14' : 'var(--mc)' }}>
                 {isPlaying ? '📼 PLAYING' : '📼 STANDBY'}
-              </div>
+              </span>
             </div>
 
-            {/* Main Video Element (Fills vertical screen perfectly with object-contain) */}
-            <div className="flex-grow bg-black relative flex items-center justify-center overflow-hidden">
+            {/* The screen — vertical tape format */}
+            <div className="relative bg-black border-2 aspect-[9/16] w-full max-w-[320px] mx-auto flex items-center justify-center overflow-hidden" style={{ borderColor: 'var(--mc-soft)' }}>
               <video
                 ref={videoRef}
                 src={activeUrl}
                 controls
                 width={resolution === '480p' ? 480 : resolution === '720p' ? 720 : undefined}
-                className="w-full h-full object-contain bg-black z-10"
+                className="w-full h-full object-contain bg-black relative z-10"
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
               />
-              
               {!isPlaying && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-none z-0 p-4 text-center">
                   <div className="font-mono text-[11px] text-[#FF6B00] tracking-widest uppercase mb-1">
                     [ SLOTTED: {selectedVideo.title} ]
                   </div>
-                  <div className="text-[9px] text-zinc-500 font-mono">
-                    Press Play below or inside screen to spin tape
+                  <div className="text-[9px] text-zinc-500 font-mono uppercase">
+                    press play to spin tape
                   </div>
                 </div>
               )}
             </div>
 
-            {/* TV Bezel Control Strip (Clean VCR mechanical key) */}
-            <div className="flex items-center justify-center border-t border-zinc-950 p-2.5 bg-[#030303] z-20">
+            {/* Big mechanical play key */}
+            <div className="flex justify-center">
               <button
                 onClick={handlePlayPause}
-                className={`w-full py-2 text-xs font-mono font-bold border transition-all flex items-center justify-center gap-2 ${
-                  isPlaying 
-                    ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' 
-                    : 'bg-black text-[#39FF14] border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
-                }`}
+                className="cab-boot-btn w-full max-w-[320px] justify-center"
+                style={isPlaying
+                  ? { '--mc': '#FF2BD6' } as any
+                  : { '--mc': '#39FF14' } as any}
               >
-                {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                <span>{isPlaying ? 'STOP TAPE' : 'SPIN TAPE'}</span>
+                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
+                {isPlaying ? 'STOP TAPE' : '⚡ SPIN TAPE'}
               </button>
             </div>
-          </div>
 
-          {/* VCR Stream Quality Resolution Dial (Optimizes GPU decoding overhead) */}
-          <div className="bg-zinc-950 border border-zinc-900 rounded-lg p-3 max-w-[340px] mx-auto w-full space-y-2">
-            <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
-              <span>📺 CRT Resolution Engine</span>
-              <span className="text-[#39FF14] font-bold">MODE: {resolution}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              {(['480p', '720p', '1080p'] as const).map((res) => (
+            {/* Resolution dial + fallbacks */}
+            <div className="space-y-2 max-w-[320px] mx-auto w-full">
+              <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
+                <span>📺 CRT RESOLUTION ENGINE</span>
+                <span className="text-[#39FF14] font-bold">MODE: {resolution}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {(['480p', '720p', '1080p'] as const).map((res) => (
+                  <button
+                    key={res}
+                    onClick={() => {
+                      setResolution(res);
+                      playChime('sine', res === '480p' ? 0.85 : res === '720p' ? 1.05 : 1.25);
+                      addLog(`RESOLVE_SHIFT: Swapped decoder resolution ceiling to ${res}`);
+                    }}
+                    className={`cab-ctl ${resolution === res ? 'is-active' : ''}`}
+                  >
+                    {res === '480p' ? '480 FAST' : res === '720p' ? '720 VHS' : '1080 HQ'}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-1.5">
                 <button
-                  key={res}
                   onClick={() => {
-                    setResolution(res);
-                    playChime('sine', res === '480p' ? 0.85 : res === '720p' ? 1.05 : 1.25);
-                    addLog(`RESOLVE_SHIFT: Swapped decoder resolution ceiling to ${res}`);
+                    playChime('triangle', 1.0);
+                    window.open(activeUrl, '_blank', 'noopener,noreferrer');
                   }}
-                  className={`py-1.5 px-1.5 border font-mono text-[9px] font-bold rounded transition-all text-center ${
-                    resolution === res
-                      ? 'bg-[#FF6B00] text-black border-[#FF6B00]'
-                      : 'bg-black text-zinc-400 border-zinc-850 hover:border-zinc-700 hover:text-white'
-                  }`}
+                  className="cab-ctl flex-1"
+                  style={{ '--mc': '#00F0FF', '--mc-soft': 'rgba(0,240,255,.4)' } as any}
                 >
-                  <span>{res === '480p' ? '480p (FAST)' : res === '720p' ? '720p (VHS)' : '1080p (HQ)'}</span>
+                  🔗 NEW TAB
                 </button>
-              ))}
+                <a
+                  href={activeUrl}
+                  download
+                  className="cab-ctl flex-1"
+                  style={{ '--mc': '#00F0FF', '--mc-soft': 'rgba(0,240,255,.4)' } as any}
+                >
+                  📥 DOWNLOAD
+                </a>
+              </div>
+              <p className="text-[8px] text-zinc-600 font-mono leading-normal uppercase">
+                💡 CODEC ADVISORY: blank screen or audio-only? hit NEW TAB or DOWNLOAD — some raw tapes are too shitty even for this vcr.
+              </p>
             </div>
-            <p className="text-[8px] text-zinc-500 font-mono leading-normal">
-              * Caps browser hardware decode canvas size to minimize buffer lag & stuttering on slower computers.
-            </p>
-          </div>
-
-          {/* External Action Row (Direct Fallbacks - perfectly centered below player) */}
-          <div className="flex gap-2 justify-center max-w-[340px] mx-auto w-full">
-            <button
-              onClick={() => {
-                playChime('triangle', 1.0);
-                window.open(activeUrl, '_blank');
-              }}
-              className="flex-1 py-2 bg-black border border-zinc-850 hover:border-zinc-600 text-zinc-300 hover:text-white font-mono text-[10px] uppercase transition-all flex items-center justify-center gap-1.5 rounded-lg"
-            >
-              <span>🔗 Open in New Tab</span>
-            </button>
-            <a
-              href={activeUrl}
-              download
-              className="flex-1 py-2 bg-black border border-zinc-850 hover:border-zinc-600 text-zinc-300 hover:text-white font-mono text-[10px] uppercase transition-all flex items-center justify-center gap-1.5 rounded-lg text-center"
-            >
-              <span>📥 Download File</span>
-            </a>
           </div>
         </div>
 
-        {/* Right Sidebar: Active Cassette Sleeve, Metadata & Options */}
-        <div className="lg:col-span-6 md:col-span-6 flex flex-col justify-center items-center text-center py-2 space-y-12 h-full md:pt-24 md:pb-12">
-          <div className="space-y-8 w-full max-w-2xl">
-            <div className="flex items-center justify-center gap-3">
-              <span className="text-xs font-mono font-bold text-[#FF6B00] bg-[#FF6B00]/10 px-2.5 py-1 rounded border border-[#FF6B00]/30 tracking-widest">
+        {/* NOW PLAYING — floats directly on the page background, no box */}
+        <div className="lg:col-span-7 flex flex-col justify-center">
+          <div
+            className="text-center space-y-6 py-6"
+            style={{ '--mc': '#FF2BD6', '--mc-soft': 'rgba(255,43,214,.4)', '--mc-faint': 'rgba(255,43,214,.13)' } as any}
+          >
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <span className="cab-chip"><i className="cab-led" />NOW_PLAYING</span>
+              <span
+                className="cab-chip"
+                style={{ '--mc': '#FF6B00', '--mc-soft': 'rgba(255,107,0,.4)', '--mc-faint': 'rgba(255,107,0,.13)' } as any}
+              >
                 {selectedVideo.tag || 'VOX'}
               </span>
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
-                // CRITICAL PLAYBACK MEDIA
-              </span>
+              <span className="cab-eq" aria-hidden="true"><i /><i /><i /><i /><i /></span>
             </div>
 
-            <div className="space-y-6">
-              {/* Song Title in Header Font (Jersey 10) */}
-              <h2 
-                className="jersey-10-regular text-6xl sm:text-7xl md:text-8xl lg:text-9xl text-white font-normal uppercase tracking-wider leading-none select-all animate-pulse-subtle text-center mx-auto"
-                style={{
-                  textShadow: '0 0 15px rgba(255,107,0,0.5), 0 0 30px rgba(255,107,0,0.25)',
-                }}
-              >
-                {selectedVideo.title}
-              </h2>
+            <h2
+              className="jersey-10-regular text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white font-normal uppercase tracking-wider leading-none select-all"
+              style={{ textShadow: '3px 0 0 rgba(255,43,214,.95), -3px 0 0 rgba(0,240,255,.95), 0 4px 16px rgba(0,0,0,.98), 0 0 32px rgba(255,107,0,.45)' }}
+            >
+              {selectedVideo.title}
+            </h2>
 
-              {/* Artist Name in complementary pixelated/mono font */}
-              <div className="space-y-3">
-                {selectedVideo.artist && (
-                  <h3 className="font-mono text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-[#39FF14] font-bold tracking-widest uppercase text-center">
-                    by {selectedVideo.artist}
-                  </h3>
-                )}
-                {/* Karaoke Cover indicator */}
-                <div className="font-mono text-sm sm:text-base md:text-lg lg:text-xl text-[#FF2BD6]/90 tracking-[0.3em] uppercase font-bold text-center">
-                  ░ Karaoke Cover ░
-                </div>
-              </div>
-
-              {/* Sleeve Description (Spaced out, stylized) */}
-              {selectedVideo.desc && (
-                <div className="pt-6 border-t border-zinc-900/40 w-full max-w-xl mx-auto">
-                  <p className="text-zinc-400 text-sm sm:text-base leading-relaxed font-mono italic text-center px-4">
-                    "{selectedVideo.desc}"
-                  </p>
-                </div>
+            <div className="space-y-3">
+              {selectedVideo.artist && (
+                <h3
+                  className="jersey-10-regular text-3xl sm:text-4xl md:text-5xl text-[#39FF14] font-normal tracking-wider uppercase leading-none"
+                  style={{ textShadow: '0 3px 12px rgba(0,0,0,.98), 0 0 18px rgba(57,255,20,.55)' }}
+                >
+                  by {selectedVideo.artist}
+                </h3>
               )}
-            </div>
-          </div>
-
-          {/* Bottom metadata details & compatibility warning */}
-          <div className="space-y-6 w-full max-w-2xl">
-            <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center text-[10px] sm:text-xs font-mono text-zinc-500 pt-6 border-t border-zinc-900/60 w-full">
-              <div>[ FILE: <span className="text-zinc-400 break-all">{selectedVideo.fileName}</span> ]</div>
-              <div>[ TIME: <span className="text-zinc-400">{selectedVideo.duration || '3:30'}</span> ]</div>
-              <div>[ DECODER: <span className="text-zinc-400 font-semibold">{resolution}</span> ]</div>
+              <div
+                className="text-base sm:text-lg text-[#00F0FF] tracking-[0.3em] uppercase font-bold"
+                style={{ fontFamily: "'Silkscreen', monospace", textShadow: '0 2px 10px rgba(0,0,0,.98), 0 0 14px rgba(0,240,255,.55)' }}
+              >
+                ░ KARAOKE COVER ░
+              </div>
             </div>
 
-            {/* Browser Compatibility Notice */}
-            <div className="bg-zinc-950/40 border border-zinc-900/50 p-3.5 rounded-xl max-w-xl mx-auto text-center">
-              <p className="text-[10px] text-zinc-500 leading-normal font-mono">
-                💡 <span className="text-zinc-400 font-bold">CODEC ADVISORY</span>: If the player displays a blank screen or audio-only, click the <span className="text-[#FF6B00]">"Open in New Tab"</span> button to view the clip instantly, or download it to play locally.
+            {selectedVideo.desc && (
+              <p
+                className="text-white text-lg sm:text-xl leading-relaxed max-w-xl mx-auto px-4 italic"
+                style={{ fontFamily: "'Jersey 10', sans-serif", letterSpacing: '.03em', textShadow: '0 2px 10px rgba(0,0,0,.98), 0 0 6px rgba(0,0,0,.95)' }}
+              >
+                "{selectedVideo.desc}"
               </p>
+            )}
+
+            <div
+              className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-lg sm:text-xl uppercase pt-1"
+              style={{ fontFamily: "'Jersey 10', sans-serif", letterSpacing: '.06em', textShadow: '0 2px 10px rgba(0,0,0,.98), 0 0 6px rgba(0,0,0,.95)' }}
+            >
+              <span className="text-white/70">FILE <span className="text-[#FF2BD6] break-all">{selectedVideo.fileName}</span></span>
+              <span className="text-white/70">RUNTIME <span className="text-[#FF2BD6]">{selectedVideo.duration || '3:30'}</span></span>
+              <span className="text-white/70">DECODER <span className="text-[#FF2BD6]">{resolution}</span></span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Cassette Tape Storage Shelf */}
-      <div className="border border-zinc-900 bg-black/25 p-6 rounded-2xl space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-zinc-900 pb-3 gap-2">
-          <div>
-            <h3 className="text-base font-bold font-mono text-white uppercase tracking-wider">📦 MAGNETIC CASSETTE STORAGE SHELF</h3>
-            <p className="text-[10px] text-zinc-500 font-mono uppercase">
-              Current storage shelf capacity: {videos.length} cassettes loaded
-            </p>
+      {/* ================= 3. CASSETTE SHELF ================= */}
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div
+            className="select-none uppercase text-[#FF6B00]"
+            style={{
+              fontFamily: "'Jersey 10', sans-serif",
+              fontSize: 24,
+              letterSpacing: '.1em',
+              textShadow: '0 0 16px rgba(255,107,0,.55), 2px 0 0 rgba(255,43,214,.5), -2px 0 0 rgba(0,240,255,.5)'
+            }}
+          >
+            ▚▚ Cassette Shelf <span className="cab-blink">█</span>
           </div>
           <div className="flex gap-2">
             <button
@@ -845,231 +972,200 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
                 setIsEditingDeck(!isEditingDeck);
                 playChime('sine', 1.0);
               }}
-              className="text-xs font-mono font-bold px-3 py-1 bg-black border border-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white transition-all flex items-center gap-1.5 rounded-md"
+              className={`cab-ctl ${isEditingDeck ? 'is-active' : ''}`}
+              style={{ '--mc': '#EFFF04', '--mc-soft': 'rgba(239,255,4,.4)' } as any}
             >
-              <Sliders className="w-3.5 h-3.5" />
-              <span>{isEditingDeck ? '🔒 CLOSE DECK MANAGER' : '⚙️ DECK CONFIG MANAGER'}</span>
+              <Sliders className="w-3 h-3" /> {isEditingDeck ? 'CLOSE DECK MANAGER' : 'DECK MANAGER'}
             </button>
             <button
               onClick={createVideo}
-              className="text-xs font-mono font-bold px-3 py-1 bg-[#39FF14]/10 border border-[#39FF14]/40 hover:border-[#39FF14] text-[#39FF14] transition-all flex items-center gap-1.5 rounded-md"
+              className="cab-ctl"
+              style={{ '--mc': '#39FF14', '--mc-soft': 'rgba(57,255,20,.4)' } as any}
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>RECORD_NEW_TAPE</span>
+              <Plus className="w-3 h-3" /> RECORD NEW TAPE
             </button>
           </div>
         </div>
 
         {/* Deck Config Editor Panel */}
         {isEditingDeck && (
-          <div className="bg-[#050505] border border-zinc-900 p-4 rounded-xl space-y-4 animate-fade-in">
-            <div className="flex justify-between items-center border-b border-zinc-950 pb-2">
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">⚙️ VHS Deck Setup Controls</span>
-              <button
-                onClick={handleReset}
-                className="text-[10px] text-zinc-500 hover:text-red-400 border border-zinc-900 hover:border-red-500/30 px-2 py-0.5 bg-black transition-all uppercase"
-              >
-                🔄 FACTORY_RESET SHELF
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[10px] text-zinc-400 block uppercase">📡 GCS Storage Bucket Name</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={bucketName}
-                    onChange={(e) => {
-                      setBucketName(e.target.value);
-                      localStorage.setItem('astraltrash_karaoke_bucket_name', e.target.value);
-                    }}
-                    className="flex-grow bg-zinc-950 border border-zinc-900 text-white px-3 py-1.5 outline-none focus:border-[#FF6B00] font-mono text-xs rounded"
-                  />
-                  <button
-                    onClick={() => {
-                      addLog(`BUCKET_SCAN: Re-connecting to GCS bucket gs://${bucketName}`);
-                      playChime('sine', 1.0);
-                    }}
-                    className="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-white px-3 py-1.5 text-xs font-mono font-bold"
-                  >
-                    SYNC
-                  </button>
-                </div>
-                <span className="text-[9px] text-zinc-600 block leading-tight">
-                  Default bucket is <span className="text-zinc-400">astraltrash_karaoke</span>. Set to yours to stream files directly. Make sure your bucket's permissions include public read capability so the browser can play files!
+          <div className="cab-console p-5 animate-fade-in">
+            <div className="cab-console-dither" />
+            <div className="relative space-y-4">
+              <div className="flex justify-between items-center border-b border-[#EFFF04]/25 pb-2">
+                <span className="flex items-center gap-2 text-[#EFFF04] font-bold uppercase tracking-[0.18em] text-xs" style={{ fontFamily: "'Silkscreen', monospace" }}>
+                  <Settings className="w-4 h-4" /> VHS_DECK_SETUP
                 </span>
+                <button
+                  onClick={handleReset}
+                  className="cab-ctl"
+                  style={{ '--mc': '#FF2B2B', '--mc-soft': 'rgba(255,43,43,.5)' } as any}
+                >
+                  <Trash2 className="w-3 h-3" /> FACTORY_RESET SHELF
+                </button>
               </div>
 
-              <div className="bg-zinc-950 p-3 rounded border border-zinc-900 space-y-1">
-                <h5 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">🔒 Google Bucket Permission Setup</h5>
-                <p className="text-[9px] text-zinc-500 leading-normal">
-                  To view videos, run this command in your Google Cloud Console terminal to make files readable to the web app:
-                </p>
-                <div className="bg-black p-2 rounded text-[10px] text-[#39FF14] font-mono select-all break-all border border-zinc-950">
-                  gcloud storage buckets add-iam-policy-binding gs://astraltrash_karaoke --member=allUsers --role=roles/storage.objectViewer
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] text-zinc-400 block uppercase font-mono tracking-widest">📡 GCS Storage Bucket Name</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={bucketName}
+                      onChange={(e) => {
+                        setBucketName(e.target.value);
+                        localStorage.setItem('astraltrash_karaoke_bucket_name', e.target.value);
+                      }}
+                      className="cab-key-input flex-grow"
+                    />
+                    <button
+                      onClick={() => {
+                        addLog(`BUCKET_SCAN: Re-connecting to GCS bucket gs://${bucketName}`);
+                        playChime('sine', 1.0);
+                      }}
+                      className="cab-ctl"
+                      style={{ '--mc': '#EFFF04', '--mc-soft': 'rgba(239,255,4,.4)' } as any}
+                    >
+                      SYNC
+                    </button>
+                  </div>
+                  <span className="text-[9px] text-zinc-600 block leading-tight font-mono">
+                    Default bucket is <span className="text-zinc-400">astraltrash_karaoke</span>. Set to yours to stream files directly — the bucket needs public read so browsers can play the files.
+                  </span>
+                </div>
+
+                <div className="cab-specs" style={{ textTransform: 'none' }}>
+                  <span className="font-bold text-zinc-400 uppercase tracking-widest text-[10px]">🔒 Bucket permission setup</span>
+                  <p className="text-[9px] text-zinc-500 leading-normal">
+                    Run this in your Google Cloud Console terminal to make files web-readable:
+                  </p>
+                  <div className="bg-black p-2 text-[10px] text-[#39FF14] font-mono select-all break-all border border-zinc-900">
+                    gcloud storage buckets add-iam-policy-binding gs://astraltrash_karaoke --member=allUsers --role=roles/storage.objectViewer
+                  </div>
                 </div>
               </div>
+
+              {/* Editing Slot Panel */}
+              {editingVideoId && (
+                <div className="border border-[#FF2BD6]/40 bg-black/60 p-4 space-y-3 animate-fade-in">
+                  <div className="flex justify-between items-center text-[10px] text-[#FF2BD6] border-b border-[#FF2BD6]/20 pb-1.5 uppercase font-bold tracking-wider font-mono">
+                    <span>🖋 EDITING TAPE STICKER LABELS (ID: {editingVideoId})</span>
+                    <button onClick={() => setEditingVideoId(null)} className="text-zinc-500 hover:text-white font-sans text-sm">✕</button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
+                    <div className="md:col-span-3">
+                      <label className="text-[9px] text-zinc-500 block mb-1 font-mono uppercase">SONG TITLE / LABEL</label>
+                      <input type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="cab-key-input" />
+                    </div>
+                    <div className="md:col-span-3">
+                      <label className="text-[9px] text-zinc-500 block mb-1 font-mono uppercase">ORIGINAL ARTIST</label>
+                      <input type="text" value={editArtist} onChange={(e) => setEditArtist(e.target.value)} className="cab-key-input" />
+                    </div>
+                    <div className="md:col-span-4">
+                      <label className="text-[9px] text-zinc-500 block mb-1 font-mono uppercase">GCS FILENAME / OBJECT PATH</label>
+                      <input type="text" value={editFileName} onChange={(e) => setEditFileName(e.target.value)} className="cab-key-input" />
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="text-[9px] text-zinc-500 block mb-1 font-mono uppercase">TIME</label>
+                      <input type="text" value={editDuration} onChange={(e) => setEditDuration(e.target.value)} className="cab-key-input text-center" />
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="text-[9px] text-zinc-500 block mb-1 font-mono uppercase">TAG</label>
+                      <input type="text" value={editTag} onChange={(e) => setEditTag(e.target.value)} className="cab-key-input text-center" />
+                    </div>
+                    <div className="md:col-span-12">
+                      <label className="text-[9px] text-zinc-500 block mb-1 font-mono uppercase">SLEEVE DESCRIPTION / CREDITS / NOTES</label>
+                      <textarea value={editDesc} rows={2} onChange={(e) => setEditDesc(e.target.value)} className="cab-key-input resize-none" />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-zinc-900">
+                    <button onClick={() => setEditingVideoId(null)} className="cab-ctl" style={{ '--mc': '#888', '--mc-soft': 'rgba(140,140,140,.4)' } as any}>
+                      CANCEL
+                    </button>
+                    <button onClick={saveEdit} className="cab-ctl is-active" style={{ '--mc': '#FF2BD6', '--mc-soft': 'rgba(255,43,214,.5)' } as any}>
+                      SAVE CHANGES
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-
-            {/* Editing Slot Panel */}
-            {editingVideoId && (
-              <div className="border border-zinc-850 bg-[#080808] p-4 rounded-lg mt-4 space-y-3 animate-fade-in">
-                <div className="flex justify-between items-center text-[10px] text-[#FF2BD6] border-b border-zinc-900 pb-1.5 uppercase font-bold tracking-wider">
-                  <span>🖋 Editing Tape Sticker Labels (ID: {editingVideoId})</span>
-                  <button onClick={() => setEditingVideoId(null)} className="text-zinc-500 hover:text-white font-sans text-sm">✕</button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
-                  <div className="md:col-span-3">
-                    <label className="text-[9px] text-zinc-500 block mb-1">SONG TITLE / LABEL</label>
-                    <input
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-850 p-2 text-white text-xs rounded outline-none focus:border-[#FF2BD6]"
-                    />
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <label className="text-[9px] text-zinc-500 block mb-1">ORIGINAL ARTIST</label>
-                    <input
-                      type="text"
-                      value={editArtist}
-                      onChange={(e) => setEditArtist(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-850 p-2 text-white text-xs rounded outline-none focus:border-[#FF2BD6]"
-                    />
-                  </div>
-
-                  <div className="md:col-span-4">
-                    <label className="text-[9px] text-zinc-500 block mb-1">GCS FILENAME / OBJECT PATH</label>
-                    <input
-                      type="text"
-                      value={editFileName}
-                      onChange={(e) => setEditFileName(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-850 p-2 text-white text-xs rounded outline-none focus:border-[#FF2BD6]"
-                    />
-                  </div>
-
-                  <div className="md:col-span-1">
-                    <label className="text-[9px] text-zinc-500 block mb-1">DURATION</label>
-                    <input
-                      type="text"
-                      value={editDuration}
-                      onChange={(e) => setEditDuration(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-850 p-2 text-white text-xs rounded outline-none focus:border-[#FF2BD6] text-center"
-                    />
-                  </div>
-
-                  <div className="md:col-span-1">
-                    <label className="text-[9px] text-zinc-500 block mb-1">TAG</label>
-                    <input
-                      type="text"
-                      value={editTag}
-                      onChange={(e) => setEditTag(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-850 p-2 text-white text-xs rounded outline-none focus:border-[#FF2BD6] text-center"
-                    />
-                  </div>
-
-                  <div className="md:col-span-12">
-                    <label className="text-[9px] text-zinc-500 block mb-1">SLEEVE DESCRIPTION / CREDITS / NOTES</label>
-                    <textarea
-                      value={editDesc}
-                      rows={1.5}
-                      onChange={(e) => setEditDesc(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-850 p-2 text-white text-xs rounded outline-none focus:border-[#FF2BD6] resize-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-zinc-950">
-                  <button
-                    onClick={() => setEditingVideoId(null)}
-                    className="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white px-3 py-1 rounded text-xs"
-                  >
-                    CANCEL
-                  </button>
-                  <button
-                    onClick={saveEdit}
-                    className="bg-[#FF2BD6] hover:bg-[#FF2BD6]/80 text-black font-bold px-4 py-1 rounded text-xs"
-                  >
-                    SAVE CHANGES
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
-        {/* RACK VHS GRID LAYOUT */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+        {/* RACK VHS GRID */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 items-start">
           {videos.map((item, index) => {
             const isCurrent = selectedVideo.id === item.id;
             const isHovered = hoveredId === item.id;
-            
+            const accent = isCurrent ? '#39FF14' : '#FF6B00';
             return (
               <div
                 key={item.id}
                 onMouseEnter={() => setHoveredId(item.id)}
-                onMouseLeave={() => setHoveredId(null)}
+                onMouseLeave={() => setHoveredId(prev => (prev === item.id ? null : prev))}
                 onClick={() => loadTape(item)}
-                className={`group border relative transition-all rounded-lg overflow-hidden flex flex-col justify-between cursor-pointer ${
-                  isCurrent
-                    ? 'border-[#39FF14] bg-[#39FF14]/5 shadow-[0_0_15px_rgba(57,255,20,0.12)]'
-                    : 'border-zinc-900 bg-black/60 hover:border-zinc-700 hover:bg-black/80'
-                }`}
+                className={`group cab-cart select-none flex flex-col ${isCurrent ? 'cab-maxed' : index % 2 === 0 ? 'cab-tilt-l' : 'cab-tilt-r'}`}
+                style={{
+                  '--mc': accent,
+                  '--mc-soft': isCurrent ? 'rgba(57,255,20,.5)' : 'rgba(255,107,0,.35)',
+                  '--mc-faint': isCurrent ? 'rgba(57,255,20,.14)' : 'rgba(255,107,0,.12)',
+                  background: 'rgba(10,4,0,.92)',
+                  ...(isCurrent ? { borderColor: '#39FF14', boxShadow: '0 0 22px rgba(57,255,20,.35)' } : {})
+                } as any}
               >
-                {/* Visual cassette top labels */}
-                <div className="p-2 space-y-1.5">
-                  <div className="flex justify-between items-center text-[8px] font-mono">
-                    <span className="text-zinc-500 font-semibold tracking-wider">CASSETTE</span>
-                    <span className={`px-1 py-0.5 rounded text-[7px] font-bold ${
-                      isCurrent ? 'bg-[#39FF14]/20 text-[#39FF14]' : 'bg-zinc-900 text-zinc-400'
-                    }`}>
-                      {item.tag || 'VOX'}
-                    </span>
+                <div className="cab-dither" />
+                <span className="cab-corner" style={{ top: 2, left: 5 }}>╔</span>
+                <span className="cab-corner" style={{ top: 2, right: 5 }}>╗</span>
+
+                <div className="relative p-2 space-y-1.5 flex-grow flex flex-col">
+                  <div className="flex justify-between items-center">
+                    <span className="cab-pixlabel text-zinc-500">CASSETTE_{String(index + 1).padStart(2, '0')}</span>
+                    <span className="cab-chip">{item.tag || 'VOX'}</span>
                   </div>
 
-                  {/* Real Video Thumbnail Art with Lazy-Preview */}
-                  <div className="aspect-[16/10] bg-zinc-950 border border-zinc-900 rounded relative overflow-hidden flex items-center justify-center group-hover:border-zinc-700 transition-all">
-                    {isHovered ? (
-                      <video
-                        src={getResolvedUrl(item.fileName)}
-                        preload="auto"
-                        playsInline
-                        muted
-                        autoPlay
-                        loop
-                        className="absolute inset-0 w-full h-full object-cover opacity-100 transition-opacity duration-300"
-                      />
-                    ) : (
-                      // Performance Optimization: #t=1 requests a single poster frame, avoiding concurrent decode streams
-                      <video
-                        src={getResolvedUrl(item.fileName) + '#t=1'}
-                        preload="metadata"
-                        playsInline
-                        muted
-                        className="absolute inset-0 w-full h-full object-cover opacity-60 transition-opacity duration-300 pointer-events-none"
-                      />
-                    )}
-                    
-                    {/* Tiny cassette tape reels on top corner for that retro mechanical flavor */}
-                    <div className="absolute top-1 left-1.5 flex gap-1 items-center bg-black/75 px-1 py-0.5 rounded border border-zinc-900 text-[6px] text-zinc-500 font-mono tracking-tighter z-10">
-                      <div className={`w-1.5 h-1.5 rounded-full border border-zinc-700 ${
-                        isHovered || (isCurrent && isPlaying) ? 'animate-spin' : ''
-                      }`} style={{ animationDuration: '3s' }} />
-                      <div className={`w-1.5 h-1.5 rounded-full border border-zinc-700 ${
-                        isHovered || (isCurrent && isPlaying) ? 'animate-spin' : ''
-                      }`} style={{ animationDuration: '3s' }} />
+                  {/* Tape window: lazy poster frame, live preview on hover */}
+                  <div className="aspect-[16/10] bg-zinc-950 border relative overflow-hidden" style={{ borderColor: 'var(--mc-faint)' }}>
+                    <LazyMount
+                      placeholder={
+                        <div className="absolute inset-0 flex items-center justify-center text-[7px] text-zinc-700 font-mono uppercase tracking-widest">
+                          [TAPE_IN_RACK]
+                        </div>
+                      }
+                    >
+                      {isHovered ? (
+                        <video
+                          key="preview"
+                          src={getResolvedUrl(item.fileName)}
+                          preload="auto"
+                          playsInline
+                          muted
+                          autoPlay
+                          loop
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        // #t=1 requests a single poster frame, avoiding concurrent decode streams
+                        <video
+                          key="poster"
+                          src={getResolvedUrl(item.fileName) + '#t=1'}
+                          preload="metadata"
+                          playsInline
+                          muted
+                          className="absolute inset-0 w-full h-full object-cover opacity-60 pointer-events-none"
+                        />
+                      )}
+                    </LazyMount>
+                    <div className="absolute top-1 left-1.5 flex gap-1 items-center bg-black/75 px-1 py-0.5 border border-zinc-900 text-[6px] text-zinc-500 font-mono tracking-tighter z-10">
+                      <div className={`w-1.5 h-1.5 rounded-full border border-zinc-700 ${isHovered || (isCurrent && isPlaying) ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
+                      <div className={`w-1.5 h-1.5 rounded-full border border-zinc-700 ${isHovered || (isCurrent && isPlaying) ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
                       <span>{isHovered ? 'PREVIEW' : 'REEL'}</span>
                     </div>
-
-                    {/* Scanning CRT Grid Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent h-[150%] pointer-events-none opacity-25 z-10" />
                   </div>
 
                   {/* Handwritten label sticker */}
-                  <div className="bg-zinc-100 border border-zinc-200 text-zinc-950 p-1.5 font-mono text-[10px] leading-tight select-none rotate-[-0.5deg] shadow-[1px_2px_4px_rgba(0,0,0,0.15)] h-[52px] flex flex-col justify-between">
+                  <div className="bg-zinc-100 border border-zinc-200 text-zinc-950 p-1.5 font-mono text-[10px] leading-tight select-none rotate-[-0.5deg] shadow-[1px_2px_4px_rgba(0,0,0,0.15)] min-h-[52px] flex flex-col justify-between">
                     <div className="font-bold uppercase tracking-wider truncate" title={item.title}>
                       {item.title}
                     </div>
@@ -1083,81 +1179,95 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
                       <span className="opacity-60"># {index + 1}</span>
                     </div>
                   </div>
-                </div>
 
-                {/* Cassette Action Controls */}
-                <div className="p-1.5 border-t border-zinc-950 bg-black/40 space-y-1">
-                  <div className="flex gap-1">
+                  {/* Controls */}
+                  <div className="flex gap-1 mt-auto pt-1">
                     <button
                       onClick={(e) => { e.stopPropagation(); loadTape(item); }}
-                      className={`flex-grow py-1 px-1 border text-[9px] uppercase font-mono font-bold transition-all flex items-center justify-center gap-1 ${
-                        isCurrent
-                          ? 'bg-[#39FF14] text-black border-[#39FF14]'
-                          : 'bg-black text-[#39FF14] border-[#39FF14]/40 hover:border-[#39FF14] hover:bg-[#39FF14]/10'
-                      }`}
+                      className={`cab-ctl flex-grow ${isCurrent ? 'is-active' : ''}`}
                     >
-                      <span>{isCurrent ? 'ACTIVE' : 'PLAY NOW'}</span>
+                      {isCurrent ? '▮ SLOTTED' : '⚡ PLAY'}
                     </button>
-
                     <button
-                      onClick={(e) => { e.stopPropagation(); startEditing(item); }}
-                      className="p-1 border border-zinc-900 hover:border-zinc-700 hover:text-white bg-black/80 transition-all rounded text-zinc-400"
+                      onClick={(e) => { e.stopPropagation(); startEditing(item); setIsEditingDeck(true); }}
+                      className="cab-ctl"
+                      style={{ '--mc': '#EFFF04', '--mc-soft': 'rgba(239,255,4,.4)' } as any}
                       title="Edit labels"
                     >
                       <Settings className="w-3 h-3" />
                     </button>
-
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteVideo(item.id); }}
-                      className="p-1 border border-zinc-900 hover:border-red-500 hover:text-red-400 bg-black/80 transition-all rounded text-zinc-500"
+                      className="cab-ctl"
+                      style={{ '--mc': '#FF2B2B', '--mc-soft': 'rgba(255,43,43,.4)' } as any}
                       title="Discard cassette"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
-
-                  {/* Move arrow buttons */}
-                  <div className="flex justify-between gap-1 text-[9px] font-mono">
+                  <div className="flex gap-1 text-[9px] font-mono">
                     <button
                       disabled={index === 0}
+                      aria-label={`Move ${item.title} left`}
                       onClick={(e) => { e.stopPropagation(); moveTape(index, 'left'); }}
-                      className={`px-1 py-0.5 border flex-grow text-center transition-all ${
-                        index === 0
-                          ? 'border-zinc-950 text-zinc-800 cursor-not-allowed'
-                          : 'border-zinc-900 hover:border-zinc-700 text-zinc-500 hover:text-zinc-300'
-                      }`}
+                      className="cab-ctl flex-1 disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:shadow-none"
+                      style={{ '--mc': '#00F0FF', '--mc-soft': 'rgba(0,240,255,.35)' } as any}
                     >
-                      ◀ MOVE
+                      ◀
                     </button>
                     <button
                       disabled={index === videos.length - 1}
+                      aria-label={`Move ${item.title} right`}
                       onClick={(e) => { e.stopPropagation(); moveTape(index, 'right'); }}
-                      className={`px-1 py-0.5 border flex-grow text-center transition-all ${
-                        index === videos.length - 1
-                          ? 'border-zinc-950 text-zinc-800 cursor-not-allowed'
-                          : 'border-zinc-900 hover:border-zinc-700 text-zinc-500 hover:text-zinc-300'
-                      }`}
+                      className="cab-ctl flex-1 disabled:opacity-20 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:shadow-none"
+                      style={{ '--mc': '#00F0FF', '--mc-soft': 'rgba(0,240,255,.35)' } as any}
                     >
-                      MOVE ▶
+                      ▶
                     </button>
                   </div>
                 </div>
+
+                <span className="cab-sticker">{isCurrent ? 'SINGING!!' : 'SING ME!!'}</span>
+                <div className="cab-scan" />
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Terminal logs */}
-      <div className="col-span-12">
-        <div className="bg-[#020202] border border-zinc-950 p-4 font-mono text-[10px] text-[#FF6B00] space-y-1 max-h-[140px] overflow-y-auto rounded-lg">
-          <div className="text-zinc-500 text-[9px] uppercase border-b border-zinc-900 pb-1 mb-2 tracking-widest flex justify-between">
+      {/* ================= 4. VCR MODEM LOGS ================= */}
+      <div
+        className="cab-panel p-4 mt-10"
+        style={{
+          '--mc': '#39FF14',
+          '--mc-soft': 'rgba(57,255,20,.35)',
+          '--mc-faint': 'rgba(57,255,20,.1)',
+          '--cab-panel-bg': 'rgba(2,10,1,.92)'
+        } as any}
+      >
+        <div className="cab-dither" />
+        <span className="cab-corner" style={{ top: 3, left: 6 }}>╔</span>
+        <span className="cab-corner" style={{ top: 3, right: 6 }}>╗</span>
+        <span className="cab-corner" style={{ bottom: 4, left: 6 }}>╚</span>
+        <span className="cab-corner" style={{ bottom: 4, right: 6 }}>╝</span>
+        <div className="relative font-mono text-[10px] text-[#FF6B00] space-y-1 max-h-[140px] overflow-y-auto custom-scrollbar">
+          <div className="text-zinc-500 text-[9px] uppercase border-b pb-1 mb-2 tracking-widest flex justify-between" style={{ borderColor: 'var(--mc-faint)' }}>
             <span>KARAOKE_VCR_MODEM_LOGS</span>
-            <span className="animate-ping">●</span>
+            <span className="cab-blink text-[#39FF14]">●</span>
           </div>
           {terminalLogs.map((line, idx) => (
             <div key={idx} className="truncate">{line}</div>
           ))}
+        </div>
+      </div>
+
+      {/* ================= 5. FOOTER ================= */}
+      <div className="mt-12 text-center space-y-6 select-none">
+        <div className="cab-dings text-[#FF6B00] opacity-80" aria-hidden="true">
+          EFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMN
+        </div>
+        <div className="font-mono text-[10px] tracking-[.3em] text-zinc-600 uppercase">
+          ── ✦ END_OF_SHELF // GO EMBARRASS YOURSELF BEAUTIFULLY ✦ ──
         </div>
       </div>
     </div>
