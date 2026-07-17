@@ -146,9 +146,10 @@ function renderMediaItem(item, itemIndex, channelID) {
     `;
   }
 
+  const optimizedUrl = type === "image" && url.startsWith('http') ? `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=400&output=webp&q=80` : url;
   const preview = type === "video"
-    ? `<video src="${url}" muted playsinline preload="metadata" aria-label="${alt}"></video>`
-    : `<img src="${url}" alt="${alt}" loading="lazy" decoding="async">`;
+    ? `<video src="${url}" muted playsinline preload="none" aria-label="${alt}"></video>`
+    : `<img src="${optimizedUrl}" alt="${alt}" loading="lazy" decoding="async" data-raw-url="${url}">`;
 
   return `
     <figure class="psy-specimen psy-specimen-${type}" data-specimen-type="${type}">
@@ -323,9 +324,11 @@ function openSpecimen(root, trigger) {
   const label = trigger.dataset.mediaCaption || "UNLABELED SPECIMEN";
   if (!url) return;
 
+  const optimizedUrl = type === "image" && url.startsWith('http') ? `https://wsrv.nl/?url=${encodeURIComponent(safeExternalURL(url))}&w=1920&output=webp&q=80` : safeExternalURL(url);
+
   stage.innerHTML = type === "video"
     ? `<video src="${safeExternalURL(url)}" controls autoplay playsinline></video>`
-    : `<img src="${safeExternalURL(url)}" alt="${escapeHTML(label)}">`;
+    : `<img src="${optimizedUrl}" alt="${escapeHTML(label)}">`;
   caption.textContent = label;
 
   if (typeof dialog.showModal === "function") dialog.showModal();

@@ -476,15 +476,17 @@ export default function App() {
   const getDossierPhotoUrl = (idx: number) => {
     const attempt = dossierAttempts[idx] || 0;
     const fileName = DOSSIER_FILE_NAMES[idx] || DOSSIER_FILE_NAMES[0];
+    let rawUrl = '';
     if (attempt === 0) {
-      return `https://cdn.jsdelivr.net/gh/merrypranxter/astraltrash_site_support@main/public/selfies/${fileName}`;
+      rawUrl = `https://cdn.jsdelivr.net/gh/merrypranxter/astraltrash_site_support@main/public/selfies/${fileName}`;
     } else if (attempt === 1) {
-      return `https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/public/selfies/${fileName}`;
+      rawUrl = `https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/public/selfies/${fileName}`;
     } else if (attempt === 2) {
-      return `https://cdn.statically.io/gh/merrypranxter/astraltrash_site_support/main/public/selfies/${fileName}`;
+      rawUrl = `https://cdn.statically.io/gh/merrypranxter/astraltrash_site_support/main/public/selfies/${fileName}`;
     } else {
-      return `https://raw.githack.com/merrypranxter/astraltrash_site_support/main/public/selfies/${fileName}`;
+      rawUrl = `https://raw.githack.com/merrypranxter/astraltrash_site_support/main/public/selfies/${fileName}`;
     }
+    return `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}&w=400&output=webp&q=80`;
   };
 
   const handleDossierError = (idx: number) => {
@@ -2885,7 +2887,7 @@ export default function App() {
                                 <div className="aspect-[16/10] bg-black border border-zinc-900 rounded relative overflow-hidden flex items-center justify-center">
                                   <video
                                     src="https://storage.googleapis.com/astraltrash_karaoke/Whatta_Man_by_Salt_n_Pepa.mov#t=1"
-                                    preload="metadata"
+                                    preload="none"
                                     playsInline
                                     muted
                                     className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/teaser:opacity-90 transition-opacity duration-300"
@@ -2912,7 +2914,7 @@ export default function App() {
                                 <div className="aspect-[16/10] bg-black border border-zinc-900 rounded relative overflow-hidden flex items-center justify-center">
                                   <video
                                     src="https://storage.googleapis.com/astraltrash_karaoke/Girl_Anachronism_by_The_Dresden_Dolls.mp4#t=1"
-                                    preload="metadata"
+                                    preload="none"
                                     playsInline
                                     muted
                                     className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover/teaser:opacity-90 transition-opacity duration-300"

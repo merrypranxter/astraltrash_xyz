@@ -121,6 +121,7 @@ export default function AiSlop({
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [displayMode, setDisplayMode] = useState<DisplayMode>('auto');
   const [galleryMode, setGalleryMode] = useState<GalleryMode>('grid');
+  const [imageRes, setImageRes] = useState<'potato' | 'low' | 'high' | 'source'>('low');
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [detectedAspect, setDetectedAspect] = useState<DisplayMode>('portrait');
   const [terminalLogs, setTerminalLogs] = useState<string[]>([
@@ -159,8 +160,21 @@ export default function AiSlop({
     return null;
   };
 
-  const getResolvedUrl = (item: BucketItem) => {
+  const getRawUrl = (item: BucketItem) => {
     return `https://storage.googleapis.com/${item.bucket}/${encodeURI(item.fileName).replace(/#/g, '%23')}`;
+  };
+
+  const getResolvedUrl = (item: BucketItem) => {
+    const raw = getRawUrl(item);
+    if (item.type === 'video' || imageRes === 'source') return raw;
+    const width = imageRes === 'high' ? 1920 : imageRes === 'low' ? 1280 : 854;
+    return `https://wsrv.nl/?url=${encodeURIComponent(raw)}&w=${width}&output=webp&q=80`;
+  };
+
+  const getResolvedThumbUrl = (item: BucketItem) => {
+    const raw = getRawUrl(item);
+    if (item.type === 'video') return raw;
+    return `https://wsrv.nl/?url=${encodeURIComponent(raw)}&w=300&output=webp&q=60`;
   };
 
   const listSourceObjects = async (source: BucketSource, signal: AbortSignal) => {
@@ -433,7 +447,7 @@ export default function AiSlop({
             <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 p-2 border-t border-zinc-950 bg-[#050505] z-20">
               <div className="text-right text-[#00F0FF] font-bold">SIZE: {selectedItem ? selectedItem.size : '0.0 KB'}</div>
               {selectedItem && (
-                  <a href={getResolvedUrl(selectedItem)} target="_blank" rel="noreferrer" onClick={() => playChime('sine', 1.2)} className="hover:text-white flex items-center gap-1">
+                  <a href={getRawUrl(selectedItem)} target="_blank" rel="noreferrer" onClick={() => playChime('sine', 1.2)} className="hover:text-white flex items-center gap-1">
                     <ExternalLink className="w-3 h-3" /> RAW FILE
                   </a>
               )}
@@ -446,6 +460,12 @@ export default function AiSlop({
               <div className="grid grid-cols-5 gap-1.5">
                 {(['auto', 'portrait', 'landscape', 'square', 'contain'] as const).map(mode => (
                   <button key={mode} onClick={() => { playChime('square', 1.0); setDisplayMode(mode); }} className={`font-mono text-[8px] font-bold py-1 px-1 text-center border uppercase transition-all ${displayMode === mode ? 'bg-[#00F0FF] text-black border-[#00F0FF]' : 'bg-black text-[#00F0FF] border-[#00F0FF]/30 hover:border-[#00F0FF]'}`}>{mode}</button>
+                ))}
+              </div>
+              <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-widest mt-4"><span>🖼️ Image Resolution</span><span className="text-[#FF2BD6] font-bold">{imageRes}</span></div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(['potato', 'low', 'high', 'source'] as const).map(res => (
+                  <button key={res} onClick={() => { playChime('square', 1.0); setImageRes(res); }} className={`font-mono text-[8px] font-bold py-1 px-1 text-center border uppercase transition-all ${imageRes === res ? 'bg-[#FF2BD6] text-black border-[#FF2BD6]' : 'bg-black text-[#FF2BD6] border-[#FF2BD6]/30 hover:border-[#FF2BD6]'}`}>{res}</button>
                 ))}
               </div>
             </div>
@@ -486,7 +506,7 @@ export default function AiSlop({
                               <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover/video-thumb:bg-black/10 transition-colors pointer-events-none"><div className="p-1 rounded-full bg-black/60 border border-zinc-850 text-zinc-300"><Play className="w-3 h-3 text-[#00F0FF]" /></div></div>
                             </div>
                           ) : (
-                            <img src={getResolvedUrl(item)} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                            <img src={getResolvedThumbUrl(item)} alt={item.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                           )}
                         </div>
                       </button>

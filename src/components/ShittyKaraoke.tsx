@@ -1046,7 +1046,7 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
                       // Performance Optimization: #t=1 requests a single poster frame, avoiding concurrent decode streams
                       <video
                         src={getResolvedUrl(item.fileName) + '#t=1'}
-                        preload="metadata"
+                        preload="none"
                         playsInline
                         muted
                         className="absolute inset-0 w-full h-full object-cover opacity-60 transition-opacity duration-300 pointer-events-none"
