@@ -92,7 +92,7 @@
     const c = document.createElement("canvas");
     c.width = W * 3; c.height = H * 3;
     c.style.cssText =
-      "position:fixed;right:12px;top:50%;transform:translateY(-50%);" +
+      "position:fixed;left:50%;top:40%;transform:translate(-50%, -50%);" +
       "z-index:9970;image-rendering:pixelated;pointer-events:none;" +
       "filter:drop-shadow(0 0 12px rgba(255,43,214,.35));";
     document.body.appendChild(c);

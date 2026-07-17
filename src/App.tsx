@@ -252,8 +252,39 @@ export default function App() {
   // 'shaderslop' = WebGL Art Gallery
   // 'aislop' = AI Hallucination Lab
   // 'about' = About the Artist / More Sections
-  const [activeTab, setActiveTab] = useState<'hub' | 'shaderslop' | 'aislop' | 'about' | 'karaoke' | 'projects'>('hub');
-  const [moreSubTab, setMoreSubTab] = useState<'landing' | 'psychedelic' | 'opinions' | 'blog' | 'about-profile'>('landing');
+  const [activeTab, setRawActiveTab] = useState<'hub' | 'shaderslop' | 'aislop' | 'about' | 'karaoke' | 'projects'>('hub');
+  const [moreSubTab, setRawMoreSubTab] = useState<'landing' | 'psychedelic' | 'opinions' | 'blog' | 'about-profile'>('landing');
+
+  const setActiveTab = (tab: typeof activeTab, subTab?: typeof moreSubTab) => {
+    const applyNavigation = () => {
+      setRawActiveTab(tab);
+      if (subTab) setRawMoreSubTab(subTab);
+      window.scrollTo(0, 0);
+    };
+
+    const AD = (window as any).AstralDeco;
+    if (AD && AD.modules && AD.modules.transition) {
+      if (activeTab === tab && (!subTab || subTab === moreSubTab)) return; 
+      AD.modules.transition.play(applyNavigation);
+    } else {
+      applyNavigation();
+    }
+  };
+
+  const setMoreSubTab = (subTab: typeof moreSubTab) => {
+    const applyNavigation = () => {
+      setRawMoreSubTab(subTab);
+      window.scrollTo(0, 0);
+    };
+
+    const AD = (window as any).AstralDeco;
+    if (AD && AD.modules && AD.modules.transition) {
+      if (subTab === moreSubTab) return; 
+      AD.modules.transition.play(applyNavigation);
+    } else {
+      applyNavigation();
+    }
+  };
   const [activeTripReport, setActiveTripReport] = useState<number>(0);
   const [activeOpinion, setActiveOpinion] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => localStorage.getItem('astraltrash_sound_enabled') === 'true');
@@ -671,6 +702,13 @@ export default function App() {
         const n = base + Math.floor((Date.now() - 1760000000000) / 60000);
         setVisitorCount(String(Math.max(n, base)).padStart(7, '0'));
       });
+  }, []);
+
+  useEffect(() => {
+    const AD = (window as any).AstralDeco;
+    if (AD && AD.modules && AD.modules.transition) {
+      try { AD.modules.transition.init({ auto: false }); } catch (_) {}
+    }
   }, []);
 
   // Fetch Psychedelic Introduction from GitHub dynamically
@@ -2404,7 +2442,7 @@ export default function App() {
               PROJECTS
             </button>
             <button data-tensor-action="celebrate"
-              onClick={() => { setActiveTab('about'); setMoreSubTab('landing'); playChime('triangle', 1.6); }}
+              onClick={() => { setActiveTab('about', 'landing'); playChime('triangle', 1.6); }}
               className={`w-full text-center flex items-center justify-center px-4 py-2.5 sm:py-3 text-lg sm:text-xl md:text-2xl font-normal tracking-widest border transition-all cursor-crosshair uppercase jersey-10-regular deco-bloom ${
                 activeTab === 'about' 
                   ? 'bg-[#EFFF04] text-black border-[#EFFF04] shadow-[0_0_12px_rgba(239,255,4,0.5)]' 
