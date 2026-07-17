@@ -54,7 +54,8 @@
     c.style.cssText =
       "position:fixed;inset:0;width:100vw;height:100vh;" +
       "pointer-events:none;image-rendering:pixelated;z-index:" + zIndex;
-    document.body.appendChild(c);
+    const target = document.getElementById("psy-portal") || document.body;
+    target.appendChild(c);
     const ctx = c.getContext("2d");
     function fit() {
       c.width = window.innerWidth;

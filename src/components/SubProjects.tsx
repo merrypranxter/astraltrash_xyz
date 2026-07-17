@@ -164,6 +164,44 @@ const PROJECTS: ProjectItem[] = [
       { num: '02/', name: 'Dynamic Feedback Matrix', desc: 'Generative interactive feedback loops responsive to cursor vectors.' },
       { num: '03/', name: 'Cognitive WebGL Shaders', desc: 'Color-shifting WebGL render passes simulating network layers.' }
     ]
+  },
+  {
+    id: 'threshold-gateway',
+    title: 'THRESHOLD',
+    subtitle: 'Dimensional Gateway Interface',
+    liveUrl: 'https://c405e407062211997f.v2.appdeploy.ai/#threshold',
+    description: 'An experimental deployment node testing the boundaries between physical space and digital reality.',
+    tag: 'THRESHOLD_PORT_80',
+    accentColor: '#39FF14',
+    soft: 'rgba(57,255,20,.4)',
+    faint: 'rgba(57,255,20,.12)',
+    bg: 'rgba(3,24,2,.92)',
+    grad: 'linear-gradient(180deg, #031802, #39FF14 40%, #00F0FF 80%)',
+    glyph: '🌀',
+    specs: [
+      { num: '01/', name: 'Gateway Handshake', desc: 'Connecting to undisclosed dimensional nodes.' },
+      { num: '02/', name: 'Spatial Anchor', desc: 'Tethering digital constructs to physical geometry.' },
+      { num: '03/', name: 'Void Transmission', desc: 'Secure data relay across the threshold.' }
+    ]
+  },
+  {
+    id: 'coming-soon',
+    title: 'COMING SOON',
+    subtitle: 'Unidentified Cartridge',
+    liveUrl: 'about:blank',
+    description: 'This slot is currently empty. Awaiting new transmission from the void. The tape is rotting but the signal is clear.',
+    tag: 'UNKNOWN_TAPE',
+    accentColor: '#666666',
+    soft: 'rgba(100,100,100,.4)',
+    faint: 'rgba(100,100,100,.12)',
+    bg: 'rgba(20,20,20,.92)',
+    grad: 'repeating-linear-gradient(45deg, #111, #111 10px, #222 10px, #222 20px)',
+    glyph: '❓',
+    specs: [
+      { num: '01/', name: 'DATA_MISSING', desc: 'Signal loss detected.' },
+      { num: '02/', name: 'DATA_MISSING', desc: 'Signal loss detected.' },
+      { num: '03/', name: 'DATA_MISSING', desc: 'Signal loss detected.' }
+    ]
   }
 ];
 
@@ -350,7 +388,7 @@ export function SubProjects({ playChime }: SubProjectsProps) {
             ▚▚ Insert Coin To Play <span className="cab-blink">█</span>
           </div>
           <div className="hidden md:flex items-center gap-2 font-mono text-[9px] text-zinc-500 uppercase tracking-widest">
-            <span className="cab-blink text-[#39FF14]">●</span> 6 CARTRIDGES DETECTED // 0 CORRUPTED
+            <span className="cab-blink text-[#39FF14]">●</span> 8 CARTRIDGES DETECTED // 1 UNIDENTIFIED
           </div>
         </div>
         <div className="cab-rainbow" />
@@ -359,8 +397,8 @@ export function SubProjects({ playChime }: SubProjectsProps) {
       {/* Scrolling system chatter */}
       <div className="cab-ticker text-[#9fdc96] mb-8 select-none" aria-hidden="true">
         <div className="cab-ticker-inner">
-          <span>✦ 6 MACHINES ONLINE ✦ INSERT COIN TO PLAY ✦ SMART MODES REQUIRE YOUR OWN GEMINI KEY ✦ FREE MODES = DUMB BUT CUTE ✦ KEYS NEVER LEAVE YOUR BROWSER ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE ✦ DIAL-UP SOULS WELCOME&nbsp;</span>
-          <span>✦ 6 MACHINES ONLINE ✦ INSERT COIN TO PLAY ✦ SMART MODES REQUIRE YOUR OWN GEMINI KEY ✦ FREE MODES = DUMB BUT CUTE ✦ KEYS NEVER LEAVE YOUR BROWSER ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE ✦ DIAL-UP SOULS WELCOME&nbsp;</span>
+          <span>✦ 8 MACHINES ONLINE ✦ INSERT COIN TO PLAY ✦ SMART MODES REQUIRE YOUR OWN GEMINI KEY ✦ FREE MODES = DUMB BUT CUTE ✦ KEYS NEVER LEAVE YOUR BROWSER ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE ✦ DIAL-UP SOULS WELCOME&nbsp;</span>
+          <span>✦ 8 MACHINES ONLINE ✦ INSERT COIN TO PLAY ✦ SMART MODES REQUIRE YOUR OWN GEMINI KEY ✦ FREE MODES = DUMB BUT CUTE ✦ KEYS NEVER LEAVE YOUR BROWSER ✦ NO ADS ✦ NO ALGORITHM ✦ 100% HANDMADE ✦ DIAL-UP SOULS WELCOME&nbsp;</span>
         </div>
       </div>
 
@@ -585,8 +623,8 @@ export function SubProjects({ playChime }: SubProjectsProps) {
                     <div className="font-mono text-[9px] tracking-[0.25em] text-zinc-600 uppercase">
                       [ NODE_STATUS: STANDBY // {smartArmed ? 'SMART_FUEL: LOADED' : proj.aiPowered ? 'RUNNING ON FUMES' : 'NO_KEY_NEEDED'} ]
                     </div>
-                    <button onClick={() => handleBoot(proj.id)} className="cab-boot-btn">
-                      ⚡ INSERT COIN // BOOT
+                    <button onClick={() => proj.id !== 'coming-soon' && handleBoot(proj.id)} className={`cab-boot-btn ${proj.id === 'coming-soon' ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                      ⚡ {proj.id === 'coming-soon' ? 'SLOT EMPTY' : 'INSERT COIN // BOOT'}
                     </button>
                     <div className="font-mono text-[9px] text-zinc-600 uppercase tracking-wider text-center">
                       boots the live iframe + web audio + GLSL passes
@@ -625,7 +663,7 @@ export function SubProjects({ playChime }: SubProjectsProps) {
                         <ExternalLink className="w-3.5 h-3.5" /> {proj.liveTitle2} 🚀
                       </a>
                     </>
-                  ) : (
+                  ) : proj.id !== 'coming-soon' && (
                     <a
                       href={buildUrl(proj)}
                       target="_blank"

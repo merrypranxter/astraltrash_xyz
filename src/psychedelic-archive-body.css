@@ -121,7 +121,7 @@
   display: block;
   margin-bottom: 6px;
   color: var(--psy-pink);
-  font-family: "BarcodeFont", "Share Tech Mono", monospace;
+  font-family: "Psycha", "Share Tech Mono", monospace;
   font-size: clamp(2rem, 5vw, 4.2rem);
   line-height: 0.68;
 }
@@ -278,7 +278,7 @@
 
 .psy-rail-button span {
   color: var(--psy-pink);
-  font-family: "BarcodeFont", monospace;
+  font-family: "Psycha", monospace;
   font-size: 1.7rem;
 }
 
@@ -349,7 +349,7 @@
   -webkit-text-stroke: 1px color-mix(in srgb, var(--channel-accent) 38%, transparent);
   opacity: 0.82;
   pointer-events: none;
-  font-family: "BarcodeFont", "Dignity of Labour", sans-serif;
+  font-family: "Psycha", "Dignity of Labour", sans-serif;
   font-size: clamp(9rem, 24vw, 25rem);
   line-height: 0.7;
   transform: scaleY(1.65);
@@ -744,7 +744,7 @@
 .psy-research-reel a > span {
   grid-row: span 2;
   color: var(--channel-accent);
-  font-family: "BarcodeFont", monospace;
+  font-family: "Psycha", monospace;
   font-size: 1.8rem;
 }
 

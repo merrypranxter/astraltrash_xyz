@@ -711,23 +711,77 @@ export default function App() {
       const AD = (window as any).AstralDeco;
       if (!AD || !AD.modules) return;
 
+      const destroyAll = () => {
+        try { AD.modules.comet?.destroy(); } catch (_) {}
+        try { AD.modules.debris?.destroy(); } catch (_) {}
+        try { AD.modules.dividers?.destroy(); } catch (_) {}
+        try { AD.modules.bloom?.destroy(); } catch (_) {}
+        
+        try { AD.modules.breathe?.destroy(); } catch (_) {}
+        try { AD.modules.eyes?.destroy(); } catch (_) {}
+        try { AD.modules.moire?.destroy(); } catch (_) {}
+        try { AD.modules.tracers?.destroy(); } catch (_) {}
+        try { AD.modules.flicker?.destroy(); } catch (_) {}
+        try { AD.modules.glossolalia?.destroy(); } catch (_) {}
+        try { AD.modules.melt?.destroy(); } catch (_) {}
+        try { AD.karaoke?.detach(); } catch (_) {}
+        try { AD.modules.deck?.destroy(); } catch (_) {}
+        try { AD.modules.notes?.destroy(); } catch (_) {}
+        try { AD.modules.onair?.destroy(); } catch (_) {}
+      };
+
       // Reset and destroy previous instances before re-initializing
-      try { AD.modules.comet?.destroy(); } catch (_) {}
-      try { AD.modules.debris?.destroy(); } catch (_) {}
-      try { AD.modules.dividers?.destroy(); } catch (_) {}
-      try { AD.modules.bloom?.destroy(); } catch (_) {}
+      destroyAll();
 
-      // Start debris (Z-index 1, behind page content)
-      try { AD.modules.debris?.init({ density: 18, zIndex: 1 }); } catch (_) {}
-      
-      // Start dividers to replace <hr> and .deco-divider elements on the current page
-      try { AD.modules.dividers?.init(); } catch (_) {}
+      const isPsychedelic = activeTab === 'about' && moreSubTab === 'psychedelic';
 
-      // Start comet trail
-      try { AD.modules.comet?.init(); } catch (_) {}
+      if (isPsychedelic) {
+        // Start psychedelic decor - wait for portal to be mounted
+        const tryInit = () => {
+          if (!document.getElementById('psy-portal')) {
+            setTimeout(tryInit, 50);
+            return;
+          }
+          try { AD.modules.breathe?.init({ zIndex: 10000 }); } catch (_) {}
+          try { AD.modules.eyes?.init({ density: 8, zIndex: -1 }); } catch (_) {}
+          try { AD.modules.moire?.init({ zIndex: -3 }); } catch (_) {}
+          try { AD.modules.tracers?.init({ zIndex: 9999 }); } catch (_) {}
+          try { AD.modules.flicker?.init({ root: '#psy-portal' }); } catch (_) {}
+          try { AD.modules.glossolalia?.init({ selector: '.psy-frequency-copy p, .psy-report-fragments p' }); } catch (_) {}
+          try { AD.modules.melt?.init({ selector: '.psy-channel-heading, .psy-context-heading' }); } catch (_) {}
+        };
+        tryInit();
+      } else if (activeTab === 'karaoke') {
+        // Start karaoke decor
+        const tryInitKaraoke = () => {
+          const media = document.getElementById('karaoke-media');
+          if (!media) {
+            setTimeout(tryInitKaraoke, 50);
+            return;
+          }
+          try {
+            if (AD.karaoke?.attach('#karaoke-media')) {
+              AD.modules.deck?.init();
+              AD.modules.notes?.init();
+              AD.modules.onair?.init({ corner: "left" });
+            }
+          } catch (_) {}
+        };
+        tryInitKaraoke();
+      } else {
+        // Start standard decor
+        // Start debris (Z-index 1, behind page content)
+        try { AD.modules.debris?.init({ density: 18, zIndex: 1 }); } catch (_) {}
+        
+        // Start dividers to replace <hr> and .deco-divider elements on the current page
+        try { AD.modules.dividers?.init(); } catch (_) {}
 
-      // Start bloom for hover elements (targets class .deco-bloom)
-      try { AD.modules.bloom?.init({ selector: '.deco-bloom' }); } catch (_) {}
+        // Start comet trail
+        try { AD.modules.comet?.init(); } catch (_) {}
+
+        // Start bloom for hover elements (targets class .deco-bloom)
+        try { AD.modules.bloom?.init({ selector: '.deco-bloom' }); } catch (_) {}
+      }
     };
 
     // Delay initialization slightly to ensure React has fully rendered the new DOM elements
@@ -741,9 +795,16 @@ export default function App() {
         try { AD.modules.debris?.destroy(); } catch (_) {}
         try { AD.modules.dividers?.destroy(); } catch (_) {}
         try { AD.modules.bloom?.destroy(); } catch (_) {}
+        try { AD.modules.breathe?.destroy(); } catch (_) {}
+        try { AD.modules.eyes?.destroy(); } catch (_) {}
+        try { AD.modules.moire?.destroy(); } catch (_) {}
+        try { AD.modules.tracers?.destroy(); } catch (_) {}
+        try { AD.modules.flicker?.destroy(); } catch (_) {}
+        try { AD.modules.glossolalia?.destroy(); } catch (_) {}
+        try { AD.modules.melt?.destroy(); } catch (_) {}
       }
     };
-  }, [activeTab]);
+  }, [activeTab, moreSubTab]);
 
   // 3d. Persistent config states
   useEffect(() => {
@@ -3975,7 +4036,7 @@ export default function App() {
                         <button
                           key={idx}
                           onClick={() => { playChime('sine', 1.0 + idx * 0.1); setActiveTripReport(idx); }}
-                          className={`w-full text-left p-2.5 rounded border transition-all text-xs flex justify-between items-center ${activeTripReport === idx ? 'bg-[#FF2BD6]/10 border-[#FF2BD6] text-white' : 'bg-black/50 border-zinc-900 text-zinc-400 hover:border-zinc-705 hover:text-white'}`}
+                          className={`w-full text-left p-2.5 rounded border transition-all text-xs flex justify-between items-center deco-breathe ${activeTripReport === idx ? 'bg-[#FF2BD6]/10 border-[#FF2BD6] text-white' : 'bg-black/50 border-zinc-900 text-zinc-400 hover:border-zinc-705 hover:text-white'}`}
                         >
                           <div className="space-y-0.5 truncate pr-2">
                             <div className="font-bold uppercase truncate">{item.title}</div>
@@ -4010,10 +4071,10 @@ export default function App() {
                     {activeTripReport === 0 && (
                       <div className="space-y-4">
                         <div className="flex justify-between items-start border-b border-zinc-900 pb-3 gap-2 flex-wrap">
-                          <h3 className="text-xl font-bold font-sans text-[#FF2BD6] tracking-wide uppercase">FILE_01: Summary of Everything</h3>
-                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 border border-zinc-900 rounded">DATE: ALL_TIME · ARCHIVE INTEGRATION</span>
+                          <h3 className="text-xl font-bold font-sans text-[#FF2BD6] tracking-wide uppercase deco-melt">FILE_01: Summary of Everything</h3>
+                          <span className="text-[10px] font-mono text-zinc-500 bg-zinc-950 px-2 py-0.5 border border-zinc-900 rounded deco-flicker">DATE: ALL_TIME · ARCHIVE INTEGRATION</span>
                         </div>
-                        <div className="text-sm font-sans text-gray-300 leading-relaxed space-y-3.5">
+                        <div className="text-sm font-sans text-gray-300 leading-relaxed space-y-3.5 deco-glossolalia">
                           <p>
                             A complete diagnostic overview of deep-state psychedelic integrations and structural pattern alignments across multiple visionary cycles.
                           </p>

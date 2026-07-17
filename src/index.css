@@ -315,7 +315,7 @@ body.light-theme .bg-zinc-950\/40 {
 @font-face { font-family: 'Copixel'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Copixel-Demo.woff') format('woff'); }
 @font-face { font-family: 'Cream Cake Bold'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Cream%20Cake%20Bold.woff') format('woff'); }
 @font-face { font-family: 'Cream Cake'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Cream%20Cake.woff') format('woff'); }
-@font-face { font-family: 'DARKAB'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/DARKAB__.woff') format('woff'); }
+@font-face { font-family: 'Spiroface'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Spiroface-gGn1.woff2') format('woff2'); }
 @font-face { font-family: 'Dignity of Labour'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Dignity%20of%20Labour.woff') format('woff'); }
 @font-face { font-family: 'Early Quake'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Early%20Quake%20DEMO.woff') format('woff'); }
 @font-face { font-family: 'Gondens'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Gondens%20DEMO.woff') format('woff'); }
@@ -323,7 +323,7 @@ body.light-theme .bg-zinc-950\/40 {
 @font-face { font-family: 'Computer 7'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/computer_7.woff') format('woff'); }
 @font-face { font-family: 'Pixeland'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Pixeland.woff2') format('woff2'); }
 @font-face { font-family: 'Pixelogist'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Pixelogist.woff2') format('woff2'); }
-@font-face { font-family: 'BarcodeFont'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/BarcodeFont.woff2') format('woff2'); }
+@font-face { font-family: 'Psycha'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Psycha_1.woff2') format('woff2'); }
 @font-face { font-family: 'VICTM___'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/VICTM___.woff2') format('woff2'); }
 @font-face { font-family: 'Pixelmania'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/Pixelmania.woff2') format('woff2'); }
 @font-face { font-family: 'Dogica Pixel'; src: url('https://raw.githubusercontent.com/merrypranxter/astraltrash_site_support/main/assets/fonts/dogicapixelbold.woff2') format('woff2'); }
@@ -553,7 +553,7 @@ body.psy-trip-active {
   pointer-events: none;
   overflow: hidden;
   z-index: -1;
-  font-family: 'DARKAB', sans-serif;
+  font-family: 'Spiroface', sans-serif;
   color: var(--psy-pink);
   opacity: 0.3;
 }
@@ -644,10 +644,10 @@ body.psy-trip-active {
 }
 .psy-fragment:hover,
 .psy-fragment.is-active { color: #fff;  }
-.psy-fragment-glyph { font-family: 'DARKAB', sans-serif; text-align: center; }
+.psy-fragment-glyph { font-family: 'Spiroface', sans-serif; text-align: center; }
 .psy-glyph-teal { color: var(--psy-cyan); font-size: 24px; }
 .psy-glyph-pink { color: var(--psy-pink); font-size: 32px; }
-.psy-fragment-title { font-family: 'BarcodeFont', monospace; font-size: clamp(30px, 8vw, 150px); white-space: nowrap; transform: scaleY(3.5); transform-origin: center; display: inline-block; letter-spacing: -2px; text-align: center; line-height: 1; }
+.psy-fragment-title { font-family: 'Psycha', sans-serif; font-size: clamp(30px, 8vw, 150px); white-space: nowrap; display: inline-block; letter-spacing: 2px; text-align: center; line-height: 1; text-transform: uppercase; }
 .psy-fragment:nth-child(5n + 1) { color: var(--psy-pink); text-shadow: 0 0 10px var(--psy-pink); }
 .psy-fragment:nth-child(5n + 2) { color: var(--psy-cyan); text-shadow: 0 0 10px var(--psy-cyan); }
 .psy-fragment:nth-child(5n + 3) { color: var(--psy-acid); text-shadow: 0 0 10px var(--psy-acid); }
