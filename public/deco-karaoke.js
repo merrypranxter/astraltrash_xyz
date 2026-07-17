@@ -22,16 +22,7 @@
     state.playing = true;
     // lazy-init audio graph on first user-gesture play
     if (!actx && el) {
-      try {
-        actx = new (window.AudioContext || window.webkitAudioContext)();
-        const src = actx.createMediaElementSource(el);
-        analyser = actx.createAnalyser();
-        analyser.fftSize = 64;
-        src.connect(analyser);
-        analyser.connect(actx.destination);
-        data = new Uint8Array(analyser.frequencyBinCount);
-        live = true;
-      } catch (e) { live = false; }   // CORS-tainted etc -> fake it
+      live = false; // Force fake bounce to prevent Web Audio CORS muting
     }
     if (actx && actx.state === "suspended") actx.resume().catch(() => {});
   }

@@ -763,7 +763,6 @@ export default function App() {
         try { AD.modules.glossolalia?.destroy(); } catch (_) {}
         try { AD.modules.melt?.destroy(); } catch (_) {}
         try { AD.karaoke?.detach(); } catch (_) {}
-        try { AD.modules.deck?.destroy(); } catch (_) {}
         try { AD.modules.notes?.destroy(); } catch (_) {}
         try { AD.modules.onair?.destroy(); } catch (_) {}
       };
@@ -799,8 +798,7 @@ export default function App() {
           }
           try {
             if (AD.karaoke?.attach('#karaoke-media')) {
-              AD.modules.deck?.init();
-              AD.modules.notes?.init();
+              AD.modules.notes?.init({ zIndex: 1 });
               AD.modules.onair?.init({ corner: "left" });
             }
           } catch (_) {}

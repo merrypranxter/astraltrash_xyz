@@ -675,11 +675,12 @@ export function ShittyKaraoke({ playChime, preselectedVideoFileName, clearPresel
             </div>
 
             {/* Main Video Element (Fills vertical screen perfectly with object-contain) */}
-            <div className="flex-grow bg-black relative flex items-center justify-center overflow-hidden">
+            <div className="flex-grow bg-black relative flex items-center justify-center overflow-hidden z-10">
               <video
                 id="karaoke-media"
                 ref={videoRef}
                 src={activeUrl}
+                crossOrigin="anonymous"
                 controls
                 width={resolution === '480p' ? 480 : resolution === '720p' ? 720 : undefined}
                 className="w-full h-full object-contain bg-black z-10"
